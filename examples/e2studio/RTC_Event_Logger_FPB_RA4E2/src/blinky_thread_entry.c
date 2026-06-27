@@ -30,10 +30,18 @@
 
 extern void rs_rtc_logger_demo_main(void);
 
-/* Override FSP weak vApplicationIdleHook.
- * The FSP default calls vTaskSuspendAll() which permanently halts the
- * system when all tasks are blocked. A plain WFI is safe and sufficient:
- * the CPU wakes on every 1 ms tick interrupt and any peripheral IRQ. */
+/* Override FSP weak vApplicationIdleHook with a plain WFI.
+ *
+ * N-14: The FSP default implementation (rm_freertos_port/port.c) calls
+ * __disable_irq() + vTaskSuspendAll() + rm_freertos_port_sleep_preserving_lpm()
+ * + __enable_irq(). This is a proper LPM-aware sleep pattern: vTaskSuspendAll()
+ * prevents context switches DURING sleep entry/exit (not permanently), and
+ * xTaskResumeAll() is called inside rm_freertos_port_sleep_preserving_lpm()
+ * before returning. It does NOT permanently halt.
+ *
+ * The override below replaces that with a plain WFI, which is correct for
+ * this demo because no LPM peripheral is configured. If LPM (Software Standby,
+ * Snooze) is added, revert to the FSP default to preserve LPM state correctly. */
 void vApplicationIdleHook(void)
 {
     __WFI();

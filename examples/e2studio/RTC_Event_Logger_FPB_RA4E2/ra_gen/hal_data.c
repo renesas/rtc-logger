@@ -89,7 +89,7 @@ const rtc_cfg_t g_rtc0_cfg =
   .p_extend = NULL,
   .alarm_ipl = (BSP_IRQ_DISABLED),
   .periodic_ipl = (BSP_IRQ_DISABLED),
-  .carry_ipl = (12),
+  .carry_ipl = (2),
 #if defined(VECTOR_NUMBER_RTC_ALARM)
     .alarm_irq               = VECTOR_NUMBER_RTC_ALARM,
 #else

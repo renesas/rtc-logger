@@ -96,6 +96,33 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
         return err;
     }
 
+    /* N-12: Validate that the RTC carry interrupt has HIGHER priority (lower IPL
+     * number) than any ISR that calls rs_rtc_logger_EventTrigger().
+     *
+     * R_RTC_CalendarTimeGet() spins waiting for the carry ISR to fire.
+     * If the EventTrigger() ISR has HIGHER priority than carry, the carry ISR
+     * can never preempt it — deadlock.  The FSP warning is:
+     *   "Do not call from interrupt with higher priority than carry interrupt."
+     *
+     * The preset config uses carry_ipl = 2, button ISR ipl = 5 → safe.
+     * The FSP-generated hal_data.c uses carry_ipl = 12, button ISR ipl = 5
+     * → carry has LOWER priority than the button ISR → deadlock path.
+     *
+     * This check reads carry_ipl directly from the RTC config.  If it exceeds
+     * RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT (default 4), the open fails with
+     * FSP_ERR_INVALID_HW_CONDITION so the misconfiguration is caught at init
+     * time rather than producing an invisible infinite loop in the ISR. */
+#if RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE
+    {
+        uint32_t carry_ipl = (uint32_t)p_rtc->p_cfg->carry_ipl;
+        if (carry_ipl > RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT)
+        {
+            (void)p_rtc->p_api->close(p_rtc->p_ctrl);
+            return FSP_ERR_INVALID_HW_CONDITION;
+        }
+    }
+#endif
+
     /* On Power-On Reset the RTC hardware has not been started yet.
      * Call clockSourceSet() explicitly to select LOCO and start the counter.
      * On a warm reset the counter is already running — skip this to avoid

@@ -128,6 +128,11 @@ fsp_err_t rs_rtc_logger_ConfigGen(rs_rtc_logger_cfg_t   * p_cfg,
  * @retval FSP_ERR_ASSERTION        p_ctrl or p_cfg is NULL (param checking enabled).
  * @retval FSP_ERR_ALREADY_OPEN     PES is not in CLOSED state.
  * @retval FSP_ERR_NOT_INITIALIZED  RTC oscillator not running.
+ * @retval FSP_ERR_INVALID_HW_CONDITION RTC carry interrupt priority exceeds
+ *                                  RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT. The carry ISR
+ *                                  must have higher preemption (lower IPL number) than
+ *                                  any ISR that calls rs_rtc_logger_EventTrigger().
+ *                                  See RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT in cfg.h.
  * @retval (other)                  Propagated from underlying HAL Open() calls.
  *
  * @note Valid in: CLOSED state only.
@@ -231,6 +236,16 @@ fsp_err_t rs_rtc_logger_Close(rs_rtc_logger_ctrl_t * p_ctrl);
  * @note ISR-safe. Non-blocking. Valid in: STARTED and STOPPED states (both modes).
  *       Example Project mode additionally handles CLOSED state on first call.
  * @note seq_count is incremented atomically on each successful enqueue.
+ * @note N-12 — RTC carry ISR priority requirement: this function calls
+ *       R_RTC_CalendarTimeGet() which spins waiting for the RTC carry ISR to
+ *       fire.  The carry ISR MUST have higher priority (lower IPL number) than
+ *       this calling ISR, or it can never preempt this ISR — causing an
+ *       infinite loop (deadlock).  The preset config sets carry_ipl = 2 which
+ *       is safely above the demo button ISR at ipl = 5.  When using the FSP
+ *       Stack Configurator path, set the RTC carry interrupt priority to a
+ *       value strictly less than the IPL of every ISR that calls this function.
+ *       rs_rtc_logger_Open() checks this at init time via
+ *       RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT (default 4).
  */
 fsp_err_t rs_rtc_logger_EventTrigger(rs_rtc_logger_ctrl_t * p_ctrl,
                                       uint8_t const        * p_data,
@@ -276,6 +291,13 @@ fsp_err_t rs_rtc_logger_Write(rs_rtc_logger_ctrl_t              * p_ctrl,
  * @retval (other)               Propagated from UART HAL write.
  *
  * @note Non-blocking. Valid in: STARTED state only.
+ * @note N-13 — seq_count: WriteStr() uses the current seq_count WITHOUT
+ *       incrementing it (unlike EventTrigger() which increments on every call).
+ *       If WriteStr() is interleaved with EventTrigger() calls, the output
+ *       will contain duplicate sequence numbers — this is intentional.
+ *       WriteStr() is an out-of-band path that does not participate in the
+ *       counted event sequence.  Use EventTrigger() if unique seq numbers
+ *       are required for every output line.
  */
 fsp_err_t rs_rtc_logger_WriteStr(rs_rtc_logger_ctrl_t * p_ctrl,
                                   char const           * p_str);

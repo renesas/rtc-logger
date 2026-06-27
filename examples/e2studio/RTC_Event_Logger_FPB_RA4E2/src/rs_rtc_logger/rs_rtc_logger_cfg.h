@@ -62,6 +62,42 @@
  **********************************************************************************************************************/
 
 /***********************************************************************************************************************
+ * RTC carry interrupt priority guard
+ **********************************************************************************************************************/
+
+/**
+ * @brief Maximum permitted RTC carry interrupt priority level (IPL).
+ *
+ * N-12: R_RTC_CalendarTimeGet() (called from rs_rtc_logger_EventTrigger() in
+ * ISR context) spins waiting for the RTC carry ISR to set a flag.  If the
+ * calling ISR has HIGHER priority (lower IPL number) than the carry ISR, the
+ * carry ISR can never preempt the calling ISR — producing an infinite loop.
+ *
+ * FSP warning (r_rtc.c line ~411):
+ *   "Do not call this function from a critical section or from an interrupt
+ *    with higher priority than the carry interrupt."
+ *
+ * Required invariant:
+ *   carry_ipl  <  ipl_of_any_ISR_that_calls_EventTrigger()
+ *   (lower IPL number = higher preemption on Cortex-M)
+ *
+ * Default: 4 — the carry ISR must be configured at priority 1–4.
+ * This is safely above the FreeRTOS max-syscall priority (1) and below the
+ * demo button ISR (priority 5).
+ *
+ * The preset config (rs_rtc_logger_data_fpb_ra4e2.c) uses carry_ipl = 2. ✓
+ * The FSP-generated hal_data.c uses carry_ipl = 12 which FAILS this check. ✗
+ * Users adopting the FSP Stack Configurator path MUST set the RTC carry
+ * interrupt priority to a value STRICTLY LESS THAN the priority of every ISR
+ * that calls rs_rtc_logger_EventTrigger().
+ *
+ * Override at build time: -DRS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT=<value>
+ */
+#ifndef RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT
+  #define RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT   (4U)
+#endif
+
+/***********************************************************************************************************************
  * LOCO oscillator drift compensation
  **********************************************************************************************************************/
 

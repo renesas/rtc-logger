@@ -38,7 +38,15 @@ static const rtc_cfg_t g_rtc0_cfg_preset =
     .p_err_cfg         = NULL,            /* No error adjustment */
     .alarm_ipl         = (BSP_IRQ_DISABLED),
     .periodic_ipl      = (BSP_IRQ_DISABLED),
-    .carry_ipl         = (2),             /* Must be > 0 for CalendarTimeSet/Get */
+    /* N-12 CRITICAL: carry_ipl MUST be strictly lower (higher preemption) than
+     * the IPL of every ISR that calls rs_rtc_logger_EventTrigger().
+     * R_RTC_CalendarTimeGet() called from EventTrigger() spins waiting for the
+     * carry ISR.  If the calling ISR has higher priority (lower IPL number),
+     * the carry ISR can never fire — infinite loop / deadlock.
+     * The demo button ISR is at ipl = 5, so carry_ipl must be < 5.
+     * FSP-generated hal_data.c uses carry_ipl = 12 — DO NOT USE that value
+     * with EventTrigger() in an ISR; use this preset (carry_ipl = 2) instead. */
+    .carry_ipl         = (2),
 #if defined(VECTOR_NUMBER_RTC_ALARM)
     .alarm_irq         = VECTOR_NUMBER_RTC_ALARM,
 #else
