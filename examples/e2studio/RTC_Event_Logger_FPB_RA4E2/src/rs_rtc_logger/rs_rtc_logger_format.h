@@ -54,25 +54,6 @@ uint32_t rs_rtc_logger_format_timestamp(rtc_time_t              const * p_time,
                                          uint32_t                        buf_size);
 
 /**
- * @brief Append the line terminator string to a caller-supplied buffer.
- *
- * Writes the appropriate line terminator (CRLF, LF, or CR) into p_buf
- * starting at offset, and NUL-terminates. Returns the number of terminator
- * characters appended (not including NUL).
- *
- * @param[in]  term      Line terminator selection.
- * @param[out] p_buf     Caller-supplied buffer.
- * @param[in]  offset    Byte offset into p_buf at which to begin writing.
- * @param[in]  buf_size  Total size of p_buf in bytes.
- *
- * @return Number of terminator characters written (1 or 2), or 0 if insufficient space.
- */
-uint32_t rs_rtc_logger_format_terminator(rs_rtc_logger_term_t   term,
-                                          char                 * p_buf,
-                                          uint32_t               offset,
-                                          uint32_t               buf_size);
-
-/**
  * @brief Compose a complete formatted log line from a buffer entry.
  *
  * Combines timestamp, event payload, sequence number, and line terminator

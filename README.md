@@ -1,26 +1,9 @@
 # Overview
-This repo contains multiple instances of standard input output stream handlers as explained briefly in sections below.
+This repo contains the RTC Event Logger
 
 ***
 
-# Buffered I/O over UART
-
-[syscalls_picolib_stdio_to_uart.c](docs/README-UART.md) module provides a **clean stdio abstraction** over FSP UART using:
-
-* ByteQ buffering
-* ISR-driven communication
-* Minimal integration effort
-
-It is best suited for:
-
-* Debug console
-* Development phase instrumentation
-
-For production-grade systems, consider:
-
-* Removing heap usage
-* Adding non-blocking APIs
-* RTOS integration
+# RTC Internal Timestamp Event Logger
 
 ***
 
@@ -32,16 +15,16 @@ For production-grade systems, consider:
 │   └── High-level overview of the project, usage, and build instructions
 │
 ├── docs
-│   └── README-UART.md
-│       └── Detailed documentation for UART stdio implementation and design notes
+│   └── README-RTC_EVENT_LOGGER.md
+│       └── Detailed documentation for RTC Event Logger implementation and design notes
 │
 ├── examples
 │   └── e2studio
-│       ├── stdio_uart_on_fpb_ra0l1
-│       │   └── e²studio project for RA0L1 FPB demonstrating UART-backed stdio
+│       ├── RTC_EVENT_LOGGER_FPB_RA4E2
+│           └── e²studio project for FPB RA4E2  demonstrating RTC Event Logger
 │       │
-│       └── stdio_uart_on_fpb_ra2e3
-│           └── e²studio project for RA2E3 FPB demonstrating UART-backed stdio
+│       └── RTC_EVENT_LOGGER_FPB_RA
+│
 │
 ├── meson.build
 │   └── Top-level Meson build definition (options, subprojects, dependency wiring)
@@ -50,22 +33,14 @@ For production-grade systems, consider:
 │   └── User-selectable build options (MCU, board, example, toolchain)
 │
 ├── src
-│   ├── reviews
-│   │   └── copilot.md
-│   │       └── Design reviews, notes, and analysis artifacts
-│   │
-│   └── syscalls_picolib_stdio_to_uart.c
-│       └── Core implementation: redirects picolibc stdio to UART using FSP APIs
+│
 │
 ├── subprojects
 │   ├── cmsis.wrap
 │   │   └── Wrap file for CMSIS dependency (headers and core support)
 │   │
-│   ├── fsp.wrap
-│   │   └── Wrap file for Renesas FSP (if used externally)
-│   │
-│   ├── pes-queues.wrap
-│   │   └── Wrap file for ByteQ (data_queues) reusable queue library
+    ├── pes-rtc-event-logger.wrap
+│   │   └── Wrap file for RTC Event Logger
 │   │
 │   └── unity.wrap
 │       └── Wrap file for Unity unit test framework
@@ -76,22 +51,11 @@ For production-grade systems, consider:
 │   │
 │   ├── stubs
 │   │   ├── bsp_api.h
-│   │   │   └── Minimal BSP stub definitions for host testing
-│   │   │
-│   │   ├── fake_uart.c / fake_uart.h
-│   │   │   └── UART test double (simulates FSP UART behavior)
-│   │   │
-│   │   └── r_uart_api.h
-│   │       └── Stubbed UART API interface for unit tests
+│   │       └── Minimal BSP stub definitions for host testing   
 │   │
 │   ├── test_main.c
-│   │   └── Entry point for host-based Unity test execution
-│   │
-│   ├── test_main_firmware.c
-│   │   └── Entry point for on-target Unity test execution (firmware mode)
-│   │
-│   └── test_picolibc_stdio_to_uart.c
-│       └── Unit tests for stdio-to-UART implementation (init, RX, TX, flush)
+│       └── Entry point for host-based Unity test execution
+│
 │
 ├── toolchains
 │   ├── llvm-cortex-m23.ini

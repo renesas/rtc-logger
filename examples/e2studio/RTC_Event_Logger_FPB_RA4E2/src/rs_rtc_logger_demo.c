@@ -75,7 +75,7 @@
  *   PRESET_CONFIG_USE = 0: ConfigGen uses FSP-generated g_rtc0 / g_uart0.
  */
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
- #include <rs_rtc_logger/config/rs_rtc_logger_config_fpb_ra4e2.h>
+ #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h>
 #endif
 
 #include "FreeRTOS.h"
@@ -88,14 +88,25 @@
  * Configuration
  **********************************************************************************************************************/
 
-#define DEMO_CLI_TASK_STACK_SIZE        (1024U)
+/* ROOT CAUSE FIX (stack): CLI task needs headroom for rs_rtc_logger_Open() +
+ * R_RTC_Open() + R_SCI_UART_Open() call depth.  The original 1024 bytes left
+ * fewer than ~200 bytes by the time R_RTC_Open() entered, causing a hard fault
+ * in Expert mode.  The saved_event_buf static fix is the primary remedy, but
+ * 2048 bytes also provides safe margin for any future FSP function growth. */
+#define DEMO_CLI_TASK_STACK_SIZE        (2048U)
 #define DEMO_CLI_TASK_PRIORITY          (tskIDLE_PRIORITY + 2U)
 
-#define DEMO_CONSUMER_TASK_STACK_SIZE   (512U)
+/* Expert mode consumer task: 512 bytes was too tight for rs_rtc_logger_Write()
+ * + rs_rtc_logger_format_line() + R_SCI_UART_Write() call depth. */
+#define DEMO_CONSUMER_TASK_STACK_SIZE   (1024U)
 #define DEMO_CONSUMER_TASK_PRIORITY     (tskIDLE_PRIORITY + 1U)
 
 #define DEMO_EVENT_PAYLOAD              "Event Detected"
-#define DEMO_EVENT_PAYLOAD_LEN          (14U)
+/* DC-4 fix: derive length from the string literal so it can never silently diverge. */
+#define DEMO_EVENT_PAYLOAD_LEN          (sizeof(DEMO_EVENT_PAYLOAD) - 1U)
+
+#define DEMO_INIT_PAYLOAD               "INIT"
+#define DEMO_INIT_PAYLOAD_LEN           (sizeof(DEMO_INIT_PAYLOAD) - 1U)
 
 /** RX line buffer — filled one byte at a time by UART_EVENT_RX_CHAR ISR */
 #define DEMO_RX_BUF_SIZE                (64U)
@@ -420,8 +431,8 @@ static void demo_cli_task(void * p_arg)
     demo_uart_write_blocking("Waiting for RTC Event Logger auto-init to complete...\r\n");
 
     (void)rs_rtc_logger_EventTrigger(&g_logger_ctrl,
-                                     (uint8_t const *)"INIT",
-                                     4U);
+                                     (uint8_t const *)DEMO_INIT_PAYLOAD,
+                                     DEMO_INIT_PAYLOAD_LEN);
 
     /* Wait for auto_init_done — set by the internal consumer task once
      * Open() and Start() have completed and the INIT event has been written. */
@@ -768,18 +779,14 @@ static void demo_consumer_task(void * p_arg)
 
         while (RS_RTC_LOGGER_STATE_STARTED == g_logger_ctrl.state)
         {
-            rs_rtc_logger_status_t status;
-            if (FSP_SUCCESS != rs_rtc_logger_StatusGet(&g_logger_ctrl, &status)) { break; }
-            if (0U == status.buf_count) { break; }
-
-            entry = g_logger_ctrl.event_buf[g_logger_ctrl.buf_tail];
-
-            uint32_t saved = __get_PRIMASK();
-            __disable_irq();
-            g_logger_ctrl.buf_tail = (g_logger_ctrl.buf_tail + 1U) %
-                                     RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH;
-            g_logger_ctrl.buf_count--;
-            if (saved == 0U) { __enable_irq(); }
+            /* DC-6 fix: use the canonical public dequeue function instead of
+             * accessing buf_tail / buf_count directly.  rs_rtc_logger_EventDequeue()
+             * wraps rs_rl_dequeue(), which copies the entry and updates the index
+             * inside a single critical section — no TOCTOU exposure. */
+            if (FSP_SUCCESS != rs_rtc_logger_EventDequeue(&g_logger_ctrl, &entry))
+            {
+                break; /* buffer empty or not open */
+            }
 
             (void)rs_rtc_logger_Write(&g_logger_ctrl, &entry);
 
@@ -862,7 +869,18 @@ static bool demo_parse_datetime(char const * p_str, rtc_time_t * p_time)
 static bool demo_is_power_on_reset(void)
 {
 #ifndef RS_RTC_LOGGER_TEST_HOST_BUILD
-    return (1U == R_SYSTEM->RSTSR0_b.PORF);
+    /* FIX: cache the result on first call.  RSTSR0 is a sticky-flag register;
+     * if any driver or BSP code clears PORF between calls the result would
+     * silently change mid-task, producing inconsistent warm/cold-start behaviour.
+     * Reading once and caching makes all calls within this session consistent. */
+    static bool s_cached = false;
+    static bool s_result = false;
+    if (!s_cached)
+    {
+        s_result = (1U == R_SYSTEM->RSTSR0_b.PORF);
+        s_cached = true;
+    }
+    return s_result;
 #else
     return true;
 #endif

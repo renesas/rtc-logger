@@ -4,7 +4,7 @@
  * Copyright (c) 2020 - 2026 Renesas Electronics Corporation and/or its affiliates
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * @file rs_rtc_logger_config_fpb_ra4e2.h
+ * @file rs_rtc_logger_data_fpb_ra4e2.h
  * @brief Pre-set HAL instance declarations for the RTC Event Logger PES — FPB-RA4E2.
  *
  * Included when RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1 (default).
@@ -16,14 +16,14 @@
  *
  * Usage:
  *   #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
- *   #include "rs_rtc_logger_config_fpb_ra4e2.h"
+ *   #include "rs_rtc_logger_data_fpb_ra4e2.h"
  *   #endif
  *   ...
  *   rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
  **********************************************************************************************************************/
 
-#ifndef RS_RTC_LOGGER_CONFIG_FPB_RA4E2_H
-#define RS_RTC_LOGGER_CONFIG_FPB_RA4E2_H
+#ifndef RS_RTC_LOGGER_DATA_FPB_RA4E2_H
+#define RS_RTC_LOGGER_DATA_FPB_RA4E2_H
 
 #include <rs_rtc_logger/rs_rtc_logger_cfg.h>
 
@@ -52,4 +52,4 @@ FSP_FOOTER
 
 #endif /* RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
 
-#endif /* RS_RTC_LOGGER_CONFIG_FPB_RA4E2_H */
+#endif /* RS_RTC_LOGGER_DATA_FPB_RA4E2_H */

@@ -45,7 +45,7 @@ extern void demo_uart_rx_char_enqueue(uint8_t c);
  * Valid for single-instance usage (primary reference target use case).
  * For multi-instance, applications must supply p_context in the UART config.
  **********************************************************************************************************************/
-static rs_rtc_logger_ctrl_t * gp_rm_rlh_uart_ctrl = NULL;
+static rs_rtc_logger_ctrl_t * volatile gp_rs_rl_uart_ctrl = NULL;
 
 /***********************************************************************************************************************
  * Private helper functions
@@ -61,13 +61,13 @@ static rs_rtc_logger_ctrl_t * gp_rm_rlh_uart_ctrl = NULL;
  *
  * @return Pointer to the PES control block, or NULL if not found.
  */
-static rs_rtc_logger_ctrl_t * rm_rlh_find_ctrl(uart_callback_args_t * p_args)
+static rs_rtc_logger_ctrl_t * rs_rl_hal_find_ctrl(uart_callback_args_t * p_args)
 {
     if ((NULL != p_args) && (NULL != p_args->p_context))
     {
         return (rs_rtc_logger_ctrl_t *)p_args->p_context;
     }
-    return gp_rm_rlh_uart_ctrl;
+    return gp_rs_rl_uart_ctrl;
 }
 
 /***********************************************************************************************************************
@@ -136,9 +136,20 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
             return FSP_ERR_NOT_INITIALIZED;
         }
 
-        /* Restart the counter. Any error is non-fatal — calendarTimeGet()
-         * already confirmed the oscillator is accessible. */
-        (void)p_rtc->p_api->calendarTimeSet(p_rtc->p_ctrl, &retained_time);
+        /* Restart the counter by writing the retained time back via
+         * calendarTimeSet() (stop → write registers → start).
+         *
+         * FIX: previously this error was silently ignored with (void).  If
+         * calendarTimeSet() fails the counter remains stopped; all subsequent
+         * EventTrigger() timestamps would be identical stale values.  Treat
+         * failure as FSP_ERR_NOT_INITIALIZED so the caller knows the RTC is
+         * not usable, consistent with the POR failure path above. */
+        err = p_rtc->p_api->calendarTimeSet(p_rtc->p_ctrl, &retained_time);
+        if (FSP_SUCCESS != err)
+        {
+            (void)p_rtc->p_api->close(p_rtc->p_ctrl);
+            return FSP_ERR_NOT_INITIALIZED;
+        }
     }
 
     return FSP_SUCCESS;
@@ -245,8 +256,23 @@ fsp_err_t rs_rtc_logger_hal_loco_freq_set(rs_rtc_logger_ctrl_t * p_ctrl,
 
     /* Step 4: Restore the saved time.  calendarTimeSet() stops the counter,
      * writes all calendar registers, and restarts — the RFRL value written
-     * in step 3 is preserved and takes effect immediately on restart. */
-    return p_rtc->p_api->calendarTimeSet(p_rtc->p_ctrl, &saved_time);
+     * in step 3 is preserved and takes effect immediately on restart.
+     *
+     * FIX: If calendarTimeSet() fails the counter is left stopped (Step 2
+     * cleared START and calendarTimeSet never restarted it).  Attempt a
+     * direct restart so at minimum the RTC keeps running at the retained
+     * pre-update time, rather than halting timestamping entirely. */
+    fsp_err_t restore_err = p_rtc->p_api->calendarTimeSet(p_rtc->p_ctrl, &saved_time);
+    if (FSP_SUCCESS != restore_err)
+    {
+        /* Best-effort counter restart — write 1 to RCR2.START directly.
+         * The counter will resume from whatever the calendar registers hold.
+         * This is better than leaving the RTC fully stopped. */
+        R_RTC->RCR2_b.START = 1U;
+        FSP_HARDWARE_REGISTER_WAIT(R_RTC->RCR2_b.START, 1U);
+    }
+
+    return restore_err;
 }
 
 /***********************************************************************************************************************
@@ -282,7 +308,7 @@ fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
     if (FSP_SUCCESS == err)
     {
         /* Register for ISR callback fallback path */
-        gp_rm_rlh_uart_ctrl = p_ctrl;
+        gp_rs_rl_uart_ctrl = p_ctrl;
     }
     return err;
 }
@@ -301,9 +327,9 @@ fsp_err_t rs_rtc_logger_hal_uart_close(rs_rtc_logger_ctrl_t * p_ctrl)
     fsp_err_t               err    = p_uart->p_api->close(p_uart->p_ctrl);
 
     /* Clear the global pointer if this instance is the registered one */
-    if (gp_rm_rlh_uart_ctrl == p_ctrl)
+    if (gp_rs_rl_uart_ctrl == p_ctrl)
     {
-        gp_rm_rlh_uart_ctrl = NULL;
+        gp_rs_rl_uart_ctrl = NULL;
     }
 
     return err;
@@ -346,7 +372,7 @@ fsp_err_t rs_rtc_logger_hal_uart_write(rs_rtc_logger_ctrl_t * p_ctrl,
  */
 void rs_rtc_logger_uart_callback(uart_callback_args_t * p_args)
 {
-    rs_rtc_logger_ctrl_t * p_ctrl = rm_rlh_find_ctrl(p_args);
+    rs_rtc_logger_ctrl_t * p_ctrl = rs_rl_hal_find_ctrl(p_args);
     if (NULL == p_ctrl)
     {
         return; /* Defensive — should not happen in normal operation */

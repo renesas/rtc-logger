@@ -33,6 +33,12 @@ static const char * const rm_rlf_month_abbr[12] =
  * Private helper functions
  **********************************************************************************************************************/
 
+/* Forward declaration — format_terminator is file-local (PG-3 fix: removed from public header) */
+static uint32_t rs_rtc_logger_format_terminator(rs_rtc_logger_term_t term,
+                                                  char               * p_buf,
+                                                  uint32_t             offset,
+                                                  uint32_t             buf_size);
+
 /**
  * @brief Write a 2-digit decimal integer (with leading zero) into buf at offset.
  *
@@ -163,6 +169,13 @@ uint32_t rs_rtc_logger_format_timestamp(rtc_time_t              const * p_time,
     }
 
     /* --- Timestamp body --------------------------------------------------- */
+    /* N-8 fix: record offset after the opening bracket so we can detect the
+     * "buffer too small" case after the switch.  If no body was written
+     * (offset did not advance), fall through to return 0 rather than emitting
+     * a malformed truncated string such as "[]" that passes the non-zero
+     * length check in rs_rtc_logger_format_line(). */
+    uint32_t offset_body_start = offset;
+
     switch (format)
     {
         case RS_RTC_LOGGER_TS_FORMAT_ISO8601:
@@ -248,6 +261,17 @@ uint32_t rs_rtc_logger_format_timestamp(rtc_time_t              const * p_time,
             return 0U;
     }
 
+    /* N-8 fix: if offset didn't advance past where the body should start, the
+     * buffer was too small for the chosen format.  Return 0 so callers that
+     * check for a zero return (e.g. rs_rtc_logger_format_line → Write →
+     * FSP_ERR_INVALID_SIZE) correctly reject the output rather than
+     * transmitting a malformed "[]" or "[Mon DD]" fragment. */
+    if (offset == offset_body_start)
+    {
+        p_buf[0] = '\0';
+        return 0U;
+    }
+
     /* --- Closing bracket ------------------------------------------------- */
     if (ts_brackets && (offset < buf_size - 1U))
     {
@@ -278,7 +302,7 @@ uint32_t rs_rtc_logger_format_timestamp(rtc_time_t              const * p_time,
  *
  * @return Number of terminator characters written (1 or 2), or 0 if insufficient space.
  */
-uint32_t rs_rtc_logger_format_terminator(rs_rtc_logger_term_t   term,
+static uint32_t rs_rtc_logger_format_terminator(rs_rtc_logger_term_t   term,
                                           char                 * p_buf,
                                           uint32_t               offset,
                                           uint32_t               buf_size)

@@ -126,7 +126,12 @@ typedef struct
     uart_instance_t const * p_uart;             ///< UART HAL instance (r_sci_b_uart)
 
     /** Timestamp formatting options */
-    rs_rtc_logger_ts_format_t   ts_format;      ///< Timestamp format (default: ISO8601)
+    rs_rtc_logger_ts_format_t   ts_format;      ///< Timestamp format (default: ISO8601).
+                                                 ///< @note N-10: Effective only at Open() time.
+                                                 ///< To change the format at runtime after Open(),
+                                                 ///< call rs_rtc_logger_TimestampFormatSet() —
+                                                 ///< Write() reads from the ctrl shadow field,
+                                                 ///< not directly from this cfg field.
     bool                        ts_brackets;    ///< Wrap timestamp in [ ] (default: true)
 
     /** Output formatting */
@@ -170,6 +175,14 @@ typedef struct
 
     /* --- Bound configuration --------------------------------------------- */
     rs_rtc_logger_cfg_t const * p_cfg;          ///< Pointer to cfg passed at Open()
+
+    /* --- Hot-mutable configuration shadow (avoids const-cast on p_cfg) --- */
+    /**
+     * Shadow of p_cfg->ts_format, kept here so rs_rtc_logger_TimestampFormatSet()
+     * can update it without casting away const from p_cfg.  Initialised from
+     * p_cfg->ts_format in Open() and used exclusively by Write() / WriteStr().
+     */
+    rs_rtc_logger_ts_format_t   ts_format;
 
     /* --- Circular event buffer (FR-110; static — no heap) ---------------- */
     rs_rtc_logger_event_entry_t event_buf[RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH];

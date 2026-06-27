@@ -163,7 +163,7 @@
 									<listOptionValue builtIn="false" value="&quot;.\src\rtc_event_logger\rm_rtc_logger.o&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;.\src\rtc_event_logger\rm_rtc_logger_format.o&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;.\src\rtc_event_logger\rm_rtc_logger_hal.o&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;.\src\rtc_event_logger\config\rm_rtc_logger_config_fpb_ra4e2.o&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;.\src\rtc_event_logger\config\rs_rtc_logger_data_fpb_ra4e2.o&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;.\src\hal_warmstart.o&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;.\ra_gen\blinky_thread.o&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;.\ra_gen\common_data.o&quot;"/>

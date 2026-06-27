@@ -25,6 +25,7 @@
 #include "hal_data.h"       /* g_uart0_ctrl, g_uart0_cfg */
 #include "r_icu.h"          /* R_ICU_ExternalIrqOpen/Enable */
 #include "r_sci_uart.h"     /* R_SCI_UART_Open, R_SCI_UART_Write */
+#include <string.h>         /* strlen() */
 /* board_leds.h included transitively: blinky_thread.h -> bsp_api.h -> board_cfg.h -> board.h */
 
 extern void rs_rtc_logger_demo_main(void);
@@ -63,12 +64,11 @@ static void demo_early_uart_callback(uart_callback_args_t * p_args)
     }
 }
 
-/* Send a NUL-terminated string over VCOM and spin-wait for TX complete.
- * Called before the RTC Event Logger is open, so no FreeRTOS delays are used. */
+/* Send a NUL-terminated string over VCOM and spin-wait for TX complete.\n * Called before the RTC Event Logger is open, so no FreeRTOS delays are used. */
 static void demo_banner_write(char const * p_str)
 {
-    uint32_t len = 0U;
-    while (p_str[len]) { len++; }
+    /* DC-5 fix: use strlen() — <string.h> is already included. */
+    uint32_t len = (uint32_t)strlen(p_str);
     if (0U == len) { return; }
 
     g_blinky_uart_tx_done = false;

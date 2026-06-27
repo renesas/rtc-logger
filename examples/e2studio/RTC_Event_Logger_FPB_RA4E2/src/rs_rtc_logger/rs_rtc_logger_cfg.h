@@ -20,9 +20,12 @@
  * Buffer sizing
  **********************************************************************************************************************/
 
-/** Timestamp string buffer: enough for "[YYYY-MM-DD HH:MM:SS] " + NUL */
-#ifndef RS_RTC_LOGGER_CFG_TS_BUF_SIZE
-  #define RS_RTC_LOGGER_CFG_TS_BUF_SIZE          (24U)
+/** Timestamp string buffer: enough for "[YYYY-MM-DD HH:MM:SS] " + NUL = 23 chars.
+ *  DC-1 fix: the old RS_RTC_LOGGER_CFG_TS_BUF_SIZE macro was defined here but never
+ *  referenced anywhere.  Replaced by a build-time assertion that LINE_BUF_SIZE is
+ *  large enough to hold the longest timestamp prefix (23 chars) plus a minimal payload. */
+#ifndef RS_RTC_LOGGER_CFG_TS_MIN_CHARS
+  #define RS_RTC_LOGGER_CFG_TS_MIN_CHARS   (23U)
 #endif
 
 /**
@@ -115,7 +118,7 @@
  * Configuration path selection.
  *
  * 1 = Preset configuration path (default):
- *     Include rs_rtc_logger_config_fpb_<board>.h and call
+ *     Include rs_rtc_logger_data_fpb_<board>.h and call
  *     rs_rtc_logger_ConfigGen() with _preset instances.
  *     No FSP Stack Configurator re-run required.
  *
@@ -157,6 +160,21 @@
  * Internal consumer task stack size in bytes (Example Project mode only).
  * Must be sufficient for timestamp formatting and VCOM write call depth.
  * No effect when RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 0.
+ *
+ * N-11 — Stack depth note: rs_rtc_logger_Open() previously stack-allocated
+ * saved_event_buf[RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH] (~80 bytes × depth),
+ * consuming 640 bytes at the default depth of 8.  This caused a hard fault
+ * in Expert mode (CLI task stack = 1024 bytes) because fewer than 200 bytes
+ * remained for R_RTC_Open() and R_SCI_UART_Open().
+ *
+ * FIXED: saved_event_buf is now declared static inside rs_rtc_logger_Open()
+ * so it lives in BSS rather than on the stack.  The stack demand of Open()
+ * is now ~64 bytes (saved scalars + frame overhead), leaving ample headroom.
+ *
+ * The static declaration is safe because Open() is never called re-entrantly:
+ * Expert mode calls it once from the CLI task; EP mode calls it once from the
+ * consumer task.  If EVENT_BUF_DEPTH is changed, the BSS footprint changes
+ * (not stack), so this value does not need to track EVENT_BUF_DEPTH.
  */
 #ifndef RS_RTC_LOGGER_CFG_TASK_STACK_SIZE
   #define RS_RTC_LOGGER_CFG_TASK_STACK_SIZE        (2048U) /* Note: increase from default for increased (high rate frequency) event workload */

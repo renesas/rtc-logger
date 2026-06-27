@@ -70,7 +70,7 @@
  * @brief Assign HAL instance pointers to the PES configuration structure.
  *
  * Called once during application initialisation, before rs_rtc_logger_Open().
- * Accepts either pre-set instances (from rs_rtc_logger_config_fpb_<board>.h,
+ * Accepts either pre-set instances (from rs_rtc_logger_data_fpb_<board>.h,
  * when RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1) or FSP Stack Configurator-
  * generated instances (RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 0).
  *
@@ -80,7 +80,7 @@
  *
  * Example — preset path (RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1):
  * @code
- *   #include "rs_rtc_logger_config_fpb_ra4e2.h"
+ *   #include "rs_rtc_logger_data_fpb_ra4e2.h"
  *   rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
  * @endcode
  *
@@ -165,7 +165,8 @@ fsp_err_t rs_rtc_logger_Start(rs_rtc_logger_ctrl_t * p_ctrl);
  * @param[in] p_ctrl  Pointer to PES control block.
  *
  * @retval FSP_SUCCESS        Stopped; state -> STOPPED.
- * @retval FSP_ERR_NOT_OPEN   PES is not in STARTED state.
+ * @retval FSP_ERR_NOT_OPEN   PES is not in OPEN or STARTED state (CLOSED).
+ * @retval FSP_ERR_INVALID_MODE PES is already STOPPED.
  *
  * @note Valid in: STARTED state only.
  */
@@ -181,8 +182,10 @@ fsp_err_t rs_rtc_logger_Stop(rs_rtc_logger_ctrl_t * p_ctrl);
  *
  * @retval FSP_SUCCESS        Closed; state -> CLOSED.
  * @retval FSP_ERR_NOT_OPEN   PES is not in OPEN or STOPPED state.
+ * @retval FSP_ERR_INVALID_MODE PES is in STARTED state — call Stop() first.
  *
- * @note Valid in: OPEN, STOPPED states. NOT valid while STARTED — call Stop() first.
+ * @note Valid in: OPEN, STOPPED states. Calling while STARTED returns
+ *       FSP_ERR_INVALID_MODE (enforced). Stop() first, then Close().
  */
 fsp_err_t rs_rtc_logger_Close(rs_rtc_logger_ctrl_t * p_ctrl);
 
@@ -276,6 +279,37 @@ fsp_err_t rs_rtc_logger_Write(rs_rtc_logger_ctrl_t              * p_ctrl,
  */
 fsp_err_t rs_rtc_logger_WriteStr(rs_rtc_logger_ctrl_t * p_ctrl,
                                   char const           * p_str);
+
+/**
+ * @brief Dequeue the oldest event entry from the circular buffer.
+ *
+ * Provides Expert-mode consumer tasks with a single canonical dequeue path,
+ * eliminating the need for application code to access buf_tail / buf_count
+ * directly. Uses the same ISR-safe critical section as the internal EP-mode
+ * consumer task (rs_rl_dequeue), so there is no TOCTOU exposure regardless
+ * of the configured overflow policy.
+ *
+ * Typical Expert-mode consumer task usage:
+ * @code
+ *   rs_rtc_logger_event_entry_t entry;
+ *   if (FSP_SUCCESS == rs_rtc_logger_EventDequeue(&g_logger_ctrl, &entry))
+ *   {
+ *       rs_rtc_logger_Write(&g_logger_ctrl, &entry);
+ *   }
+ * @endcode
+ *
+ * @param[in]  p_ctrl      PES control block.
+ * @param[out] p_entry_out Caller-allocated entry; populated when FSP_SUCCESS returned.
+ *
+ * @retval FSP_SUCCESS       Entry dequeued; p_entry_out is valid.
+ * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_ASSERTION p_ctrl or p_entry_out is NULL.
+ * @retval FSP_ERR_BUFFER_EMPTY Circular buffer was empty; p_entry_out not populated.
+ *
+ * @note Task context only — not ISR-safe. Valid in: OPEN, STARTED, STOPPED states.
+ */
+fsp_err_t rs_rtc_logger_EventDequeue(rs_rtc_logger_ctrl_t        * p_ctrl,
+                                      rs_rtc_logger_event_entry_t * p_entry_out);
 
 /* ── Configuration functions (hot-safe — valid in OPEN, STARTED, STOPPED) ── */
 
@@ -382,9 +416,20 @@ fsp_err_t rs_rtc_logger_LocoCalibrationSet(rs_rtc_logger_ctrl_t * p_ctrl,
  * @param[in] seq_count   Sequence counter value to restore.
  *
  * @retval FSP_SUCCESS      Counter restored.
- * @retval FSP_ERR_NOT_OPEN PES is not in OPEN or STOPPED state.
+ * @retval FSP_ERR_NOT_OPEN PES is CLOSED.
  *
- * @note Valid in: OPEN, STOPPED states only. Not hot-safe.
+ * @note Valid in: OPEN, STARTED, STOPPED states.
+ *       STARTED is permitted because in Example Project mode the PES reaches
+ *       STARTED (via auto-init) before the CLI task can call SeqCountSet().
+ *       A 32-bit aligned store is atomic on Cortex-M33.
+ * @note N-9: Call this function **before** arming any interrupt source that
+ *       calls rs_rtc_logger_EventTrigger().  If an EventTrigger() ISR fires
+ *       between the moment the restore value is chosen and this store
+ *       executes, the ISR's seq_count++ will be overwritten by the restore
+ *       value, silently creating a duplicate sequence number in the output.
+ *       On a typical warm-reset path this is naturally satisfied because the
+ *       application calls SeqCountSet() during initialisation before enabling
+ *       the external IRQ.
  */
 fsp_err_t rs_rtc_logger_SeqCountSet(rs_rtc_logger_ctrl_t * p_ctrl,
                                      uint32_t               seq_count);

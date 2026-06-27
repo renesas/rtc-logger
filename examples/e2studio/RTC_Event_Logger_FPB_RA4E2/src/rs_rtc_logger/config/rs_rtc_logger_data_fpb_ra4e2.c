@@ -4,7 +4,7 @@
  * Copyright (c) 2020 - 2026 Renesas Electronics Corporation and/or its affiliates
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * @file rs_rtc_logger_config_fpb_ra4e2.c
+ * @file rs_rtc_logger_data_fpb_ra4e2.c
  * @brief Pre-set HAL instance definitions for the RTC Event Logger PES — FPB-RA4E2.
  *
  * Compiled only when RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1 (default).
@@ -17,11 +17,11 @@
  *
  * g_uart0_preset:
  *   Macro alias for g_uart0 (ra_gen/common_data.c).
- *   Defined via #define in rs_rtc_logger_config_fpb_ra4e2.h — no separate
+ *   Defined via #define in rs_rtc_logger_data_fpb_ra4e2.h — no separate
  *   object definition needed here.
  **********************************************************************************************************************/
 
-#include <rs_rtc_logger/config/rs_rtc_logger_config_fpb_ra4e2.h>
+#include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h>
 
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
 
@@ -68,7 +68,7 @@ const rtc_instance_t g_rtc0_preset =
 
 /*
  * g_uart0_preset is a macro alias for the FSP-generated g_uart0 (common_data.c).
- * The alias is defined in rs_rtc_logger_config_fpb_ra4e2.h — nothing to define here.
+ * The alias is defined in rs_rtc_logger_data_fpb_ra4e2.h — nothing to define here.
  */
 
 #endif /* RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
