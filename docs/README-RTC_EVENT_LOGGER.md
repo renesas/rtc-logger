@@ -89,7 +89,7 @@ The module supports two operating modes selected at compile time via `RS_RTC_LOG
 | Aspect | Example Project Mode (`=1`, default) | Expert Mode (`=0`) |
 |---|---|---|
 | Purpose | Onboarding, demos, evaluation | Production use requiring precise control |
-| Application entry point | `rs_rtc_logger_EventTrigger()` only | Full lifecycle: `rs_rtc_logger_Open()`, `rs_rtc_logger_Start()`, `rs_rtc_logger_Stop()`, `rs_rtc_logger_Close()`, `rs_rtc_logger_EventTrigger()`, `rs_rtc_logger_Write()` |
+| Application entry point | `rs_rtc_logger_EventTrigger()` only | Full lifecycle: `rs_rtc_logger_Open()`, `rs_rtc_logger_Start()`, `rs_rtc_logger_Stop()`, `rs_rtc_logger_Close()`, `rs_rtc_logger_EventTrigger()`, `rs_rtc_logger_EventDequeue()`, `rs_rtc_logger_Write()`, `rs_rtc_logger_WriteStr()` |
 | Lifecycle management | Auto-managed — triggered on first `rs_rtc_logger_EventTrigger()` call | Application owns all lifecycle transitions |
 | Consumer task | Module-owned internal static FreeRTOS task | Application-owned consumer task |
 | `rs_rtc_logger_Write()` caller | Called internally by module consumer task | Application consumer task calls explicitly |
@@ -113,7 +113,7 @@ The following table identifies which files are reusable core code and which belo
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_cfg.h` | Build-time configuration constants with `#ifndef` guards | Override individual constants as needed for your project |
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_format.c/.h` | Pure timestamp formatting — converts `rtc_time_t` to ASCII string; no I/O; integer arithmetic only | Copy into your project; no board-specific content |
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_hal.c/.h` | Thin HAL shim: UART TX-complete callback registered with UART HAL; sets completion flag and signals FreeRTOS consumer task | Copy into your project; board-agnostic |
-| **Preset Config** | `src/rs_rtc_logger/config/rs_rtc_logger_config_fpb_ra4e2.c/.h` | Pre-built HAL instance definitions for FPB-RA4E2; aliased to FSP-generated instances where appropriate | Reference only — do not edit; for custom boards, use the FSP Stack Configurator path instead (see Section 6) |
+| **Preset Config** | `src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.c/.h` | Pre-built HAL instance definitions for FPB-RA4E2; aliased to FSP-generated instances where appropriate | Reference only — do not edit; for custom boards, use the FSP Stack Configurator path instead (see Section 6) |
 | **Reference App** | `src/rs_rtc_logger_demo.c` | Full demonstration of both modes; CLI task, consumer task (Expert mode), button ISR, LOCO calibration | Adapt or replace entirely for your application |
 | **Reference App** | `src/blinky_thread_entry.c` | FreeRTOS thread entry; banner output; r_icu External IRQ open/enable; LED blink | Adapt for your board; not reusable as-is |
 | **Reference App** | `src/hal_warmstart.c` | Warm-start detection helper used by demo | Adapt for your application |
@@ -162,6 +162,7 @@ rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
 | Function | Valid States | Description |
 |---|---|---|
 | `rs_rtc_logger_EventTrigger(p_ctrl, p_data, length)` | STARTED, STOPPED (Example Project: also CLOSED on first call) | ISR-safe capture; enqueues to circular buffer |
+| `rs_rtc_logger_EventDequeue(p_ctrl, p_entry_out)` | OPEN, STARTED, STOPPED | Dequeue oldest buffer entry into caller's struct (Expert mode consumer task; safe canonical path) |
 | `rs_rtc_logger_Write(p_ctrl, p_entry)` | STARTED | Format and transmit one buffer entry (called internally in Example Project mode) |
 | `rs_rtc_logger_WriteStr(p_ctrl, p_str)` | STARTED | Convenience: write a string with live RTC timestamp, bypassing the circular buffer |
 
@@ -215,6 +216,7 @@ The following FSP Stack Configurator settings must be configured correctly for t
 | `r_rtc` | Calendar mode | Enabled | Required for `R_RTC_CalendarTimeGet()` and `R_RTC_CalendarTimeSet()` |
 | `r_rtc` | Set Source Clock in Open | **Disabled** | Required for warm-reset RTC preservation — prevents `R_RTC_ClockSourceSet()` from being called on every open, which would reset the running clock |
 | `r_rtc` | RTC interrupt priority | Non-zero (≥ 2) | Required; must be lower than the FreeRTOS max syscall priority |
+| `r_rtc` | Carry interrupt priority (carry_ipl) | ≤ 4 (e.g. 2) | `R_RTC_CalendarTimeGet()` is called from EventTrigger() in ISR context and spins waiting for the carry ISR. The carry ISR MUST have higher preemption (lower IPL number) than every ISR that calls EventTrigger(). The demo button ISR is at IPL 5; carry must be < 5. The FSP-generated `hal_data.c` default of 12 will cause an **infinite loop/deadlock** when EventTrigger() is called from an ISR. The preset config uses carry_ipl = 2 (safe). `rs_rtc_logger_Open()` checks this at runtime and returns `FSP_ERR_INVALID_HW_CONDITION` if the limit is exceeded. |
 | `r_sci_uart` | TX callback | `rs_rtc_logger_uart_callback` | Module-owned callback; must not be changed |
 | `r_sci_uart` | Operating mode | Asynchronous | Required for non-blocking UART write |
 | `r_sci_uart` | Baud rate | 115200 | Matches the VCOM USB-Serial bridge default on FPB boards |
@@ -246,11 +248,11 @@ The FSP RTC operates exclusively in 24-hour mode. The timestamp formatter inside
 The module supports two ways to supply hardware configuration, selected by `RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE` in `rs_rtc_logger_cfg.h`.
 
 **Preset Path (default, `RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1`):**  
-Pre-built HAL instance definitions for the FPB-RA4E2 are provided in `src/rs_rtc_logger/config/rs_rtc_logger_config_fpb_ra4e2.c/.h`. The project builds and runs without opening the FSP Stack Configurator. This path is recommended for initial evaluation on the FPB-RA4E2.
+Pre-built HAL instance definitions for the FPB-RA4E2 are provided in `src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.c/.h`. The project builds and runs without opening the FSP Stack Configurator. This path is recommended for initial evaluation on the FPB-RA4E2.
 
 ```c
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
-#include "rs_rtc_logger/config/rs_rtc_logger_config_fpb_ra4e2.h"
+#include "rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h"
 #endif
 
 rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
@@ -281,6 +283,7 @@ Use this path when targeting a board other than the FPB-RA4E2, or when you need 
 | Overflow policy | `rs_rtc_logger_cfg_t.overflow_policy` | Switch to `DROP_NEWEST` if strict event ordering must be preserved |
 | Sequence counter on warm reset | Application: call `rs_rtc_logger_SeqCountSet()` after `Open()` | Restore from application-managed non-volatile storage |
 | LOCO drift compensation | `rs_rtc_logger_LocoCalibrationSet()` at runtime, or `RS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT` at build time | Adjust RFRL register to compensate for observed oscillator error |
+| RTC carry interrupt priority (`carry_ipl`) | `configuration.xml` r_rtc properties → Carry Interrupt Priority | Must be strictly lower number (higher preemption) than the IPL of every ISR that calls `rs_rtc_logger_EventTrigger()`. The FSP Stack Configurator default is `carry_ipl = 12`, which is lower preemption than the demo button ISR at `ipl = 5`. Set `carry_ipl` to a value ≤ `RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT` (default 4). `rs_rtc_logger_Open()` returns `FSP_ERR_INVALID_HW_CONDITION` if this is violated. |
 
 ### FPB-RA6E2 (Secondary Target)
 
@@ -344,7 +347,7 @@ The ISR path performs: one `R_RTC_CalendarTimeGet()` HAL call, one atomic `seq_c
 Asynchronous and non-blocking. The consumer task initiates a non-blocking UART write and waits on a task notification from the UART TX-complete callback. Latency is task-scheduler-dependent; sub-millisecond at typical FreeRTOS tick rates at 115200 baud.
 
 **RAM consumption (default configuration):**  
-- Circular buffer: 8 entries × ~68 bytes per entry (`rtc_time_t` + seq_count + 32-byte payload + length + time_valid flag) ≈ 544 bytes  
+- Circular buffer: 8 entries × ~80 bytes per entry (`rtc_time_t`/`struct tm` (9×int = 36 B) + 32-byte payload + seq_count (4 B) + length (4 B) + time_valid (4 B padded)) ≈ 640 bytes  
 - Line buffer: 256 bytes (inside `rs_rtc_logger_ctrl_t`)  
 - Total control block: verified at build time via `static_assert` against `RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES` (default 1024 bytes)  
 - Internal consumer task (Example Project mode): stack 2048 bytes + TCB ~88 bytes on Cortex-M33
@@ -376,7 +379,7 @@ All identifiers follow a consistent scheme using the `rs_` / `RS_` prefix, which
 | **Struct type names** | `rs_rtc_logger_*_t` — lowercase with `_t` suffix | `rs_rtc_logger_cfg_t`, `rs_rtc_logger_ctrl_t`, `rs_rtc_logger_status_t` |
 | **Source and header files** | `rs_rtc_logger_*.c / .h` — lowercase | `rs_rtc_logger.c`, `rs_rtc_logger_cfg.h`, `rs_rtc_logger_types.h` |
 | **Core source folder** | `src/rs_rtc_logger/` | All core module files live here |
-| **Board config files** | `rs_rtc_logger_config_<board>.c/.h` | `rs_rtc_logger_config_fpb_ra4e2.c/.h` |
+| **Board config files** | `rs_rtc_logger_data_<board>.c/.h` | `rs_rtc_logger_data_fpb_ra4e2.c/.h` |
 | **Project name** | `UseCaseName_<board>` — descriptive, not prefixed with `rs_` | `RTC_Event_Logger_FPB_RA4E2` |
 
 The key rule to remember: **public functions use lowercase `rs_rtc_logger_` prefix** with an UpperCamelCase operation name (e.g. `rs_rtc_logger_EventTrigger`). Everything that is a macro, constant, or enumeration value uses the **all-uppercase `RS_RTC_LOGGER_`** form. Type names and internal helpers are always all-lowercase.
@@ -402,8 +405,8 @@ These files are pre-built for the FPB-RA4E2 and are marked "do not edit." They a
 
 | File | Notes |
 |---|---|
-| `config/rs_rtc_logger_config_fpb_ra4e2.c` | Preset HAL instance definitions for FPB-RA4E2; do not edit |
-| `config/rs_rtc_logger_config_fpb_ra4e2.h` | Preset instance declarations; do not edit |
+| `config/rs_rtc_logger_data_fpb_ra4e2.c` | Preset HAL instance definitions for FPB-RA4E2; do not edit |
+| `config/rs_rtc_logger_data_fpb_ra4e2.h` | Preset instance declarations; do not edit |
 
 ### Reference Application — Adapt Freely
 
@@ -596,10 +599,14 @@ After pressing the reset button while USB power remains:
 *** RTC Event Logger Demo ***
 Mode: Example Project
 ...
+Warm reset: seq counter restored.
 Warm reset — RTC time retained.
 Ready. Press S1 to log an event.
 [2024-07-15 14:31:42] Event Detected #4
 ```
+
+> Note: "Warm reset: seq counter restored." appears only when a valid sequence-counter
+> backup exists from the previous session (i.e. at least one event was logged before the reset).
 
 The sequence counter resumes from its pre-reset value and the RTC continues from its running time with no re-prompting for date/time.
 
@@ -625,7 +632,7 @@ The `rs_rtc_logger_EventTrigger()` function is the universal entry point and is 
 
 ### Portions Requiring Modification
 
-- **Board-specific preset config files** (`config/rs_rtc_logger_config_fpb_<board>.c/.h`): Create new preset files for other target boards, or switch to the FSP Stack Configurator path (see Section 6). The UART channel, baud rate, and pin configuration are board-specific.
+- **Board-specific preset config files** (`config/rs_rtc_logger_data_fpb_<board>.c/.h`): Create new preset files for other target boards, or switch to the FSP Stack Configurator path (see Section 6). The UART channel, baud rate, and pin configuration are board-specific.
 - **Reference application** (`rs_rtc_logger_demo.c`, `blinky_thread_entry.c`): Replace the CLI task, consumer task structure, and ISR callback with application-specific code. The demo application is demonstration scaffolding, not production code.
 - **RTC clock source**: Replace LOCO with the sub-clock (SOSC) for applications requiring higher time accuracy. Change the `r_rtc` clock source property in `configuration.xml` and remove or adapt the LOCO calibration prompt.
 
@@ -665,3 +672,5 @@ rs_rtc_logger_Start(&g_logger_ctrl);
 The `seq_count` and circular buffer are preserved across `rs_rtc_logger_Stop()`/`rs_rtc_logger_Start()`. Events that arrived during the STOPPED window are transmitted in order once STARTED.
 
 ---
+
+*End of Documentation — `rs_rtc_logger` v1.0.0*
