@@ -1,4 +1,4 @@
-# RTC Event Logger – User Manual
+# RTC Internal Timestamp Event Logger – User Manual
 
 **Short ID:** `rs_rtc_logger`  
 **Version:** 1.0.0  
