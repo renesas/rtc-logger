@@ -59,10 +59,8 @@ meson test -C build-msvc --print-errorlogs
 
 ## What is being tested
 
-* `syscalls_picolib_stdio_to_uart.c`
-* RX/TX paths
-* ByteQ interaction (via dependency or stubs)
-* UART behavior (via `fake_uart.c`)
+*
+*
 
 ***
 
@@ -70,9 +68,7 @@ meson test -C build-msvc --print-errorlogs
 
 | Component | Used                      |
 | --------- | ------------------------- |
-| UART      | Fake implementation       |
 | FSP       | Not used                  |
-| ByteQ     | `byteq_host_dep` or local |
 | libc      | Host                      |
 
 ***
@@ -170,7 +166,7 @@ After build completes:
 ## Example output path
 
 ```
-build-ra0l1/examples/e2studio/stdio_uart_on_fpb_ra0l1/
+build-ra0l1/examples/e2studio/RTC_Event_Logger_FPB_RA4E2/
 ```
 
 ***

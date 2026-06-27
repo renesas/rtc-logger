@@ -2,8 +2,7 @@
 
 static void RunAllTests(void)
 {
-    RUN_TEST_GROUP(picolibc_stdio_to_sci_uart_init);
-    RUN_TEST_GROUP(picolibc_stdio_to_sci_uart_rxtx);
+    RUN_TEST_GROUP(TODO);
 }
 
 int main(int argc, const char * argv[])
