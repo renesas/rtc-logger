@@ -1,0 +1,184 @@
+/***********************************************************************************************************************
+ * Copyright (c) 2020 - 2026 Renesas Electronics Corporation and/or its affiliates
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ **********************************************************************************************************************/
+
+/**
+ * @file rs_rtc_logger_cfg.h
+ * @brief Build-time configuration constants for the RTC Event Logger.
+ *
+ * All constants use #ifndef guards so user project overrides take precedence.
+ * Override any constant by defining it before including this header, or by
+ * adding -D<CONSTANT>=<VALUE> to the compiler command line.
+ */
+
+#ifndef RS_RTC_LOGGER_CFG_H
+#define RS_RTC_LOGGER_CFG_H
+
+/***********************************************************************************************************************
+ * Buffer sizing
+ **********************************************************************************************************************/
+
+/** Timestamp string buffer: enough for "[YYYY-MM-DD HH:MM:SS] " + NUL */
+#ifndef RS_RTC_LOGGER_CFG_TS_BUF_SIZE
+  #define RS_RTC_LOGGER_CFG_TS_BUF_SIZE          (24U)
+#endif
+
+/**
+ * Output line buffer: timestamp prefix + event payload + seq number + terminator + NUL.
+ * Reduce for highly constrained targets if event payload is short.
+ */
+#ifndef RS_RTC_LOGGER_CFG_LINE_BUF_SIZE
+  #define RS_RTC_LOGGER_CFG_LINE_BUF_SIZE         (256U)
+#endif
+
+/**
+ * Circular event buffer depth — number of (timestamp, event_data) entries.
+ * Default 8 handles short event bursts. Reduce to 4 for RAM-constrained targets.
+ */
+#ifndef RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH
+  #define RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH       (8U)
+#endif
+
+/**
+ * Maximum inline event payload per circular buffer entry (bytes, including NUL).
+ * EventTrigger() truncates silently if caller supplies more than this.
+ */
+#ifndef RS_RTC_LOGGER_CFG_EVENT_DATA_MAX_LEN
+  #define RS_RTC_LOGGER_CFG_EVENT_DATA_MAX_LEN    (32U)
+#endif
+
+/** Hard cap on control block RAM — build will fail if exceeded */
+#ifndef RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES
+  #define RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES  (1024U)
+#endif
+
+/***********************************************************************************************************************
+ * Parameter checking
+ **********************************************************************************************************************/
+
+/***********************************************************************************************************************
+ * LOCO oscillator drift compensation
+ **********************************************************************************************************************/
+
+/**
+ * Default RFRL (Frequency Register Low) value written to the RTC on power-on reset.
+ *
+ * The RFRL register is the LOCO-mode calibration register.  The RTC counts
+ * (RFRL + 1) LOCO cycles to generate each 128 Hz sub-tick; 128 sub-ticks make
+ * one RTC second.  For a nominal 32.768 kHz LOCO:
+ *
+ *   RTC seconds per real second = 32768 / ((RFRL + 1) * 128)
+ *
+ * Nominal (RFRL = 255): 32768 / (256 * 128) = 1.000 000 Hz — perfect.
+ *
+ * Each +1 step makes the RTC slightly slower (fewer LOCO cycles are "missing"
+ * per sub-tick), each -1 step makes it slightly faster:
+ *
+ *   ppm per step ≈ 1 / (RFRL + 1) × 10^6 ≈ 3906 ppm   (~3.5 s per 15 min)
+ *
+ * Practical tuning guide:
+ *   Clock fast  1 min per 15 min → trim = +17 → RFRL = 272
+ *   Clock slow  1 min per 15 min → trim = -17 → RFRL = 238
+ *   Clock fast  1 sec per hour   → trim = +1  → RFRL = 256
+ *   Clock slow  1 sec per hour   → trim = -1  → RFRL = 254
+ *
+ * Valid FSP range: 8 ≤ RFRL ≤ 510.
+ *
+ * Override at build time: -DRS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT=<value>
+ * Override at runtime: rs_rtc_logger_LocoCalibrationSet().
+ */
+#ifndef RS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT
+  #define RS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT  (255U)
+#endif
+
+/**
+ * Enable/disable parameter checking (mirrors FSP convention).
+ * When BSP_CFG_PARAM_CHECKING_ENABLE is not defined (e.g. host-based unit tests),
+ * defaults to enabled (1) for maximum safety.
+ */
+#ifndef RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE
+  #ifdef BSP_CFG_PARAM_CHECKING_ENABLE
+    #define RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE  (BSP_CFG_PARAM_CHECKING_ENABLE)
+  #else
+    #define RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE  (1U)
+  #endif
+#endif
+
+
+/***********************************************************************************************************************
+ * Configuration path
+ **********************************************************************************************************************/
+
+/**
+ * Configuration path selection.
+ *
+ * 1 = Preset configuration path (default):
+ *     Include rs_rtc_logger_config_fpb_<board>.h and call
+ *     rs_rtc_logger_ConfigGen() with _preset instances.
+ *     No FSP Stack Configurator re-run required.
+ *
+ * 0 = FSP Stack Configurator path:
+ *     Configure r_rtc and r_sci_uart in e2studio FSP tooling.
+ *     Call rs_rtc_logger_ConfigGen() with FSP-generated instances.
+ */
+#ifndef RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
+  #define RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE    (1U)
+#endif
+
+/***********************************************************************************************************************
+ * Operating mode
+ **********************************************************************************************************************/
+
+/**
+ * Operating mode selection
+ *
+ * 1 = Example Project mode (default):
+ *     Application calls only rs_rtc_logger_EventTrigger().
+ *     RTC Event Logger auto-manages Open()/Start() on the first call.
+ *     RTC Event Logger owns an internal static FreeRTOS consumer task (FR-123).
+ *     Write() is called internally — not required from application.
+ *
+ * 0 = Expert mode:
+ *     Application owns the full lifecycle: Open() -> Start() -> EventTrigger()
+ *     -> consumer task calls Write() -> Stop() -> Close().
+ *     Supports advanced scenarios including firmware-update Stop/Start (FR-129).
+ */
+#ifndef RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
+  #define RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE    (1U)
+#endif
+
+/***********************************************************************************************************************
+ * Internal consumer task (Example Project mode only)
+ **********************************************************************************************************************/
+
+/**
+ * Internal consumer task stack size in bytes (Example Project mode only).
+ * Must be sufficient for timestamp formatting and VCOM write call depth.
+ * No effect when RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 0.
+ */
+#ifndef RS_RTC_LOGGER_CFG_TASK_STACK_SIZE
+  #define RS_RTC_LOGGER_CFG_TASK_STACK_SIZE        (2048U) /* Note: increase from default for increased (high rate frequency) event workload */
+#endif
+
+/**
+ * Internal consumer task FreeRTOS priority (Example Project mode only).
+ * Set lower than time-critical tasks; must be high enough to drain the buffer
+ * before it overflows under expected burst rates.
+ * No effect when RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 0.
+ */
+#ifndef RS_RTC_LOGGER_CFG_TASK_PRIORITY
+  #define RS_RTC_LOGGER_CFG_TASK_PRIORITY          (tskIDLE_PRIORITY + 1U)
+#endif
+
+/**
+ * UART TX completion timeout in milliseconds for the internal consumer task
+ * (Example Project mode only). Guards against hung TX without blocking indefinitely.
+ * No effect when RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 0.
+ */
+#ifndef RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS
+  #define RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS          (1000U)
+#endif
+
+#endif /* RS_RTC_LOGGER_CFG_H */

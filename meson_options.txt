@@ -1,0 +1,6 @@
+option('mcu', type: 'string', description: 'MCU group (e.g., ra0l1, ra2e3, ra4e2, ra6e2, ra8e1)')
+option('board', type: 'string', description: 'Board (e.g., fpb, ek, rssk, mck)')
+option('example', type: 'string', description: 'Example project name')
+option('ide', type: 'string', description: 'IDE to use for example')
+
+option('toolchain_file', type: 'string', description: 'Toolchain file path')
