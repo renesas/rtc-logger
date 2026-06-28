@@ -287,7 +287,7 @@ Use this path when targeting a board other than the FPB-RA4E2, or when you need 
 
 ### FPB-RA6E2 (Secondary Target)
 
-The FPB-RA6E2 uses the same UART driver (`r_sci_b_uart`) and the same core source files without modification. Board-specific differences to address:
+The FPB-RA6E2 uses the same UART driver (`r_sci_uart`) and the same core source files without modification. Board-specific differences to address:
 
 - The RA6E2 includes TrustZone. The module targets the non-secure partition by default. The reference application must use the BSP TrustZone template configured as a non-secure project.
 - Confirm the equivalent user button pin and IRQ channel against the FPB-RA6E2 schematic and update the application-owned `r_icu` configuration accordingly.
