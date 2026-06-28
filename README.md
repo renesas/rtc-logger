@@ -21,10 +21,10 @@ This repo contains the RTC Event Logger
 ├── examples
 │   └── e2studio
 │       ├── RTC_EVENT_LOGGER_FPB_RA4E2
-│           └── e²studio project for FPB RA4E2  demonstrating RTC Event Logger
+│       │   └── e²studio project for FPB-RA4E2 demonstrating RTC Event Logger
 │       │
-│       └── RTC_EVENT_LOGGER_FPB_RA
-│
+│       └── RTC_EVENT_LOGGER_FPB_RA6E2
+│           └── e²studio project for FPB-RA6E2 demonstrating RTC Event Logger
 │
 ├── meson.build
 │   └── Top-level Meson build definition (options, subprojects, dependency wiring)
