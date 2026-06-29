@@ -814,6 +814,35 @@ static void demo_consumer_task(void * p_arg)
 void demo_button_s1_callback(external_irq_callback_args_t * p_args)
 {
     (void)p_args;
+
+#if RS_RTC_LOGGER_CFG_DEBOUNCE_MS > 0
+    /* Software debounce (see rs_rtc_logger_cfg.h).
+     *
+     * the r_icu hardware digital filter
+     * is far shorter than the mechanical button bounce period (5-20 ms).
+     * Every bounce edge triggers this ISR, producing 7-13 spurious calls
+     * per physical press — observable as many events with identical second
+     * timestamps.  The effect is worst for the FIRST press after a warm
+     * reset or after a long idle period, when the button contact has not
+     * been recently exercised.
+     *
+     * compare the current FreeRTOS tick count against the tick count
+     * recorded for the last accepted press.  Reject the event if less than
+     * RS_RTC_LOGGER_CFG_DEBOUNCE_MS ticks have elapsed.  TickType_t is an
+     * unsigned type so the subtraction handles 32-bit tick counter wrap
+     * correctly without special-casing.
+     *
+     * xTaskGetTickCountFromISR() is safe at this ISR priority (IPL=5 <=
+     * configMAX_SYSCALL_INTERRUPT_PRIORITY). */
+    static volatile TickType_t s_last_accepted_tick = 0U;
+    TickType_t const now = xTaskGetTickCountFromISR();
+    if ((now - s_last_accepted_tick) < pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_DEBOUNCE_MS))
+    {
+        return;  /* Within debounce window — discard bounce edge */
+    }
+    s_last_accepted_tick = now;
+#endif /* RS_RTC_LOGGER_CFG_DEBOUNCE_MS > 0 */
+
     (void)rs_rtc_logger_EventTrigger(&g_logger_ctrl,
                                      (uint8_t const *)DEMO_EVENT_PAYLOAD,
                                      DEMO_EVENT_PAYLOAD_LEN);
