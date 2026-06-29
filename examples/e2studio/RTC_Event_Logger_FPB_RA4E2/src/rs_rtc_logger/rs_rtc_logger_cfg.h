@@ -235,4 +235,23 @@
   #define RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS          (1000U)
 #endif
 
+/***********************************************************************************************************************
+ * Software debounce for the button S1 ISR callback
+ *
+ * The r_icu hardware digital filter is set to PCLKB_div_1 (120 ns at 25 MHz)
+ * which is far shorter than the 5-20 ms bounce period of a mechanical button.
+ * Every bounce edge triggers the ISR, producing 7-13 spurious EventTrigger()
+ * calls per physical button press.
+ *
+ * The debounce is implemented in demo_button_s1_callback() using the
+ * FreeRTOS tick count (xTaskGetTickCountFromISR) to reject ISR firings that
+ * arrive sooner than RS_RTC_LOGGER_CFG_DEBOUNCE_MS after the last accepted
+ * event.  This covers typical button bounce while allowing rapid
+ * intentional presses spaced apart.
+ *
+ * Set to 0 to disable software debounce (hardware filter only).
+ **********************************************************************************************************************/
+#ifndef RS_RTC_LOGGER_CFG_DEBOUNCE_MS
+ #define RS_RTC_LOGGER_CFG_DEBOUNCE_MS    (150U)
+#endif
 #endif /* RS_RTC_LOGGER_CFG_H */
