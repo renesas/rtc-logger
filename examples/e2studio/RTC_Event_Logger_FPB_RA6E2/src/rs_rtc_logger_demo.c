@@ -88,7 +88,7 @@
  * Configuration
  **********************************************************************************************************************/
 
-/* ROOT CAUSE FIX (stack): CLI task needs headroom for rs_rtc_logger_Open() +
+/* CLI task needs stack headroom for rs_rtc_logger_Open() +
  * R_RTC_Open() + R_SCI_UART_Open() call depth.  The original 1024 bytes left
  * fewer than ~200 bytes by the time R_RTC_Open() entered, causing a hard fault
  * in Expert mode.  The saved_event_buf static fix is the primary remedy, but
@@ -96,7 +96,7 @@
 #define DEMO_CLI_TASK_STACK_SIZE        (2048U)
 #define DEMO_CLI_TASK_PRIORITY          (tskIDLE_PRIORITY + 2U)
 
-/* Expert mode consumer task: 512 bytes was too tight for rs_rtc_logger_Write()
+/* Expert mode consumer task: sized for rs_rtc_logger_Write()
  * + rs_rtc_logger_format_line() + R_SCI_UART_Write() call depth. */
 #define DEMO_CONSUMER_TASK_STACK_SIZE   (1024U)
 #define DEMO_CONSUMER_TASK_PRIORITY     (tskIDLE_PRIORITY + 1U)
@@ -793,13 +793,7 @@ static void demo_consumer_task(void * p_arg)
             /* Wait for demo_logger_callback() to notify us on TX_COMPLETE/
              * TX_ERROR (ISR context) instead of polling tx_complete.
              *
-             * BUG FIX (TestIssue_02): same race as the Example Project mode
-             * consumer task — an EventTrigger() ISR notification can wake
-             * this ulTaskNotifyTake() before the UART TX is complete, causing
-             * line_buf to be overwritten mid-transmission and producing
-             * corrupted output with dropped events.
-             *
-             * FIX: loop until g_logger_ctrl.tx_complete is actually set by
+             * loop until g_logger_ctrl.tx_complete is actually set by
              * the UART_EVENT_TX_COMPLETE handler in the ISR callback.
              * tx_complete is cleared before every write and set only on
              * genuine TX completion — so the condition is unambiguous. */

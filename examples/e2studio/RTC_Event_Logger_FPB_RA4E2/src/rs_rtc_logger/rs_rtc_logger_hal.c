@@ -6,7 +6,7 @@
 
 /**
  * @file rs_rtc_logger_hal.c
- * @brief HAL abstraction shim for the RTC Event Logger PES.
+ * @brief HAL abstraction shim for the RTC Event Logger.
  *
  * This module is a thin wrapper around FSP HAL driver calls. It owns:
  *   - RTC open/close/get/set wrappers
@@ -14,7 +14,7 @@
  *   - The UART TX-complete callback (ISR context; must not block)
  *
  * The UART callback uses the p_context field of the UART callback args to
- * locate the PES control block. At Open() time, the PES stores a pointer to
+ * locate the control block. At Open() time, the RTC Event Logger stores a pointer to
  * itself in the UART driver's extend structure context so the callback can
  * update tx_complete and signal the consumer task.
  *
@@ -59,7 +59,7 @@ static rs_rtc_logger_ctrl_t * volatile gp_rs_rl_uart_ctrl = NULL;
  *
  * @param[in] p_args  UART callback args from HAL.
  *
- * @return Pointer to the PES control block, or NULL if not found.
+ * @return Pointer to the control block, or NULL if not found.
  */
 static rs_rtc_logger_ctrl_t * rs_rl_hal_find_ctrl(uart_callback_args_t * p_args)
 {
@@ -77,7 +77,7 @@ static rs_rtc_logger_ctrl_t * rs_rl_hal_find_ctrl(uart_callback_args_t * p_args)
 /**
  * @brief Open the RTC HAL driver.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  control block.
  *
  * @retval FSP_SUCCESS              RTC opened successfully.
  * @retval FSP_ERR_NOT_INITIALIZED  RTC opened but oscillator probe failed.
@@ -185,7 +185,7 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
 /**
  * @brief Close the RTC HAL driver.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  control block.
  *
  * @retval FSP_SUCCESS  RTC closed.
  * @retval (other)      Propagated from RTC HAL close().
@@ -264,7 +264,7 @@ static uint8_t rs_rl_bcd_to_dec (uint8_t bcd)
  * Keeping the check avoids surprising users who add their own
  * calendarTimeGet() calls from ISR context.
  *
- * @param[in]  p_ctrl  PES control block (unused; R_RTC addressed directly).
+ * @param[in]  p_ctrl  control block (unused; R_RTC addressed directly).
  * @param[out] p_time  Populated with current RTC calendar time.
  *
  * @retval FSP_SUCCESS  Always.
@@ -315,7 +315,7 @@ fsp_err_t rs_rtc_logger_hal_rtc_time_get(rs_rtc_logger_ctrl_t * p_ctrl,
 /**
  * @brief Set the RTC calendar time.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  control block.
  * @param[in] p_time  Time value to set.
  *
  * @retval FSP_SUCCESS  Time set.
@@ -342,7 +342,7 @@ fsp_err_t rs_rtc_logger_hal_rtc_time_set(rs_rtc_logger_ctrl_t * p_ctrl,
  *   4. Restore the saved time via calendarTimeSet(), which also restarts
  *      the counter — no seconds are lost.
  *
- * @param[in] p_ctrl      PES control block.
+ * @param[in] p_ctrl      control block.
  * @param[in] rfrl_value  New RFRL value (FSP valid range: 8–510).
  *
  * @retval FSP_SUCCESS              RFRL updated; counter restarted.
@@ -412,7 +412,7 @@ fsp_err_t rs_rtc_logger_hal_loco_freq_set(rs_rtc_logger_ctrl_t * p_ctrl,
  * Also registers the module-global control block pointer for the ISR callback
  * fallback path (single-instance use case).
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  control block.
  *
  * @retval FSP_SUCCESS  UART opened.
  * @retval (other)      Propagated from UART HAL open().
@@ -443,7 +443,7 @@ fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
 /**
  * @brief Close the UART HAL driver.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  control block.
  *
  * @retval FSP_SUCCESS  UART closed.
  * @retval (other)      Propagated from UART HAL close().
@@ -468,7 +468,7 @@ fsp_err_t rs_rtc_logger_hal_uart_close(rs_rtc_logger_ctrl_t * p_ctrl)
  * Clears the tx_complete flag before submitting so the callback can set it
  * on completion.
  *
- * @param[in] p_ctrl   PES control block.
+ * @param[in] p_ctrl   control block.
  * @param[in] p_data   Data buffer to transmit.
  * @param[in] length   Byte count to transmit.
  *
@@ -535,7 +535,7 @@ void rs_rtc_logger_uart_callback(uart_callback_args_t * p_args)
     else if (UART_EVENT_RX_CHAR == p_args->event)
     {
         /* Route received byte to the demo CLI input buffer.
-         * The PES itself has no use for RX data; this allows the demo
+         * The RTC Event logger itself has no use for RX data; this allows the demo
          * CLI task to read user input from VCOM without a separate
          * UART instance. demo_uart_rx_char_enqueue() is ISR-safe. */
         demo_uart_rx_char_enqueue((uint8_t)p_args->data);
