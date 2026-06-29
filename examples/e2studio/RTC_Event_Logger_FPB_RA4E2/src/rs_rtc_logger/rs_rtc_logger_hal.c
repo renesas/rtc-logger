@@ -197,19 +197,119 @@ fsp_err_t rs_rtc_logger_hal_rtc_close(rs_rtc_logger_ctrl_t * p_ctrl)
 }
 
 /**
- * @brief Get the current RTC calendar time.
+ * @brief Convert a packed BCD byte to a decimal integer.
  *
- * @param[in]  p_ctrl  PES control block.
- * @param[out] p_time  Populated with current RTC value.
+ * Used exclusively by rs_rtc_logger_hal_rtc_time_get() to decode RTC
+ * calendar registers. Integer arithmetic only — no division (FR-014).
  *
- * @retval FSP_SUCCESS  Time retrieved.
- * @retval (other)      Propagated from RTC HAL calendarTimeGet().
+ * @param[in] bcd  Packed BCD byte (e.g. 0x21 → 21).
+ * @return Decimal value.
+ */
+static uint8_t rs_rl_bcd_to_dec (uint8_t bcd)
+{
+    return (uint8_t)(((bcd >> 4U) & 0x0FU) * 10U + (bcd & 0x0FU));
+}
+
+/**
+ * @brief Get the current RTC calendar time — seconds-sandwich direct read.
+ *
+ * **Why NOT R_RTC_CalendarTimeGet() here? **
+ *
+ * R_RTC_CalendarTimeGet() uses the carry-interrupt method: it enables CIE
+ * and spins until the carry ISR fires (once per second, when RSECCNT
+ * increments).  The carry ISR reads RSECCNT at the EXACT moment of the
+ * carry event — the worst possible time — because that is precisely when
+ * the LOCO-domain register is propagating through the AHB synchronizer.
+ *
+ * On RA6E2, the AHB-LOCO synchronizer has more pipeline stages than RA4E2
+ * (additional isolation layers for TrustZone power domains).  The carry ISR
+ * executes within ~300 ns of the carry, but the register needs ~60-120 us
+ * to settle in the AHB domain.  The ISR therefore reads the OLD second
+ * value (e.g. 21) instead of the incremented value (22), causing all
+ * EventTrigger() timestamps to show the same stuck second for 1-5 seconds
+ * after a warm restart (observed as events #21-#28 all at 10:30:21 in
+ * TestIssue_03).  The issue resolves spontaneously once the synchronizer
+ * has stabilised after several carries.  It is more pronounced on RA6E2
+ * than RA4E2 because the RA6E2 synchronizer has more pipeline stages.
+ *
+ * **Instead use — seconds-sandwich read:**
+ *
+ * The RA6E2 RCR1 register has no software-readable carry status flag
+ * (RCR1 contains only AIE, CIE, PIE, RTCOS, PES — there is no CF bit
+ * on this device).  The consistency mechanism used here is the seconds
+ * sandwich: snapshot RSECCNT before and after the full register read,
+ * retry if the value changed.  If RSECCNT is identical both times, no
+ * carry occurred during the read and all fields are consistent.
+ *
+ *   1. Snapshot RSECCNT (sec_before)
+ *   2. Read all calendar registers into a local struct
+ *   3. Re-read RSECCNT (sec_after)
+ *   4. If sec_before != sec_after, carry occurred — retry from 1
+ *
+ * Reading BETWEEN carry events (not AT the carry moment) gives the fully
+ * settled AHB-domain value.  This is non-blocking and ISR-safe.
+ *
+ * The carry ISR continues to fire and update the FSP carry_irq_occurred /
+ * carry_time shadow for calendarTimeGet() calls from task context (e.g.
+ * Open(), LocoCalibrationSet()); those calls are unaffected.
+ *
+ * **N-12 carry_ipl note:**
+ * The carry-ISR path is no longer used by EventTrigger().  The N-12
+ * carry_ipl constraint (carry must have higher preemption than the button
+ * ISR) is no longer required for correct EventTrigger() operation.  The
+ * constraint is retained in the carry_ipl validation inside hal_rtc_open()
+ * because calendarTimeGet() IS still called from task context in
+ * hal_rtc_open() (warm reset) and hal_loco_freq_set(), where carry can
+ * always preempt task context (no IPL conflict regardless of carry_ipl).
+ * Keeping the check avoids surprising users who add their own
+ * calendarTimeGet() calls from ISR context.
+ *
+ * @param[in]  p_ctrl  PES control block (unused; R_RTC addressed directly).
+ * @param[out] p_time  Populated with current RTC calendar time.
+ *
+ * @retval FSP_SUCCESS  Always.
  */
 fsp_err_t rs_rtc_logger_hal_rtc_time_get(rs_rtc_logger_ctrl_t * p_ctrl,
                                           rtc_time_t           * p_time)
 {
-    const rtc_instance_t * p_rtc = p_ctrl->p_cfg->p_rtc;
-    return p_rtc->p_api->calendarTimeGet(p_rtc->p_ctrl, p_time);
+    FSP_PARAMETER_NOT_USED(p_ctrl);
+
+    rtc_time_t t;
+    uint8_t    sec_before;
+
+    do
+    {
+        /* Step 1: snapshot RSECCNT before reading all fields             */
+        sec_before = R_RTC->RSECCNT;
+
+        /* Data memory barrier: RSECCNT read must architecturally complete
+         * before the subsequent field reads are issued.                   */
+        __DMB();
+
+        /* Step 2: read all calendar fields into local struct             */
+        t.tm_sec  = (int) rs_rl_bcd_to_dec(sec_before);
+        t.tm_min  = (int) rs_rl_bcd_to_dec(R_RTC->RMINCNT);
+        t.tm_hour = (int) rs_rl_bcd_to_dec((uint8_t)(R_RTC->RHRCNT  & 0x3FU));
+        t.tm_mday = (int) rs_rl_bcd_to_dec((uint8_t)(R_RTC->RDAYCNT & 0x3FU));
+        /* RMONCNT is 1-based (01-12); struct tm tm_mon is 0-based (0-11) */
+        t.tm_mon  = (int) rs_rl_bcd_to_dec((uint8_t)(R_RTC->RMONCNT & 0x1FU)) - 1;
+        /* RYRCNT is 2-digit BCD (00-99 = years 2000-2099);
+         * struct tm tm_year is years since 1900, so +100                 */
+        t.tm_year = (int) rs_rl_bcd_to_dec((uint8_t)R_RTC->RYRCNT) + 100;
+        t.tm_wday = (int)(R_RTC->RWKCNT & 0x07U);
+        t.tm_yday  = 0;
+        t.tm_isdst = 0;
+
+        /* Data memory barrier: all field reads must complete before the
+         * confirmation re-read of RSECCNT below.                         */
+        __DMB();
+
+        /* Step 3+4: if RSECCNT changed, a carry occurred during the read;
+         * the fields may be inconsistent — retry the full read.          */
+    } while (sec_before != R_RTC->RSECCNT);
+
+    *p_time = t;
+    return FSP_SUCCESS;
 }
 
 /**
@@ -235,7 +335,7 @@ fsp_err_t rs_rtc_logger_hal_rtc_time_set(rs_rtc_logger_ctrl_t * p_ctrl,
  * FSP_ERR_UNSUPPORTED for LOCO.  For LOCO sources the correct compensation
  * mechanism is the RFRL (Frequency Register Low) register.
  *
- * Procedure (per RA4E2 HW manual, RTC section "Frequency Register"):
+ * Procedure (per RA6E2 HW manual, RTC section "Frequency Register"):
  *   1. Read and save the current calendar time.
  *   2. Stop the RTC counter (RCR2.START = 0).
  *   3. Write 0 to RFRH, then write the new value to RFRL.
