@@ -791,10 +791,22 @@ static void demo_consumer_task(void * p_arg)
             (void)rs_rtc_logger_Write(&g_logger_ctrl, &entry);
 
             /* Wait for demo_logger_callback() to notify us on TX_COMPLETE/
-             * TX_ERROR (ISR context) instead of polling tx_complete. Falls
-             * through on timeout so a missed notification can't stall the
-             * drain loop indefinitely. */
-            (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
+             * TX_ERROR (ISR context) instead of polling tx_complete.
+             *
+             * BUG FIX (TestIssue_02): same race as the Example Project mode
+             * consumer task — an EventTrigger() ISR notification can wake
+             * this ulTaskNotifyTake() before the UART TX is complete, causing
+             * line_buf to be overwritten mid-transmission and producing
+             * corrupted output with dropped events.
+             *
+             * FIX: loop until g_logger_ctrl.tx_complete is actually set by
+             * the UART_EVENT_TX_COMPLETE handler in the ISR callback.
+             * tx_complete is cleared before every write and set only on
+             * genuine TX completion — so the condition is unambiguous. */
+            do
+            {
+                (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
+            } while (!g_logger_ctrl.tx_complete);
         }
     }
 }

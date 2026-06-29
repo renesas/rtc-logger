@@ -356,9 +356,32 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg)
             fsp_err_t err = rs_rtc_logger_Write(p_ctrl, &entry);
             if (FSP_SUCCESS == err)
             {
-                /* Wait for UART TX complete before sending the next entry */
-                (void)ulTaskNotifyTake(pdTRUE,
-                                       pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
+                /* Wait for UART TX complete before sending the next entry.
+                 *
+                 * BUG FIX (TestIssue_02): rs_rtc_logger_EventTrigger() calls
+                 * vTaskNotifyGiveFromISR() on this task handle whenever a new
+                 * event arrives.  If a button press fires while we are waiting
+                 * here for TX_COMPLETE, that EventTrigger notification wakes
+                 * this ulTaskNotifyTake() prematurely — before the UART has
+                 * finished transmitting the current line_buf content.
+                 *
+                 * The consumer then dequeues the next entry and overwrites
+                 * line_buf via rs_rtc_logger_Write() while the UART hardware
+                 * shift register is still reading from it, producing corrupted
+                 * output (e.g. "[[2026-06-29 09:57:52] Event Detected #18")
+                 * and silently dropping the intervening event.
+                 *
+                 * FIX: loop on ulTaskNotifyTake() until p_ctrl->tx_complete is
+                 * actually set by the UART ISR callback.  tx_complete is
+                 * cleared to false by rs_rtc_logger_hal_uart_write() before
+                 * every write and set to true only by the UART_EVENT_TX_COMPLETE
+                 * handler — so the condition unambiguously identifies genuine
+                 * TX completion vs. a spurious EventTrigger wake-up. */
+                do
+                {
+                    (void)ulTaskNotifyTake(pdTRUE,
+                                           pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
+                } while (!p_ctrl->tx_complete);
             }
             /* On error, skip this entry and continue draining */
         }
