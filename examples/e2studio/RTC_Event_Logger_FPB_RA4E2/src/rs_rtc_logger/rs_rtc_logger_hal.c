@@ -179,6 +179,36 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
         }
     }
 
+    /* Keep the carry interrupt permanently active,
+     * BOTH at the RTC peripheral level (CIE) AND at the NVIC level.
+     *
+     * The AHB-domain calendar registers (RSECCNT etc.) are
+     * refreshed from the LOCO domain by the carry ISR mechanism.  When
+     * FSP's calendarTimeGet() finishes, it disables CIE AND disables the
+     * NVIC interrupt (see R_RTC_CalendarTimeGet() in r_rtc.c: it calls
+     * R_BSP_IrqDisable(carry_irq) at the end unless the NVIC was already
+     * enabled on entry).  Without a live carry ISR, the AHB-visible
+     * RSECCNT freezes at the value from the last ISR execution.  After a
+     * long idle period the sandwich read in hal_rtc_time_get() reads the
+     * same stale value before AND after the register sequence (sec_before
+     * == sec_after), exits the loop, and returns the wrong timestamp —
+     * observed as multiple successive button presses returning an
+     * identical frozen time.
+     *
+     * Explicitly call R_BSP_IrqEnable() on the carry IRQ vector, in
+     * addition to setting CIE, so the carry interrupt is actually unmasked
+     * and delivered to the CPU every second for the lifetime of the PES
+     * instance.
+     *
+     * N-12 constraint: carry_ipl must be LOWER (higher preemption) than the
+     * button ISR IPL so the carry ISR can always run promptly, including
+     * during the sandwich-read retry window in hal_rtc_time_get().  The
+     * preset config sets carry_ipl = 2 (button ISR ipl = 5), which
+     * satisfies this.  The N-12 validation earlier in this function
+     * enforces it at runtime. */
+    R_RTC->RCR1_b.CIE = 1U;
+    R_BSP_IrqEnable(p_rtc->p_cfg->carry_irq);
+
     return FSP_SUCCESS;
 }
 
@@ -253,16 +283,15 @@ static uint8_t rs_rl_bcd_to_dec (uint8_t bcd)
  * carry_time shadow for calendarTimeGet() calls from task context (e.g.
  * Open(), LocoCalibrationSet()); those calls are unaffected.
  *
- * **N-12 carry_ipl note:**
- * The carry-ISR path is no longer used by EventTrigger().  The N-12
- * carry_ipl constraint (carry must have higher preemption than the button
- * ISR) is no longer required for correct EventTrigger() operation.  The
- * constraint is retained in the carry_ipl validation inside hal_rtc_open()
- * because calendarTimeGet() IS still called from task context in
- * hal_rtc_open() (warm reset) and hal_loco_freq_set(), where carry can
- * always preempt task context (no IPL conflict regardless of carry_ipl).
- * Keeping the check avoids surprising users who add their own
- * calendarTimeGet() calls from ISR context.
+ * **N-12 carry_ipl note (Issue4 fix):**
+ * CIE is now kept permanently enabled after Open() (see hal_rtc_open()).
+ * The carry ISR therefore fires every second for the lifetime of the PES
+ * instance.  The N-12 constraint — carry_ipl must be LOWER (higher
+ * preemption) than the button ISR IPL — IS REQUIRED for correct operation:
+ * when the sandwich loop detects a mid-carry read (sec_before != sec_after),
+ * it retries; the carry ISR must be able to preempt the button ISR during
+ * that retry to settle the registers before the next read.
+ * The carry_ipl validation in hal_rtc_open() enforces this at runtime.
  *
  * @param[in]  p_ctrl  control block (unused; R_RTC addressed directly).
  * @param[out] p_time  Populated with current RTC calendar time.
