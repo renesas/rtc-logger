@@ -1,8 +1,0 @@
-[wrap-git]
-directory = pes-rtc-event-logger
-url = git@gitlab.global.renesas.com:mcusys/pes-rtc-event-logger.git
-
-# Use a tag or commit
-revision = main
-
-depth = 1
