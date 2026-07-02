@@ -40,7 +40,9 @@ RTC_Event_Logger_Meson/
 ├── src/
 │   │   blinky_thread_entry_ra4e2.c   ← FreeRTOS entry — RA4E2
 │   │   blinky_thread_entry_ra6e2.c   ← FreeRTOS entry — RA6E2
+│   │   crt0_stub.c                   ← weak _start stub (picolibc compat)
 │   │   fault_handler.c
+│   │   hal_entry.c                   ← FSP v6.5.0: no longer RASC-generated
 │   │   hal_warmstart.c / .h          ← warm-reset seq-count preservation
 │   │   rs_rtc_logger_demo.c          ← reference demo (board-agnostic)
 │   └── rs_rtc_logger/
@@ -89,22 +91,29 @@ Scroll to "Build Tools for Visual Studio" and install:
 - MSVC toolchain
 - Windows SDK (latest)
 
-**2. LLVM (Arm Embedded Toolchain variant)**
-Used for both host unit tests (`clang-cl`) and cross firmware builds
-(`clang` targeting Cortex-M33). Use the Arm LLVM-ET-Arm build, not the
-generic LLVM installer — it includes the bare-metal Arm libraries.
-Download: https://github.com/ARM-software/LLVM-Embedded-Toolchain-for-Arm/releases
-Pick: `LLVM-ET-Arm-<version>-Windows-x86_64.exe`
-During install, add to PATH when prompted (or add manually afterwards):
-`C:\Program Files\LLVM\bin`
+**2. LLVM generic**
+Used for host unit tests (`clang-cl`, `x86_64-pc-windows-msvc` target).
+Download: https://releases.llvm.org/
+Install to the default path `C:\Program Files\LLVM`.
 
-Verify:
-```powershell
-clang --version
-clang-cl --version
-```
+**3. e2studio with ATfE toolchain**
+The e2studio FSP bundle includes ATfE (Arm Toolchain for Embedded, LLVM
+variant) which provides `clang.exe` targeting `arm-none-eabi` with the
+correct bare-metal sysroot headers (`setjmp.h`, `string.h`, etc.) for
+Cortex-M33 firmware cross builds.
+Download: https://www.renesas.com/en/software-tool/e2studio
+Default install path:
+`C:\Users\<username>\AppData\Local\Programs\Renesas\RA\e2studio_v2025-12_fsp_v6.4.0\`
 
-**3. Python 3**
+ATfE `clang.exe` is at:
+`...\toolchains\llvm_arm\ATfE-21.1.1-Windows-x86_64\bin\clang.exe`
+
+> **PATH order matters:** Generic LLVM must appear **after** ATfE in
+> `env.ps1` so that `clang-cl.exe` resolves to the generic LLVM
+> (`x86_64-pc-windows-msvc`) and `clang.exe` resolves to ATfE
+> (`arm-none-eabi`). See `scripts/env.ps1` for the correct order.
+
+**4. Python 3**
 Required to run Meson, Ninja, and the RASC helper scripts.
 Download: https://www.python.org/downloads/windows/
 During install tick **"Add Python to PATH"**.
@@ -120,35 +129,42 @@ meson --version
 ninja --version
 ```
 
-**4. Git**
+**5. Git**
 Required by Meson to fetch the `unity`, `fsp`, and `cmsis` subprojects
 from GitHub on first build.
 Download: https://git-scm.com/download/win
 
-**5. RASC / e2studio** *(firmware builds only — not needed for unit tests)*
-RASC is bundled inside e2studio and invoked headlessly by `scripts/run_rasc.py`
-to regenerate `ra_gen` / `ra_cfg` from `configuration.xml`.
-Download: https://www.renesas.com/en/software-tool/e2studio
+**6. RASC standalone** *(firmware builds only — not needed for unit tests)*
+The standalone RASC installer provides `rasc.exe` for headless FSP code
+generation. This is separate from e2studio — `e2studioc.exe` bundled with
+e2studio cannot run `--generate` headlessly (it waits for an Eclipse socket
+connection). The standalone installer is required.
 
-The FSP+e2studio bundle installs `e2studio.exe` — there is no separate
-`rasc.exe` in this package. The project uses `find_program('e2studio')` and
-passes the same `--generate` headless arguments to it.
+Download: https://github.com/renesas/fsp/releases
+Look for: `setup_fsp_v6_5_0_rasc_v2026-04.2.exe`
+Default install path: `C:\Renesas\RA\sc_v2026-04.2_fsp_v6.5.0\eclipse\rasc.exe`
 
-The expected install path is:
-`C:\Users\<username>\AppData\Local\Programs\Renesas\RA\e2studio_v2025-12_fsp_v6.4.0\eclipse`
+Verify:
+```powershell
+rasc --version
+```
 
-Update `scripts/env.ps1` with this path (replacing `MyPC` with your username).
-
-Note: A standalone `rasc.exe` is available via the separate RASC installer on
-the FSP GitHub releases page (`setup_fsp_v6_4_0_rasc_v2025-12.exe`). If you
-install that instead, change `find_program('e2studio')` back to
-`find_program('rasc')` in `firmware/generated/meson.build`.
-
-**6. Renesas Flash Programmer V3** *(flashing only — not needed for building)*
+**7. Renesas Flash Programmer V3** *(flashing only — not needed for building)*
 Provides `rfp-cli.exe` used by the `rfp_program` and `rfp_program_ut` Meson
 targets to flash firmware over JLink/SWD.
 Download: https://www.renesas.com/en/software-tool/renesas-flash-programmer-programming-gui
 Update `scripts/env.ps1` with the install path.
+
+### Tool install paths (update env.ps1 if different)
+
+```
+C:\Program Files\LLVM\bin\                          # generic LLVM (clang-cl)
+C:\Users\MyPC\AppData\Local\Programs\Renesas\RA\
+  e2studio_v2025-12_fsp_v6.4.0\toolchains\
+  llvm_arm\ATfE-21.1.1-Windows-x86_64\bin\          # ATfE (clang)
+C:\Users\MyPC\AppData\Local\Programs\Python\Python311\
+C:\Renesas\RA\sc_v2026-04.2_fsp_v6.5.0\eclipse\    # RASC v6.5.0
+```
 
 ### Admin requirement summary
 
@@ -175,14 +191,19 @@ the start of every build session:
 . .\scripts\env.ps1
 ```
 
+If scripts are blocked by execution policy, run once:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Unblock-File -Path .\scripts\env.ps1
+```
+
 Verify all tools are on PATH:
 ```powershell
-clang --version
-clang-cl --version
+clang --version       # should show ATfE arm-none-eabi target
+clang-cl --version    # should show x86_64-pc-windows-msvc target
 meson --version
 python --version
 rasc --version        # firmware builds only
-rfp-cli --version     # flashing only
 ```
 
 ### Linux
@@ -272,13 +293,13 @@ OK
 
 Run once before any firmware build (requires Git and internet access):
 
-```bash
+```powershell
 meson subprojects download
 ```
 
 Reset if corrupted:
 
-```bash
+```powershell
 meson subprojects purge --confirm
 meson subprojects download
 ```
@@ -336,6 +357,33 @@ build-ra6e2/firmware/rtc_event_logger_on_ra6e2_fpb_clang.elf
 build-ra6e2/firmware/rtc_event_logger_on_ra6e2_fpb_clang.srec
 build-ra6e2/firmware/rtc_event_logger_unittest_on_ra6e2_fpb_clang.elf
 build-ra6e2/firmware/rtc_event_logger_unittest_on_ra6e2_fpb_clang.srec
+```
+
+---
+
+## 🎯 Firmware build outputs explained
+
+Each firmware build produces two independent SREC images. Flash one or the
+other depending on what you want to run on the board.
+
+**`rtc_event_logger_on_<board>_clang.srec` — Application firmware**
+The full RTC Event Logger demo. Runs the FreeRTOS blinky thread, initialises
+the RTC and UART via FSP drivers, and executes the `rs_rtc_logger_demo`
+example. Flash this for normal operation or demonstration.
+
+**`rtc_event_logger_unittest_on_<board>_clang.srec` — On-target Unity tests**
+A separate firmware image that replaces `main.c` and `blinky_thread_entry`
+with a Unity test runner. On boot it runs the `test_rs_rtc_logger_format` and
+`test_rs_rtc_logger_core` test suites directly on the Cortex-M33 using the
+real FSP RTC and UART drivers, then streams Unity pass/fail output over UART.
+Flash this to verify the `rs_rtc_logger` library on real silicon.
+
+### TDD workflow
+
+```
+1. meson test -C build-clangcl        # host tests: fast, no hardware
+2. flash unittest SREC → read UART    # on-target tests: real drivers, real silicon
+3. flash app SREC                     # demo / production firmware
 ```
 
 ---
@@ -409,22 +457,153 @@ which internally includes `fsp_gen.lld` and `memory_regions.lld`.
 | `undefined ref to rs_rtc_logger_hal_rtc_open` (host) | Ensure `rs_rtc_logger_hal.c` is excluded from host test sources in `tests/meson.build` |
 | `fsp.lld not found` | Run `rasc_generate` target before `meson compile` |
 | Corrupted UART output / dropped events | Ensure v18+ of `rs_rtc_logger.c` is in use (TestIssue_02 fix) |
+| `clang-cl cannot compile programs` on setup | Wrong `clang-cl.exe` on PATH — ensure generic LLVM appears last in `env.ps1` so it wins over ATfE for `clang-cl` |
+| `cannot open crt0.o` at link time | `--sysroot` must not appear in `c_link_args` — see FSP v6.5.0 deviation note 6 |
+| FreeRTOS symbols undefined at link | FSP subproject needs re-overlay — run `(Get-Content .\subprojects\packagefiles\fsp\meson.build) \| Set-Content .\subprojects\fsp\meson.build` |
 | Clean rebuild | `meson setup build-dir --wipe ...` |
 
 ---
 
-## 📝 Version Notes
+## FSP v6.5.0 migration — deviations from e2studio example projects
 
-### v18 — rs_rtc_logger.c (TestIssue_02 fix)
+This section documents every structural difference discovered when migrating the
+e2studio example projects (`RTC_Event_Logger_FPB_RA4E2_v15` and
+`RTC_Event_Logger_FPB_RA6E2_v18`) to FSP v6.5.0 with the Meson build system.
+It exists so that future changes to the e2studio reference projects can be
+compared against this list to identify what needs updating here.
 
-The RA6E2 project (v18) fixed a race condition in both operating modes:
+### 1. `hal_entry.c` no longer generated by RASC
 
-An `EventTrigger()` ISR notification could wake `ulTaskNotifyTake()` before
-the UART TX was complete, causing `line_buf` to be overwritten mid-transmission
-and producing corrupted output with silently dropped events.
+**e2studio reference project (FSP v6.4.0):** RASC generated `hal_entry.c` into
+`ra_gen/` as a thin wrapper calling `g_hal_init()` and starting the FreeRTOS
+scheduler.
 
-The consumer task now loops on `ulTaskNotifyTake()` until `p_ctrl->tx_complete`
-is set by the UART HAL callback. This fix applies to both boards.
+**FSP v6.5.0 behaviour:** RASC no longer generates `hal_entry.c`. The function
+is declared in `ra_gen/hal_data.h` and must be provided by the application.
+
+**This project's fix:** `src/hal_entry.c` was added to the project source tree.
+It provides an empty `hal_entry()` body — the generated `main.c` calls
+`g_hal_init()` and `vTaskStartScheduler()` directly, so `hal_entry()` is an
+application hook that does nothing for this project.
+
+### 2. `hal_warmstart.c` is now RASC-generated
+
+**e2studio reference project (FSP v6.4.0):** `hal_warmstart.c` was a project
+source file in `src/`, hand-edited by the developer.
+
+**FSP v6.5.0 behaviour:** RASC now generates `hal_warmstart.c` into the project
+directory (`src/hal_warmstart.c` inside the RASC projectdir). The content
+matches the original project version.
+
+**This project's fix:** `src/hal_warmstart.c` is no longer compiled from the
+project `src/` tree. The RASC-generated copy is compiled instead (it is copied
+to `firmware/generated/hal_warmstart.c` by `run_rasc.py`). Including both would
+cause a duplicate `R_BSP_WarmStart` symbol at link time.
+
+### 3. `blinky_thread.c` is a new RASC-generated file
+
+**e2studio reference project (FSP v6.4.0):** No `blinky_thread.c` was generated
+by RASC. The FreeRTOS thread was registered manually.
+
+**FSP v6.5.0 behaviour:** RASC generates `ra_gen/blinky_thread.c` and
+`ra_gen/blinky_thread.h`. `blinky_thread.c` defines `blinky_thread_create()`
+which is called by the generated `main.c`. Without it the firmware fails to link
+with `undefined symbol: blinky_thread_create`.
+
+**This project's fix:** `blinky_thread.c` is copied from the RASC projectdir
+(`ra_gen/blinky_thread.c`) to `firmware/generated/blinky_thread.c` by
+`run_rasc.py` and declared as a `custom_target` output so Meson compiles it.
+
+### 4. FreeRTOS kernel sources ship in the RASC projectdir, not the FSP git repo
+
+**e2studio reference project:** FreeRTOS kernel `.c` files were compiled from
+the FSP git repo at `ra/aws/FreeRTOS/FreeRTOS/Source/`. The FSP git tag
+`v6.4.0` included them.
+
+**FSP v6.5.0 behaviour:** The FSP v6.5.0 git repo (`github.com/renesas/fsp`) no
+longer includes FreeRTOS source files. Instead, RASC copies them from the RASC
+installer bundle into the `--projectdir` at `ra/aws/FreeRTOS/FreeRTOS/Source/`
+when `--generate` is run headlessly.
+
+**This project's fix:** `run_rasc.py` copies the six FreeRTOS kernel `.c` files
+(`tasks.c`, `queue.c`, `list.c`, `timers.c`, `event_groups.c`,
+`stream_buffer.c`) from the RASC projectdir to `firmware/generated/` with
+renamed filenames (`ra_freertos_tasks.c` etc.) so they can be declared as
+`custom_target` outputs and compiled by Meson without triggering setup-time
+path validation.
+
+### 5. `rm_comms_lock` and `rm_comms_uart` removed from FSP `src/`
+
+**e2studio reference project (FSP v6.4.0):** `rm_comms_lock.c` and
+`rm_comms_uart.c` existed under `ra/fsp/src/` and were compiled as part of the
+FSP middleware layer.
+
+**FSP v6.5.0 behaviour:** These source files were removed from `src/`. The
+`rm_comms_lock.h` stub in `src/rm_comms_lock/` now contains a `#error` directive
+instructing users to use the `inc/instances/` version instead. Attempting to
+compile `rm_comms_lock.c` produces a hard error.
+
+**This project's fix:** Both files are commented out in
+`subprojects/packagefiles/fsp/meson.build` with a version note.
+
+### 6. picolibc linker script conflict with FSP linker script
+
+**e2studio reference project:** e2studio links with a custom GCC or LLVM
+invocation that does not use the picolibc sysroot at link time.
+
+**This project's issue:** The ATfE toolchain's `--sysroot` flag, when passed to
+the linker, causes `ld.lld` to auto-include `picolibc.ld` from the sysroot's
+multilib directory. This linker script contains `ENTRY(_start)` and references
+`crt0.o` directly. The FSP already provides `Reset_Handler` as the entry point
+via `startup.c` and its own linker script (`fsp_gen.lld`), making `picolibc.ld`
+and `crt0.o` both redundant and conflicting.
+
+**This project's fix:** `--sysroot` is present in `c_args` (needed at compile
+time for headers such as `setjmp.h`, `string.h`) but is omitted from
+`c_link_args`. The linker instead receives `-Wl,-L<multilib_lib_dir>` pointing
+directly at the correct ATfE multilib directory
+(`armv8m.main_hard_fp_unaligned_size/lib`) so `libc.a` and
+`libclang_rt.builtins.a` can be found without triggering `picolibc.ld`
+auto-inclusion. A weak `_start` stub in `src/crt0_stub.c` satisfies any
+residual reference from `libc.a`.
+
+### 7. RASC headless invocation: standalone `rasc.exe` required
+
+**e2studio reference project:** Code generation is performed interactively
+inside e2studio's GUI.
+
+**This project's requirement:** Headless code generation via `--generate` is
+only supported by the standalone RASC installer (`setup_fsp_v6_5_0_rasc_v2026-04.2.exe`).
+The `e2studioc.exe` bundled with e2studio enters an interactive Eclipse socket
+wait mode when given `--generate` and cannot run headlessly. The two
+executables accept the same command-line arguments but behave differently.
+
+### 8. `configuration.xml` must be migrated to FSP v6.5.0 before headless builds
+
+RASC v6.5.0 will generate content for a v6.4.0 `configuration.xml` but exits
+with a non-zero code and may produce incomplete output. The fix is to open each
+board's `configuration.xml` in the RASC v6.5.0 GUI, accept the migration prompt,
+click **Generate Project Content**, and save. The migrated files checked in to
+`firmware/ra4e2-fpb/configuration.xml` and `firmware/ra6e2-fpb/configuration.xml`
+were produced this way.
+
+---
+
+## Subproject management
+
+After editing `subprojects/packagefiles/fsp/meson.build`, the change only takes
+effect after a purge + re-download:
+
+```powershell
+meson subprojects purge --confirm fsp
+meson subprojects download fsp
+```
+
+Then copy the packagefiles content to the live subproject:
+
+```powershell
+(Get-Content .\subprojects\packagefiles\fsp\meson.build) | Set-Content .\subprojects\fsp\meson.build
+```
 
 ---
 
