@@ -102,7 +102,7 @@
 #define DEMO_CONSUMER_TASK_PRIORITY     (tskIDLE_PRIORITY + 1U)
 
 #define DEMO_EVENT_PAYLOAD              "Event Detected"
-/* DC-4 fix: derive length from the string literal so it can never silently diverge. */
+/* derive length from the string literal so it can never silently diverge. */
 #define DEMO_EVENT_PAYLOAD_LEN          (sizeof(DEMO_EVENT_PAYLOAD) - 1U)
 
 #define DEMO_INIT_PAYLOAD               "INIT"
@@ -779,7 +779,7 @@ static void demo_consumer_task(void * p_arg)
 
         while (RS_RTC_LOGGER_STATE_STARTED == g_logger_ctrl.state)
         {
-            /* DC-6 fix: use the canonical public dequeue function instead of
+            /* use the canonical public dequeue function instead of
              * accessing buf_tail / buf_count directly.  rs_rtc_logger_EventDequeue()
              * wraps rs_rl_dequeue(), which copies the entry and updates the index
              * inside a single critical section — no TOCTOU exposure. */
@@ -808,12 +808,44 @@ static void demo_consumer_task(void * p_arg)
 #endif /* !RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE */
 
 /***********************************************************************************************************************
+ * DIAGNOSTIC — RTC-read check (button S1)
+ *
+ * Measures the millisecond gap since the previous ACCEPTED (post-debounce)
+ * event on every press, unconditionally — this happens regardless of the
+ * DEMO_RTC_DT_DIAGNOSTIC_ENABLE gate below, so ISR timing is identical
+ * whether the gate is on or off. The gate controls DISPLAY only: whether
+ * that measured delta gets encoded into the event payload (and therefore
+ * shows up on the serial terminal next to the RTC-formatted [HH:MM:SS])
+ * or the event logs as the plain "Event Detected" text.
+ *
+ * DISPLAY GATED OFF BY DEFAULT - Because measurement is
+ * now always-on regardless of this gate, flipping it does not change ISR
+ * timing — only what gets printed.
+ *
+ * To re-enable display: build with -DDEMO_RTC_DT_DIAGNOSTIC_ENABLE=1, or
+ * flip the default below.
+ **********************************************************************************************************************/
+#ifndef DEMO_RTC_DT_DIAGNOSTIC_ENABLE
+ #define DEMO_RTC_DT_DIAGNOSTIC_ENABLE  (0)
+#endif
+
+/***********************************************************************************************************************
  * Button S1 ISR callback
  **********************************************************************************************************************/
 
 void demo_button_s1_callback(external_irq_callback_args_t * p_args)
 {
     (void)p_args;
+
+    /* DIAGNOSTIC — see block comment above. Always measured,
+     * regardless of DEMO_RTC_DT_DIAGNOSTIC_ENABLE. Persistent across the
+     * whole session (not reset per burst), so it reflects the gap between
+     * consecutive ACCEPTED events — the same events visible in the UART log
+     * when display is enabled. */
+    static volatile TickType_t s_debug_last_tick = 0U;
+    TickType_t const debug_now         = xTaskGetTickCountFromISR();
+    TickType_t const debug_delta_ticks = debug_now - s_debug_last_tick;
+    (void)debug_delta_ticks;   /* used below only when display is enabled */
 
 #if RS_RTC_LOGGER_CFG_DEBOUNCE_MS > 0
     /* Software debounce (see rs_rtc_logger_cfg.h).
@@ -843,9 +875,33 @@ void demo_button_s1_callback(external_irq_callback_args_t * p_args)
     s_last_accepted_tick = now;
 #endif /* RS_RTC_LOGGER_CFG_DEBOUNCE_MS > 0 */
 
+    /* Always update the diagnostic baseline for events that survive
+     * debounce, regardless of the display gate, so the measurement stream
+     * is continuous and unaffected by whether display is on. */
+    s_debug_last_tick = debug_now;
+
+#if DEMO_RTC_DT_DIAGNOSTIC_ENABLE
+    char           debug_payload[24];
+    uint32_t const debug_delta_ms = (uint32_t)debug_delta_ticks * (uint32_t)portTICK_PERIOD_MS;
+    int            debug_len      = snprintf(debug_payload, sizeof(debug_payload),
+                                              "Event dt=%lums", (unsigned long)debug_delta_ms);
+    if (debug_len < 0)
+    {
+        debug_len = 0;
+    }
+    else if ((size_t)debug_len >= sizeof(debug_payload))
+    {
+        debug_len = (int)sizeof(debug_payload) - 1;
+    }
+
+    (void)rs_rtc_logger_EventTrigger(&g_logger_ctrl,
+                                     (uint8_t const *)debug_payload,
+                                     (uint32_t)debug_len);
+#else
     (void)rs_rtc_logger_EventTrigger(&g_logger_ctrl,
                                      (uint8_t const *)DEMO_EVENT_PAYLOAD,
                                      DEMO_EVENT_PAYLOAD_LEN);
+#endif /* DEMO_RTC_DT_DIAGNOSTIC_ENABLE */
 
     /* Persist the current sequence counter to the warm-reset-safe noinit
      * backup so it can be restored after a warm reset (FR-064).
@@ -904,7 +960,7 @@ static bool demo_parse_datetime(char const * p_str, rtc_time_t * p_time)
 static bool demo_is_power_on_reset(void)
 {
 #ifndef RS_RTC_LOGGER_TEST_HOST_BUILD
-    /* FIX: cache the result on first call.  RSTSR0 is a sticky-flag register;
+    /* cache the result on first call.  RSTSR0 is a sticky-flag register;
      * if any driver or BSP code clears PORF between calls the result would
      * silently change mid-task, producing inconsistent warm/cold-start behaviour.
      * Reading once and caching makes all calls within this session consistent. */
