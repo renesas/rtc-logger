@@ -102,7 +102,7 @@
 #define DEMO_CONSUMER_TASK_PRIORITY     (tskIDLE_PRIORITY + 1U)
 
 #define DEMO_EVENT_PAYLOAD              "Event Detected"
-/* DC-4 fix: derive length from the string literal so it can never silently diverge. */
+/* derive length from the string literal so it can never silently diverge. */
 #define DEMO_EVENT_PAYLOAD_LEN          (sizeof(DEMO_EVENT_PAYLOAD) - 1U)
 
 #define DEMO_INIT_PAYLOAD               "INIT"
@@ -779,7 +779,7 @@ static void demo_consumer_task(void * p_arg)
 
         while (RS_RTC_LOGGER_STATE_STARTED == g_logger_ctrl.state)
         {
-            /* DC-6 fix: use the canonical public dequeue function instead of
+            /* use the canonical public dequeue function instead of
              * accessing buf_tail / buf_count directly.  rs_rtc_logger_EventDequeue()
              * wraps rs_rl_dequeue(), which copies the entry and updates the index
              * inside a single critical section — no TOCTOU exposure. */
@@ -966,7 +966,7 @@ static bool demo_parse_datetime(char const * p_str, rtc_time_t * p_time)
 static bool demo_is_power_on_reset(void)
 {
 #ifndef RS_RTC_LOGGER_TEST_HOST_BUILD
-    /* FIX: cache the result on first call.  RSTSR0 is a sticky-flag register;
+    /* cache the result on first call.  RSTSR0 is a sticky-flag register;
      * if any driver or BSP code clears PORF between calls the result would
      * silently change mid-task, producing inconsistent warm/cold-start behaviour.
      * Reading once and caching makes all calls within this session consistent. */

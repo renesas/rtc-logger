@@ -88,7 +88,7 @@
  * Configuration
  **********************************************************************************************************************/
 
-/* ROOT CAUSE FIX (stack): CLI task needs headroom for rs_rtc_logger_Open() +
+/* CLI task needs stack headroom for rs_rtc_logger_Open() +
  * R_RTC_Open() + R_SCI_UART_Open() call depth.  The original 1024 bytes left
  * fewer than ~200 bytes by the time R_RTC_Open() entered, causing a hard fault
  * in Expert mode.  The saved_event_buf static fix is the primary remedy, but
@@ -102,7 +102,7 @@
 #define DEMO_CONSUMER_TASK_PRIORITY     (tskIDLE_PRIORITY + 1U)
 
 #define DEMO_EVENT_PAYLOAD              "Event Detected"
-/* DC-4 fix: derive length from the string literal so it can never silently diverge. */
+/* derive length from the string literal so it can never silently diverge. */
 #define DEMO_EVENT_PAYLOAD_LEN          (sizeof(DEMO_EVENT_PAYLOAD) - 1U)
 
 #define DEMO_INIT_PAYLOAD               "INIT"
@@ -779,7 +779,7 @@ static void demo_consumer_task(void * p_arg)
 
         while (RS_RTC_LOGGER_STATE_STARTED == g_logger_ctrl.state)
         {
-            /* DC-6 fix: use the canonical public dequeue function instead of
+            /* use the canonical public dequeue function instead of
              * accessing buf_tail / buf_count directly.  rs_rtc_logger_EventDequeue()
              * wraps rs_rl_dequeue(), which copies the entry and updates the index
              * inside a single critical section — no TOCTOU exposure. */
@@ -793,13 +793,12 @@ static void demo_consumer_task(void * p_arg)
             /* Wait for demo_logger_callback() to notify us on TX_COMPLETE/
              * TX_ERROR (ISR context) instead of polling tx_complete.
              *
-             * BUG FIX (TestIssue_02): same race as the Example Project mode
              * consumer task — an EventTrigger() ISR notification can wake
              * this ulTaskNotifyTake() before the UART TX is complete, causing
              * line_buf to be overwritten mid-transmission and producing
              * corrupted output with dropped events.
              *
-             * FIX: loop until g_logger_ctrl.tx_complete is actually set by
+             * loop until g_logger_ctrl.tx_complete is actually set by
              * the UART_EVENT_TX_COMPLETE handler in the ISR callback.
              * tx_complete is cleared before every write and set only on
              * genuine TX completion — so the condition is unambiguous. */
@@ -966,7 +965,7 @@ static bool demo_parse_datetime(char const * p_str, rtc_time_t * p_time)
 static bool demo_is_power_on_reset(void)
 {
 #ifndef RS_RTC_LOGGER_TEST_HOST_BUILD
-    /* FIX: cache the result on first call.  RSTSR0 is a sticky-flag register;
+    /* cache the result on first call.  RSTSR0 is a sticky-flag register;
      * if any driver or BSP code clears PORF between calls the result would
      * silently change mid-task, producing inconsistent warm/cold-start behaviour.
      * Reading once and caching makes all calls within this session consistent. */
