@@ -371,7 +371,7 @@ if needs_bundle
     command: [
       rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-fo', 'boundary-file', rasc_bundle_app[0],
-      '-file', firmware_srec[0], '-auto',
+      '-file', firmware_srec[0], '-auto', '-run',
     ],
   )
   run_target(
@@ -379,7 +379,7 @@ if needs_bundle
     command: [
       rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-fo', 'boundary-file', rasc_bundle_ut[0],
-      '-file', firmware_ut_srec[0], '-auto',
+      '-file', firmware_ut_srec[0], '-auto', '-run',
     ],
   )
 else
@@ -388,14 +388,14 @@ else
     'rfp_program',
     command: [
       rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
-      '-file', firmware_srec[0], '-auto',
+      '-file', firmware_srec[0], '-auto', '-run',
     ],
   )
   run_target(
     'rfp_program_ut',
     command: [
       rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
-      '-file', firmware_ut_srec[0], '-auto',
+      '-file', firmware_ut_srec[0], '-auto', '-run',
     ],
   )
 endif
