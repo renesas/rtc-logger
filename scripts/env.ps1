@@ -30,4 +30,4 @@ $env:PATH = "C:\Renesas\RA\sc_v2026-04.2_fsp_v6.5.0\eclipse;" + $env:PATH
 # Renesas Flash Programmer CLI — provides rfp-cli.exe for flashing over JLink/SWD.
 # Download: https://www.renesas.com/en/software-tool/renesas-flash-programmer-programming-gui
 # Update the path below to match your installation.
-$env:PATH = "Path\to\Renesas Flash Programmer V3;" + $env:PATH
+$env:PATH = "C:\Program Files (x86)\Renesas Electronics\Programming Tools\Renesas Flash Programmer V3.23;" + $env:PATH

@@ -369,7 +369,7 @@ if needs_bundle
   run_target(
     'rfp_program',
     command: [
-      rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd',
+      rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-fo', 'boundary-file', rasc_bundle_app[0],
       '-file', firmware_srec[0], '-auto',
     ],
@@ -377,7 +377,7 @@ if needs_bundle
   run_target(
     'rfp_program_ut',
     command: [
-      rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd',
+      rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-fo', 'boundary-file', rasc_bundle_ut[0],
       '-file', firmware_ut_srec[0], '-auto',
     ],
@@ -387,26 +387,26 @@ else
   run_target(
     'rfp_program',
     command: [
-      rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd',
+      rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-file', firmware_srec[0], '-auto',
     ],
   )
   run_target(
     'rfp_program_ut',
     command: [
-      rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd',
+      rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd',
       '-file', firmware_ut_srec[0], '-auto',
     ],
   )
 endif
 
 run_target('rfp_reset',
-  command: [rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd', '-reset'])
+  command: [rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd', '-reset'])
 
 run_target('rfp_erase_halt',
-  command: [rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd', '-erase', '-halt'])
+  command: [rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd', '-erase', '-halt'])
 
 run_target('rfp_check_blank',
-  command: [rfp_cli, '-d', device, '-t', 'jlink', '-if', 'swd', '-blankcheck'])
+  command: [rfp_cli, '-d', 'RA', '-t', 'jlink', '-if', 'swd', '-blankcheck'])
 
 endif # rfp_cli.found()

@@ -28,8 +28,8 @@ static const char * run_argv[] = {
 
 int main(void)
 {
-    TEST_MESSAGE("\n===== UNITY LOG BEGIN ======\n");
+    UnityPrint("===== UNITY LOG BEGIN ======"); UNITY_PRINT_EOL();
     int code = UnityMain(2, run_argv, RunAllTests);
-    TEST_MESSAGE("\n===== UNITY LOG END =====\n");
+    UnityPrint("===== UNITY LOG END ======"); UNITY_PRINT_EOL();
     return code;
 }
