@@ -79,4 +79,10 @@ const rtc_instance_t g_rtc0_preset =
  * The alias is defined in rs_rtc_logger_data_fpb_ra4e2.h — nothing to define here.
  */
 
+/*
+ * Note: g_rtc0_cfg_preset.carry_ipl (= 2, above) is validated by
+ * rs_rtc_logger_ConfigCheck() / rs_rtc_logger_hal_rtc_open() against
+ * RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT (default 4) — see rs_rtc_logger.h.
+ */
+
 #endif /* RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */

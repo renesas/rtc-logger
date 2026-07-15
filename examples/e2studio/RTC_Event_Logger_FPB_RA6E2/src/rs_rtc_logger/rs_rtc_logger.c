@@ -419,6 +419,17 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg)
  * (Section 10.1): both the preset path (RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE=1)
  * and the FSP Stack Configurator path (=0) call this function with the
  * appropriate instance pointers before calling rs_rtc_logger_Open().
+ *
+ * Follows the memset()/memcpy() PES Config_Gen pattern (see
+ * pes_smooth_led_lighting_pwm/led_pwm.c: PES_Smooth_Lighting_Config_Gen):
+ * the destination pointer fields are cleared before being bound, then the
+ * caller-supplied instance pointers are copied in via memcpy(). p_rtc and
+ * p_uart are byte-copied by value (this PES stores references, not deep
+ * copies, of the HAL instances) — the pointed-to rtc_instance_t /
+ * uart_instance_t must remain valid (static/const storage) for the life of
+ * the PES instance, e.g. the *_preset instances in
+ * rs_rtc_logger_data_fpb_<board>.c or the FSP Stack Configurator's
+ * ra_gen/hal_data.c instances.
  */
 fsp_err_t rs_rtc_logger_ConfigGen (rs_rtc_logger_cfg_t   * p_cfg,
                                      rtc_instance_t  const * p_rtc,
@@ -430,8 +441,118 @@ fsp_err_t rs_rtc_logger_ConfigGen (rs_rtc_logger_cfg_t   * p_cfg,
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_uart, FSP_ERR_ASSERTION);
 #endif
 
-    p_cfg->p_rtc  = p_rtc;
-    p_cfg->p_uart = p_uart;
+    /* Clear the destination HAL instance-pointer fields before binding. */
+    memset(&p_cfg->p_rtc,  0, sizeof(p_cfg->p_rtc));
+    memset(&p_cfg->p_uart, 0, sizeof(p_cfg->p_uart));
+
+    /* Bind the caller-supplied HAL instance pointers into the configuration. */
+    memcpy(&p_cfg->p_rtc,  &p_rtc,  sizeof(p_cfg->p_rtc));
+    memcpy(&p_cfg->p_uart, &p_uart, sizeof(p_cfg->p_uart));
+
+    return FSP_SUCCESS;
+}
+
+/***********************************************************************************************************************
+ * rs_rtc_logger_ConfigCheck
+ **********************************************************************************************************************/
+
+/**
+ * @brief Validate a PES configuration structure before rs_rtc_logger_Open().
+ *
+ * Verifies that the required RTC and UART HAL instances (and their
+ * underlying configuration blocks) are present, that the RTC carry
+ * interrupt priority satisfies the N-12 constraint enforced again at
+ * rs_rtc_logger_hal_rtc_open() time, and that the enumerated configuration
+ * fields (ts_format, line_term, overflow_policy) hold in-range values.
+ *
+ * Mirrors PES_Smooth_Lighting_Check_Config() in the reference PES
+ * (pes_smooth_led_lighting_pwm/led_pwm.c), adapted to this PES's required
+ * resources: RTC + UART HAL instances instead of GPT/DMAC/ELC instances.
+ *
+ * @param[in] p_cfg  Configuration structure populated by rs_rtc_logger_ConfigGen().
+ *
+ * @retval FSP_SUCCESS                    Configuration is valid.
+ * @retval FSP_ERR_ASSERTION              p_cfg is NULL.
+ * @retval FSP_ERR_NOT_INITIALIZED        Required RTC or UART instance/config is missing.
+ * @retval FSP_ERR_INVALID_HW_CONDITION   RTC carry_ipl exceeds RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT.
+ * @retval FSP_ERR_INVALID_ARGUMENT       ts_format, line_term, or overflow_policy is out of range.
+ *
+ * @note Valid in any PES lifecycle state. Not ISR-safe. Does not modify p_cfg.
+ */
+fsp_err_t rs_rtc_logger_ConfigCheck (rs_rtc_logger_cfg_t const * p_cfg)
+{
+#if RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE
+    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg, FSP_ERR_ASSERTION);
+#endif
+
+    /* Required RTC instance must exist and carry a configuration block. */
+    if ((NULL == p_cfg->p_rtc) || (NULL == p_cfg->p_rtc->p_cfg))
+    {
+        return FSP_ERR_NOT_INITIALIZED;
+    }
+
+    /* Required UART instance must exist and carry a configuration block. */
+    if ((NULL == p_cfg->p_uart) || (NULL == p_cfg->p_uart->p_cfg))
+    {
+        return FSP_ERR_NOT_INITIALIZED;
+    }
+
+    /* N-12: RTC carry interrupt priority must be strictly below the priority
+     * of any ISR that calls rs_rtc_logger_EventTrigger() — surfaced here for
+     * pre-Open() validation; re-checked at rs_rtc_logger_hal_rtc_open() time. */
+    if ((uint32_t) p_cfg->p_rtc->p_cfg->carry_ipl > RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT)
+    {
+        return FSP_ERR_INVALID_HW_CONDITION;
+    }
+
+    /* Enumerated configuration fields must hold in-range values. */
+    if (p_cfg->ts_format > RS_RTC_LOGGER_TS_FORMAT_SYSLOG)
+    {
+        return FSP_ERR_INVALID_ARGUMENT;
+    }
+
+    if (p_cfg->line_term > RS_RTC_LOGGER_TERM_CR)
+    {
+        return FSP_ERR_INVALID_ARGUMENT;
+    }
+
+    if (p_cfg->overflow_policy > RS_RTC_LOGGER_OVERFLOW_DROP_NEWEST)
+    {
+        return FSP_ERR_INVALID_ARGUMENT;
+    }
+
+    return FSP_SUCCESS;
+}
+
+/***********************************************************************************************************************
+ * rs_rtc_logger_ConfigGetSize
+ **********************************************************************************************************************/
+
+/**
+ * @brief Get the size, in bytes, of the PES control block structure.
+ *
+ * Mirrors PES_Smooth_Lighting_Get_Config_Size() in the reference PES
+ * (pes_smooth_led_lighting_pwm/led_pwm.c). Useful for callers that want to
+ * confirm control-block sizing (e.g. against RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES)
+ * without needing to have called rs_rtc_logger_Open() first.
+ *
+ * @param[in]  p_ctrl  Pointer to a PES control block (may be caller-allocated,
+ *                     not-yet-Open()'d storage — only used for sizeof(*p_ctrl)).
+ * @param[out] p_size  Populated with sizeof(rs_rtc_logger_ctrl_t).
+ *
+ * @retval FSP_SUCCESS       Size returned in *p_size.
+ * @retval FSP_ERR_ASSERTION p_ctrl or p_size is NULL.
+ *
+ * @note Valid in any PES lifecycle state. Not ISR-safe.
+ */
+fsp_err_t rs_rtc_logger_ConfigGetSize (rs_rtc_logger_ctrl_t const * p_ctrl, size_t * p_size)
+{
+#if RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE
+    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_ctrl, FSP_ERR_ASSERTION);
+    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_size, FSP_ERR_ASSERTION);
+#endif
+
+    *p_size = sizeof(*p_ctrl);
 
     return FSP_SUCCESS;
 }

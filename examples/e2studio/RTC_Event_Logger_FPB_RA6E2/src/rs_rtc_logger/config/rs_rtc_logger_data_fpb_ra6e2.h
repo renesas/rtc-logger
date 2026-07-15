@@ -43,6 +43,8 @@
  *   #endif
  *   ...
  *   rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+ *   rs_rtc_logger_ConfigCheck(&g_logger_cfg);      // optional: validate before Open()
+ *   rs_rtc_logger_ConfigGetSize(&g_logger_ctrl, &sz); // optional: query control-block size
  **********************************************************************************************************************/
 
 #ifndef RS_RTC_LOGGER_DATA_FPB_RA6E2_H

@@ -401,6 +401,33 @@ static void demo_cli_task(void * p_arg)
 #else
     (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0, &g_uart0);
 #endif
+
+    /* Validate the generated configuration before Open() — catches a bad
+     * RTC/UART instance pointer or an out-of-range carry_ipl/enum field
+     * early, with a clear diagnostic, instead of failing deeper inside
+     * rs_rtc_logger_Open(). */
+    fsp_err_t cfg_check_err = rs_rtc_logger_ConfigCheck(&g_logger_cfg);
+    if (FSP_SUCCESS != cfg_check_err)
+    {
+        char msg[96];
+        (void)snprintf(msg, sizeof(msg),
+                        "ERROR: RTC Event Logger ConfigCheck failed (err=0x%08X).\r\n",
+                        (unsigned)cfg_check_err);
+        demo_uart_write_blocking(msg);
+        for (;;) { vTaskDelay(portMAX_DELAY); }
+    }
+
+    /* Report the PES control-block footprint (diagnostic only). */
+    {
+        size_t ctrl_size = 0U;
+        (void)rs_rtc_logger_ConfigGetSize(&g_logger_ctrl, &ctrl_size);
+        char msg[64];
+        (void)snprintf(msg, sizeof(msg),
+                        "RTC Event Logger control block: %u bytes.\r\n",
+                        (unsigned)ctrl_size);
+        demo_uart_write_blocking(msg);
+    }
+
     g_logger_ctrl.p_cfg = &g_logger_cfg;
 
     /* Create the internal consumer task from task context — BEFORE the ICU
@@ -491,6 +518,32 @@ static void demo_cli_task(void * p_arg)
 #else
     (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0, &g_uart0);
 #endif
+
+    /* Validate the generated configuration before Open() (Section 10.1 —
+     * ConfigCheck/ConfigGetSize). Catches a bad RTC/UART instance pointer or
+     * an out-of-range carry_ipl/enum field early, with a clear diagnostic. */
+    fsp_err_t cfg_check_err = rs_rtc_logger_ConfigCheck(&g_logger_cfg);
+    if (FSP_SUCCESS != cfg_check_err)
+    {
+        char msg[96];
+        (void)snprintf(msg, sizeof(msg),
+                        "ERROR: RTC Event Logger ConfigCheck failed (err=0x%08X).\r\n",
+                        (unsigned)cfg_check_err);
+        demo_uart_write_blocking(msg);
+        for (;;) { vTaskDelay(portMAX_DELAY); }
+    }
+
+    /* Report the PES control-block footprint (diagnostic only). */
+    {
+        size_t ctrl_size = 0U;
+        (void)rs_rtc_logger_ConfigGetSize(&g_logger_ctrl, &ctrl_size);
+        char msg[64];
+        (void)snprintf(msg, sizeof(msg),
+                        "RTC Event Logger control block: %u bytes.\r\n",
+                        (unsigned)ctrl_size);
+        demo_uart_write_blocking(msg);
+    }
+
     g_logger_cfg.p_callback = demo_logger_callback; /* FR-084: wake demo_consumer_task on TX_COMPLETE/TX_ERROR */
     fsp_err_t err = rs_rtc_logger_Open(&g_logger_ctrl, &g_logger_cfg);
     if (FSP_SUCCESS != err)
