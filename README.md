@@ -16,7 +16,9 @@ This repo contains the RTC Event Logger
 │
 ├── docs
 │   └── README-RTC_EVENT_LOGGER.md
-│       └── Detailed documentation for RTC Event Logger implementation and design notes
+│   │   └── Detailed documentation for RTC Event Logger implementation and design notes
+│   └── BUILD.md
+│       └── Build and Test Instructions for Host and On-Target Unity Tests and Firmware for Boards (Meson + LLVM/Clang)
 │
 ├── examples
 │   └── e2studio
