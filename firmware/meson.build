@@ -10,7 +10,7 @@ fs = import('fs')
 
 if not meson.is_cross_build()
   subdir_done()
-endif
+endif 
 
 subdir('generated')
 
@@ -118,6 +118,19 @@ common_defines = [
   '-D_RA_CORE=' + ra_core,
   '-D_RA_ORDINAL=' + ra_ordinal.to_string(),
 ]
+
+# Board-select macro for source files that must branch at compile time on
+# target board (currently: src/rs_rtc_logger_demo.c, which picks between
+# rs_rtc_logger_data_fpb_ra4e2.h and rs_rtc_logger_data_fpb_ra6e2.h).
+# Mirrors the `mcu == 'ra6e2'` checks already used above for
+# board_config_src / app_entry_src, so all three per-board selections in
+# this file stay in sync with a single option (-Dmcu=ra4e2|ra6e2).
+if mcu == 'ra6e2'
+  common_defines += ['-DRS_RTC_LOGGER_TARGET_RA6E2=1']
+else
+  # ra4e2 (default)
+  common_defines += ['-DRS_RTC_LOGGER_TARGET_RA4E2=1']
+endif
 
 cc = meson.get_compiler('c')
 compiler_id = cc.get_id()

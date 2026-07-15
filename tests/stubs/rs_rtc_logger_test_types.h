@@ -63,10 +63,24 @@ typedef struct st_uart_callback_args
  * Declared as minimal structs (not void) so that test code can zero-
  * initialise dummy instances with {0} and take their address.
  * Open() only checks NULL != p_rtc / NULL != p_uart; it never dereferences
- * the internal fields on the host build (all HAL calls are mocked). */
+ * the internal fields on the host build (all HAL calls are mocked).
+ *
+ * p_cfg / carry_ipl are the minimum subset needed by
+ * rs_rtc_logger_ConfigCheck() (mirrors r_rtc_api.h rtc_cfg_t.carry_ipl and
+ * r_uart_api.h uart_cfg_t) so that function is host-testable too. */
 
-typedef struct { int _unused; } rtc_instance_t;
-typedef struct { int _unused; } uart_instance_t;
+typedef struct st_rtc_cfg_stub
+{
+    uint32_t carry_ipl;    ///< RTC carry interrupt priority (N-12)
+} rtc_cfg_t;
+
+typedef struct st_uart_cfg_stub
+{
+    int _unused;
+} uart_cfg_t;
+
+typedef struct { rtc_cfg_t  const * p_cfg; } rtc_instance_t;
+typedef struct { uart_cfg_t const * p_cfg; } uart_instance_t;
 
 /* ── FSP_HEADER / FSP_FOOTER macros (no-ops on host) ───────────────────── */
 

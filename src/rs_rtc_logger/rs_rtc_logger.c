@@ -408,34 +408,6 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg)
  * @retval (other)                  Propagated from HAL Open() calls.
  */
 
-/***********************************************************************************************************************
- * rs_rtc_logger_ConfigGen
- **********************************************************************************************************************/
-
-/**
- * @brief Assign HAL instance pointers to the PES configuration structure.
- *
- * This is the configuration bridge function for the two-path approach
- * (Section 10.1): both the preset path (RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE=1)
- * and the FSP Stack Configurator path (=0) call this function with the
- * appropriate instance pointers before calling rs_rtc_logger_Open().
- */
-fsp_err_t rs_rtc_logger_ConfigGen (rs_rtc_logger_cfg_t   * p_cfg,
-                                     rtc_instance_t  const * p_rtc,
-                                     uart_instance_t const * p_uart)
-{
-#if RS_RTC_LOGGER_CFG_PARAM_CHECKING_ENABLE
-    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg,  FSP_ERR_ASSERTION);
-    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_rtc,  FSP_ERR_ASSERTION);
-    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_uart, FSP_ERR_ASSERTION);
-#endif
-
-    p_cfg->p_rtc  = p_rtc;
-    p_cfg->p_uart = p_uart;
-
-    return FSP_SUCCESS;
-}
-
 fsp_err_t rs_rtc_logger_Open(rs_rtc_logger_ctrl_t       * p_ctrl,
                               rs_rtc_logger_cfg_t  const * p_cfg)
 {
