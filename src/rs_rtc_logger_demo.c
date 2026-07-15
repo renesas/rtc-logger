@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  **********************************************************************************************************************/
-
+ 
 /**
  * @file rs_rtc_logger_demo.c
  * @brief Reference application for the RTC Event Logger 
@@ -75,8 +75,28 @@
  *   PRESET_CONFIG_USE = 0: ConfigGen uses FSP-generated g_rtc0 / g_uart0.
  *
  * rs_rtc_logger_ConfigGen()/ConfigCheck()/ConfigGetSize() live in this
- * board config header and are declared there, so the header is included here */
-#include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h>
+ * board config header and are declared there, so the header is included here
+ * unconditionally — regardless of RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE —
+ * while the *_preset instance externs inside that header remain
+ * conditionally compiled on that same flag.
+ *
+ * Board selection: this file is shared by both boards (unlike
+ * blinky_thread_entry_ra4e2.c / _ra6e2.c, which are separate per-board
+ * files), so the correct header is chosen at compile time via
+ * RS_RTC_LOGGER_TARGET_RA4E2 / RS_RTC_LOGGER_TARGET_RA6E2. These macros are
+ * defined by firmware/meson.build based on the `mcu` option
+ * (-Dmcu=ra4e2|ra6e2) — the same option that already selects
+ * board_config_src and app_entry_src for the firmware build. */
+#if defined(RS_RTC_LOGGER_TARGET_RA6E2)
+ #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h>
+#elif defined(RS_RTC_LOGGER_TARGET_RA4E2)
+ #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h>
+#else
+ #error "rs_rtc_logger_demo.c: define RS_RTC_LOGGER_TARGET_RA4E2 or " \
+        "RS_RTC_LOGGER_TARGET_RA6E2 (set automatically by firmware/meson.build " \
+        "from the -Dmcu=ra4e2|ra6e2 option; if building outside that system, " \
+        "define the macro matching your target board manually)."
+#endif
 
 #include "FreeRTOS.h"
 #include "task.h"
