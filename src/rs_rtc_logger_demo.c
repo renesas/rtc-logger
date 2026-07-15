@@ -73,10 +73,10 @@
  *   PRESET_CONFIG_USE = 1 (default): ConfigGen uses _preset instances from
  *     the board config file — no FSP Stack Configurator re-run required.
  *   PRESET_CONFIG_USE = 0: ConfigGen uses FSP-generated g_rtc0 / g_uart0.
- */
-#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
- #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h>
-#endif
+ *
+ * rs_rtc_logger_ConfigGen()/ConfigCheck()/ConfigGetSize() live in this
+ * board config header and are declared there, so the header is included here */
+#include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h>
 
 #include "FreeRTOS.h"
 #include "task.h"

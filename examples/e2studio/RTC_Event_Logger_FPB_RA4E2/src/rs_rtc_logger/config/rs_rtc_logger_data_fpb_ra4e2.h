@@ -40,7 +40,10 @@
 #ifndef RS_RTC_LOGGER_DATA_FPB_RA4E2_H
 #define RS_RTC_LOGGER_DATA_FPB_RA4E2_H
 
+#include <stddef.h>                       /* size_t (rs_rtc_logger_ConfigGetSize) */
 #include <rs_rtc_logger/rs_rtc_logger_cfg.h>
+#include <rs_rtc_logger/rs_rtc_logger_types.h> /* rs_rtc_logger_cfg_t, rs_rtc_logger_ctrl_t,
+                                                 * rtc_instance_t, uart_instance_t */
 
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
 
@@ -66,5 +69,86 @@ extern const uart_instance_t g_uart0;
 FSP_FOOTER
 
 #endif /* RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
+
+/***********************************************************************************************************************
+ * PES configuration bridge functions — FPB-RA4E2
+ *
+ * Board-specific ConfigGen/ConfigCheck/
+ * ConfigGetSize live alongside the *_preset instance data they are most
+ * commonly paired with. Declared and defined UNCONDITIONALLY (outside the
+ * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE guard above) so the same three
+ * functions remain available whether the caller binds *_preset instances or
+ * FSP Stack Configurator-generated instances (g_rtc0 / g_uart0).
+ **********************************************************************************************************************/
+
+FSP_HEADER
+
+/**
+ * @brief Assign HAL instance pointers to the PES configuration structure.
+ *
+ * Called once during application initialisation, before rs_rtc_logger_Open().
+ * Accepts either pre-set instances (g_rtc0_preset / g_uart0_preset, above,
+ * when RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1) or FSP Stack Configurator-
+ * generated instances (RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 0).
+ *
+ * Non-instance fields (ts_format, ts_brackets, line_term, overflow_policy,
+ * p_callback, p_context) are already set in p_cfg by the caller and are not
+ * modified by this function.
+ *
+ * @param[in,out] p_cfg   PES configuration structure. p_rtc and p_uart are written.
+ * @param[in]     p_rtc   RTC HAL instance pointer (preset or FSP-generated).
+ * @param[in]     p_uart  UART HAL instance pointer (preset or FSP-generated).
+ *
+ * @retval FSP_SUCCESS        Instance pointers assigned.
+ * @retval FSP_ERR_ASSERTION  p_cfg, p_rtc, or p_uart is NULL.
+ *
+ * @note Valid in any PES lifecycle state. Not ISR-safe.
+ */
+fsp_err_t rs_rtc_logger_ConfigGen(rs_rtc_logger_cfg_t   * p_cfg,
+                                    rtc_instance_t  const * p_rtc,
+                                    uart_instance_t const * p_uart);
+
+/**
+ * @brief Validate a PES configuration structure before rs_rtc_logger_Open().
+ *
+ * Verifies that the required RTC and UART HAL instances (and their
+ * configuration blocks) are present, that the RTC carry interrupt
+ * priority satisfies the N-12 constraint above, and that the enumerated
+ * configuration fields (ts_format, line_term, overflow_policy) are in
+ * range. Call any time after rs_rtc_logger_ConfigGen() and before
+ * rs_rtc_logger_Open(), so misconfiguration is caught early.
+ *
+ * @param[in] p_cfg  Configuration structure populated by rs_rtc_logger_ConfigGen().
+ *
+ * @retval FSP_SUCCESS                   Configuration is valid.
+ * @retval FSP_ERR_ASSERTION             p_cfg is NULL.
+ * @retval FSP_ERR_NOT_INITIALIZED       Required RTC or UART instance/config is missing.
+ * @retval FSP_ERR_INVALID_HW_CONDITION  RTC carry_ipl exceeds RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT.
+ * @retval FSP_ERR_INVALID_ARGUMENT      ts_format, line_term, or overflow_policy is out of range.
+ *
+ * @note Valid in any PES lifecycle state. Not ISR-safe.
+ */
+fsp_err_t rs_rtc_logger_ConfigCheck(rs_rtc_logger_cfg_t const * p_cfg);
+
+/**
+ * @brief Get the size, in bytes, of the PES control block structure.
+ *
+ * Useful for confirming control-block sizing (e.g. against
+ * RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES) without requiring
+ * rs_rtc_logger_Open() to have been called first.
+ *
+ * @param[in]  p_ctrl  Pointer to a PES control block (may be caller-allocated,
+ *                     not-yet-Open()'d storage — only used for sizeof(*p_ctrl)).
+ * @param[out] p_size  Populated with sizeof(rs_rtc_logger_ctrl_t).
+ *
+ * @retval FSP_SUCCESS       Size returned in *p_size.
+ * @retval FSP_ERR_ASSERTION p_ctrl or p_size is NULL.
+ *
+ * @note Valid in any PES lifecycle state. Not ISR-safe.
+ */
+fsp_err_t rs_rtc_logger_ConfigGetSize(rs_rtc_logger_ctrl_t const * p_ctrl,
+                                      size_t                      * p_size);
+
+FSP_FOOTER
 
 #endif /* RS_RTC_LOGGER_DATA_FPB_RA4E2_H */
