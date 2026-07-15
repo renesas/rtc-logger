@@ -14,6 +14,15 @@
  *   UART : SCI0 — USB-Serial VCOM bridge, 115200 baud, async
  *   IRQ  : P304 / IRQ9 / S1 (application-owned r_icu)
  *
+ * g_uart0_preset is a standalone r_sci_uart instance — NOT an alias for the
+ * FSP-generated g_uart0. Its register-level baud settings (brr/mddr/bgdm/
+ * cks/abcs/abcse) are the exact values RASC computes for 115200 baud on
+ * FPB-RA4E2's PCLK (captured from a known-good ra_gen/hal_data.c and baked
+ * in below), so g_uart0_preset always runs at 115200 regardless of whatever
+ * baud rate (or other SCI settings) the Stack Configurator currently has for
+ * g_uart0. This mirrors how g_rtc0_preset is already independent of whatever
+ * the Stack Configurator has for g_rtc0.
+ *
  * N-12 — CRITICAL carry_ipl requirement:
  *   The RTC carry interrupt (carry_ipl = 2 in the preset .c file) MUST have
  *   HIGHER preemption (lower IPL number) than every ISR that calls
@@ -26,6 +35,15 @@
  *   caller.  rs_rtc_logger_Open() enforces RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT
  *   (default 4) at runtime and returns FSP_ERR_INVALID_HW_CONDITION if the
  *   limit is exceeded.
+ *
+ * Preset UART's early-open handoff:
+ *   demo_banner_setup() (blinky_thread_entry.c) and demo_uart_write_blocking()
+ *   (rs_rtc_logger_demo.c) must open/write through g_uart0_preset (not
+ *   g_uart0) whenever RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1, or the
+ *   pre-demo banner and CLI prompts would keep using the Stack Configurator's
+ *   (possibly broken) g_uart0 settings while the logger itself uses this
+ *   preset — a silent baud-rate mismatch between demo output and logged
+ *   events. See DEMO_UART_INSTANCE in those two files.
  *
  * Usage:
  *   #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
@@ -50,6 +68,7 @@
 #include "r_rtc.h"
 #include "r_rtc_api.h"
 #include "r_uart_api.h"
+#include "r_sci_uart.h"
 
 FSP_HEADER
 
@@ -60,11 +79,13 @@ extern rtc_instance_ctrl_t g_rtc0_ctrl_preset;
 extern const rtc_instance_t g_rtc0_preset;
 
 /***********************************************************************************************************************
- * UART preset instance — macro alias for FSP-generated g_uart0 (ra_gen/common_data.c).
- * SCI0, 115200 baud, async, TX callback = rs_rtc_logger_uart_callback.
+ * UART preset instance — standalone r_sci_uart instance, SCI0, fixed 115200
+ * baud (register values captured from a known-good FSP-generated config;
+ * see rs_rtc_logger_data_fpb_ra4e2.c). Independent of the Stack
+ * Configurator's current g_uart0 settings.
  **********************************************************************************************************************/
-extern const uart_instance_t g_uart0;
-#define g_uart0_preset  g_uart0
+extern sci_uart_instance_ctrl_t g_uart0_ctrl_preset;
+extern const uart_instance_t g_uart0_preset;
 
 FSP_FOOTER
 

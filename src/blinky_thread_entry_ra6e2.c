@@ -19,14 +19,39 @@
  *       prevents the scheduler from being suspended indefinitely.
  **********************************************************************************************************************/
 
-#include <rs_rtc_logger/rs_rtc_logger_cfg.h> /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE */
+#include <rs_rtc_logger/rs_rtc_logger_cfg.h> /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE, RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
 #include "blinky_thread.h"
 #include "common_data.h"    /* g_external_irq9 */
-#include "hal_data.h"       /* g_uart0_ctrl, g_uart0_cfg */
+#include "hal_data.h"       /* g_uart0 (FSP-generated) */
+#include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h> /* g_uart0_preset (when PRESET_CONFIG_USE=1) */
 #include "r_icu.h"          /* R_ICU_ExternalIrqOpen/Enable */
 #include "r_sci_uart.h"     /* R_SCI_UART_Open, R_SCI_UART_Write */
 #include <string.h>         /* strlen() */
 /* board_leds.h included transitively: blinky_thread.h -> bsp_api.h -> board_cfg.h -> board.h */
+
+/* Preset-mode aware UART instance for the pre-demo banner below.
+ *
+ * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1 (default): rs_rtc_logger_Open()
+ * will bind g_uart0_preset — a standalone SCI0 config with fixed 115200-baud
+ * register values (rs_rtc_logger_data_fpb_ra6e2.c), independent of whatever
+ * the Stack Configurator currently has set for g_uart0. The banner below
+ * MUST open/write through that same instance, or the "ALREADY_OPEN ->
+ * close+reopen" handoff inside rs_rtc_logger_hal_uart_open() targets a
+ * *different* control block than the one the banner opened — banner/CLI
+ * output would then keep using whatever (possibly broken) baud rate is in
+ * the Stack Configurator while the logger's own event writes use the
+ * preset, a silent mismatch between demo output and logged events.
+ *
+ * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0: use the FSP-generated g_uart0
+ * directly, matching what ConfigGen()/Open() bind in that mode.
+ *
+ * demo_uart_write_blocking() in rs_rtc_logger_demo.c defines the identical
+ * macro for the same reason — keep both in sync if this changes. */
+#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
+ #define DEMO_UART_INSTANCE  (&g_uart0_preset)
+#else
+ #define DEMO_UART_INSTANCE  (&g_uart0)
+#endif
 
 extern void rs_rtc_logger_demo_main(void);
 
@@ -80,7 +105,7 @@ static void demo_banner_write(char const * p_str)
     if (0U == len) { return; }
 
     g_blinky_uart_tx_done = false;
-    R_SCI_UART_Write(&g_uart0_ctrl, (uint8_t const *)p_str, len);
+    R_SCI_UART_Write(DEMO_UART_INSTANCE->p_ctrl, (uint8_t const *)p_str, len);
 
     /* Spin until TX ISR sets the flag — typically <1 ms at 115200 baud */
     uint32_t timeout = 200000U;
@@ -93,11 +118,13 @@ static void demo_banner_setup(void)
     /* ── Step 1: Open UART with a temporary callback for the banner ─────── *
      * We open with a modified cfg that points to our local callback.
      * The RTC Event Logger will re-open the UART later (Close + Open) with its own
-     * callback, so there is no conflict.                                     */
+     * callback, so there is no conflict. Open/write through DEMO_UART_INSTANCE
+     * (see its definition above) so this matches whichever instance
+     * rs_rtc_logger_Open() will bind — preset or FSP-generated.           */
 
-    uart_cfg_t early_cfg = g_uart0_cfg;
+    uart_cfg_t early_cfg = *(DEMO_UART_INSTANCE->p_cfg);
     early_cfg.p_callback = demo_early_uart_callback;
-    fsp_err_t err = R_SCI_UART_Open(&g_uart0_ctrl, &early_cfg);
+    fsp_err_t err = R_SCI_UART_Open(DEMO_UART_INSTANCE->p_ctrl, &early_cfg);
     if (FSP_SUCCESS != err)
     {
         /* UART failed — halt visibly; LEDs will not blink */

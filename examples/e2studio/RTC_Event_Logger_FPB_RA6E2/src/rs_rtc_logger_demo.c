@@ -82,6 +82,28 @@
  * compiled on that same flag. */
 #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h>
 
+/* Preset-mode aware UART instance for demo_uart_write_blocking() below.
+ *
+ * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1 (default): rs_rtc_logger_Open()
+ * binds g_uart0_preset — a standalone SCI0 config with fixed 115200-baud
+ * register values, independent of whatever the Stack Configurator
+ * currently has set for g_uart0. All CLI writes here must go through that
+ * same instance, or CLI/status output would keep using whatever (possibly
+ * broken) baud rate is in the Stack Configurator while the logger's own
+ * event writes use the preset — a silent mismatch between demo output and
+ * logged events.
+ *
+ * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0: use the FSP-generated g_uart0
+ * directly, matching what ConfigGen()/Open() bind in that mode.
+ *
+ * blinky_thread_entry.c defines the identical macro for the pre-demo
+ * banner, for the same reason — keep both in sync if this changes. */
+#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
+ #define DEMO_UART_INSTANCE  (&g_uart0_preset)
+#else
+ #define DEMO_UART_INSTANCE  (&g_uart0)
+#endif
+
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -234,7 +256,7 @@ static void demo_uart_write_blocking(char const * p_str)
      * when the TX ISR fires for this specific transfer.              */
     g_logger_ctrl.tx_complete = false;
 
-    fsp_err_t err = R_SCI_UART_Write(&g_uart0_ctrl,
+    fsp_err_t err = R_SCI_UART_Write(DEMO_UART_INSTANCE->p_ctrl,
                                      (uint8_t const *)p_str,
                                      len);
     if (FSP_SUCCESS != err)
