@@ -16,7 +16,9 @@ This repo contains the RTC Event Logger
 │
 ├── docs
 │   └── README-RTC_EVENT_LOGGER.md
-│       └── Detailed documentation for RTC Event Logger implementation and design notes
+│   │   └── Detailed documentation for RTC Event Logger implementation and design notes
+│   └── BUILD.md
+│       └── Build and Test Instructions for Host and On-Target Unity Tests and Firmware for Boards (Meson + LLVM/Clang)
 │
 ├── examples
 │   └── e2studio
@@ -32,30 +34,46 @@ This repo contains the RTC Event Logger
 ├── meson_options.txt
 │   └── User-selectable build options (MCU, board, example, toolchain)
 │
-├── src
+├── firmware
+│   └── Meson based Build for Firmware Targets - Builds ELF targets per Board
 │
+├── src
+│   └── PES RTC Event Logger Source and Demo
 │
 ├── subprojects
-│   ├── cmsis.wrap
-│   │   └── Wrap file for CMSIS dependency (headers and core support)
-│   │
-    ├── pes-rtc-event-logger.wrap
-│   │   └── Wrap file for RTC Event Logger
-│   │
+│   ├── packagefiles
+│   │   └── 
+│   ├── unity
+│   ├── cmsis 
+│   ├── fsp
+│   ├── rm_comms_lock.patch
 │   └── unity.wrap
 │       └── Wrap file for Unity unit test framework
 │
 ├── tests
 │   ├── meson.build
 │   │   └── Test build configuration (host vs target tests, dependencies)
+│   ├── run_ut.robot
+│   │   └── Run On-Target Unity Firmware Tests
 │   │
 │   ├── stubs
-│   │   ├── bsp_api.h
-│   │       └── Minimal BSP stub definitions for host testing   
+│   │   ├── FreeRTOS.h
+│   │   ├── rs_rtc_logger_test_types.h
+│   │   ├── task.h
+│   │
+│   ├── target
+│   │   ├── syscalls_sci_uart.c
+│   │   ├── unity_config.h
+│   │   ├── unity_port_sci_uart.c
 │   │
 │   ├── test_main.c
-│       └── Entry point for host-based Unity test execution
-│
+│   │   └── Entry point for host-based Unity test execution
+│   ├── test_main_firmware.c
+│   │   └── Entry point for On-Target Unity test execution
+│   ├── test_rs_rtc_logger_core.c
+│   │   └── Unit Tests for Lifecycle state-machine transistions and EventTrigger enqueue, dequeue, overflow
+│   ├── test_rs_rtc_logger_format.c      
+│   │   └── Unit Tests for RTC Event Logger formatting engine
 │
 ├── toolchains
 │   ├── llvm-cortex-m23.ini
@@ -63,9 +81,6 @@ This repo contains the RTC Event Logger
 │   │
 │   └── llvm-cortex-m33.ini
 │       └── Meson cross file for Cortex-M33 (RA2/RA4/RA6 series)
-│
-└── tree.txt
-    └── Generated directory tree snapshot (for documentation/reference)
 
 ```
 
