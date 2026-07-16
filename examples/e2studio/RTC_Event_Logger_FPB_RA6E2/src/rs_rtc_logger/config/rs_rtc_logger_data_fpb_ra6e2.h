@@ -151,7 +151,11 @@ fsp_err_t rs_rtc_logger_ConfigGen(rs_rtc_logger_cfg_t   * p_cfg,
  * @retval FSP_SUCCESS                   Configuration is valid.
  * @retval FSP_ERR_ASSERTION             p_cfg is NULL.
  * @retval FSP_ERR_NOT_INITIALIZED       Required RTC or UART instance/config is missing.
- * @retval FSP_ERR_INVALID_HW_CONDITION  RTC carry_ipl exceeds RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT.
+ * @retval FSP_ERR_INVALID_HW_CONDITION  RTC carry_ipl/carry_irq, or a UART rxi/txi/tei/eri
+ *                                       ipl/irq, is disabled or has no NVIC vector allocated
+ *                                       (RASC removes the vector-table entry entirely when the
+ *                                       r_rtc/r_sci_uart stack is deleted, even with the
+ *                                       component left enabled — see rs_rtc_logger_data_fpb_ra6e2.c).
  * @retval FSP_ERR_INVALID_ARGUMENT      ts_format, line_term, or overflow_policy is out of range.
  *
  * @note Valid in any PES lifecycle state. Not ISR-safe.

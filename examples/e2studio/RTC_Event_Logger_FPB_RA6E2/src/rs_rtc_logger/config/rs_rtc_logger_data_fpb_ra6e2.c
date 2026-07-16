@@ -48,7 +48,7 @@ static const rtc_cfg_t g_rtc0_cfg_preset =
     .p_err_cfg          = NULL,           /* No error adjustment */
     .alarm_ipl          = (BSP_IRQ_DISABLED),
     .periodic_ipl       = (BSP_IRQ_DISABLED),
-    /* N-12 CRITICAL: carry_ipl MUST be strictly lower (higher preemption) than
+    /* Carry_ipl MUST be strictly lower (higher preemption) than
      * the IPL of every ISR that calls rs_rtc_logger_EventTrigger().
      * R_RTC_CalendarTimeGet() called from EventTrigger() spins waiting for the
      * carry ISR. If the calling ISR has higher priority (lower IPL number),
@@ -239,7 +239,12 @@ fsp_err_t rs_rtc_logger_ConfigGen (rs_rtc_logger_cfg_t   * p_cfg,
  * @retval      FSP_SUCCESS                   Configuration is valid.
  * @retval      FSP_ERR_ASSERTION             p_cfg is NULL.
  * @retval      FSP_ERR_NOT_INITIALIZED       Required RTC or UART instance/config is missing.
- * @retval      FSP_ERR_INVALID_HW_CONDITION  RTC carry_ipl exceeds RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT.
+ * @retval      FSP_ERR_INVALID_HW_CONDITION  RTC carry_ipl/carry_irq, or a UART rxi/txi/tei/eri
+ *                                            ipl/irq, is disabled or has no NVIC vector allocated
+ *                                            (see rs_rtc_logger_data_fpb_ra6e2.h — Onkar's
+ *                                            validation-test finding: RASC removes the vector-table
+ *                                            entry entirely when the r_rtc/r_sci_uart stack is
+ *                                            deleted, even with the component left enabled).
  * @retval      FSP_ERR_INVALID_ARGUMENT      ts_format, line_term, or overflow_policy is out of range.
  ****************************************************************************************************************/
 fsp_err_t rs_rtc_logger_ConfigCheck (rs_rtc_logger_cfg_t const * p_cfg)
@@ -260,10 +265,36 @@ fsp_err_t rs_rtc_logger_ConfigCheck (rs_rtc_logger_cfg_t const * p_cfg)
         return FSP_ERR_NOT_INITIALIZED;
     }
 
-    /* N-12: RTC carry interrupt priority must be strictly below the priority
-     * of any ISR that calls rs_rtc_logger_EventTrigger() — surfaced here for
-     * pre-Open() validation; re-checked at rs_rtc_logger_hal_rtc_open() time. */
-    if ((uint32_t) p_cfg->p_rtc->p_cfg->carry_ipl > RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT)
+    /* The RTC carry interrupt
+     * Must (a) have a real NVIC vector allocated by the FSP Stack
+     * Configurator, and (b) run at a priority strictly below every ISR that
+     * calls rs_rtc_logger_EventTrigger(). If the r_rtc "stack" has been
+     * removed from configuration.xml (module instance deleted, component
+     * left enabled), RASC deletes the vector-table entry / ISR trampoline
+     * for RTC_CARRY entirely — no ConfigGen()-produced value can restore a
+     * vector slot RASC never allocated (see PES_Validation_Test_Findings).
+     * Checking for FSP_INVALID_VECTOR / BSP_IRQ_DISABLED here converts that
+     * silent hang (inside R_RTC_CalendarTimeGet()) into a clear, immediate
+     * ConfigCheck() failure instead. */
+    if ((FSP_INVALID_VECTOR == p_cfg->p_rtc->p_cfg->carry_irq) ||
+        (BSP_IRQ_DISABLED   == (uint32_t) p_cfg->p_rtc->p_cfg->carry_ipl) ||
+        ((uint32_t) p_cfg->p_rtc->p_cfg->carry_ipl > RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT))
+    {
+        return FSP_ERR_INVALID_HW_CONDITION;
+    }
+
+    /* Same rationale, applied to the UART RXI/TXI/TEI/ERI interrupts: if the
+     * r_sci_uart stack has been removed, these fall back to
+     * FSP_INVALID_VECTOR / BSP_IRQ_DISABLED, and TX would silently stall
+     * after the first byte because no TX-complete interrupt can ever fire. */
+    if ((FSP_INVALID_VECTOR == p_cfg->p_uart->p_cfg->rxi_irq) ||
+        (FSP_INVALID_VECTOR == p_cfg->p_uart->p_cfg->txi_irq) ||
+        (FSP_INVALID_VECTOR == p_cfg->p_uart->p_cfg->tei_irq) ||
+        (FSP_INVALID_VECTOR == p_cfg->p_uart->p_cfg->eri_irq) ||
+        (BSP_IRQ_DISABLED   == (uint32_t) p_cfg->p_uart->p_cfg->rxi_ipl) ||
+        (BSP_IRQ_DISABLED   == (uint32_t) p_cfg->p_uart->p_cfg->txi_ipl) ||
+        (BSP_IRQ_DISABLED   == (uint32_t) p_cfg->p_uart->p_cfg->tei_ipl) ||
+        (BSP_IRQ_DISABLED   == (uint32_t) p_cfg->p_uart->p_cfg->eri_ipl))
     {
         return FSP_ERR_INVALID_HW_CONDITION;
     }
