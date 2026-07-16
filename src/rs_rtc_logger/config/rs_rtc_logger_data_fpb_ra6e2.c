@@ -48,7 +48,7 @@ static const rtc_cfg_t g_rtc0_cfg_preset =
     .p_err_cfg          = NULL,           /* No error adjustment */
     .alarm_ipl          = (BSP_IRQ_DISABLED),
     .periodic_ipl       = (BSP_IRQ_DISABLED),
-    /* N-12 CRITICAL: carry_ipl MUST be strictly lower (higher preemption) than
+    /* Carry_ipl MUST be strictly lower (higher preemption) than
      * the IPL of every ISR that calls rs_rtc_logger_EventTrigger().
      * R_RTC_CalendarTimeGet() called from EventTrigger() spins waiting for the
      * carry ISR. If the calling ISR has higher priority (lower IPL number),
@@ -265,8 +265,8 @@ fsp_err_t rs_rtc_logger_ConfigCheck (rs_rtc_logger_cfg_t const * p_cfg)
         return FSP_ERR_NOT_INITIALIZED;
     }
 
-    /* N-12 + hardening (per Onkar's validation-test review): the RTC carry
-     * interrupt must (a) have a real NVIC vector allocated by the FSP Stack
+    /* The RTC carry interrupt
+     * must (a) have a real NVIC vector allocated by the FSP Stack
      * Configurator, and (b) run at a priority strictly below every ISR that
      * calls rs_rtc_logger_EventTrigger(). If the r_rtc "stack" has been
      * removed from configuration.xml (module instance deleted, component
