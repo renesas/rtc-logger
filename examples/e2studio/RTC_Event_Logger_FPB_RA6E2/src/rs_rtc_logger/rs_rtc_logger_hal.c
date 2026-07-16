@@ -142,6 +142,20 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
             (void)p_rtc->p_api->close(p_rtc->p_ctrl);
             return err;
         }
+
+        /* BUG FIX (validation-test finding): RSTSR0.PORF is a sticky
+         * hardware flag — per the MCU register description, it is
+         * "Writable only to clear the flag. Confirm the value is 1 and
+         * then write 0." It is NOT cleared automatically on the next
+         * reset. Left unclear, every subsequent reset (including a
+         * genuine warm reset via the reset button) would ALSO read
+         * PORF == 1, wrongly re-enter this POR branch, and call
+         * clockSourceSet() again — which stops the counter and zeroes
+         * the calendar registers, silently destroying the retained time
+         * on what should have been a warm-reset retention path.
+         * Clear it now that we've consumed it, so the flag reflects only
+         * the reset that just occurred. */
+        R_SYSTEM->RSTSR0_b.PORF = 0U;
     }
     else
     {

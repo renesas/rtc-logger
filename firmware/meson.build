@@ -5,12 +5,12 @@
 #   rtc_event_logger_unittest_on_<board>_<compiler>.elf — Unity test firmware
 #
 # Supports: ra4e2-fpb (Cortex-M33) and ra6e2-fpb (Cortex-M33 + TrustZone)
-
+ 
 fs = import('fs')
 
 if not meson.is_cross_build()
   subdir_done()
-endif 
+endif
 
 subdir('generated')
 
@@ -131,6 +131,33 @@ else
   # ra4e2 (default)
   common_defines += ['-DRS_RTC_LOGGER_TARGET_RA4E2=1']
 endif
+
+# BSP_CFG_RTC_USED override (validation-test finding, RTC time-retention).
+#
+# ra_cfg/fsp_cfg/bsp/bsp_cfg.h is generated fresh into rasc_gen_base
+# (the build directory, see below) every time the RASC-equivalent generation
+# step runs for a board — it is NOT checked into this repo. If that
+# generation step ever runs against a configuration.xml with the r_rtc
+# *stack* removed (e.g. for the ConfigGen/ConfigCheck validation test),
+# it emits `#define BSP_CFG_RTC_USED (RA_NOT_DEFINED)` instead of `(1)`.
+#
+# bsp_clocks.c gates an unconditional RTC peripheral reset on this exact
+# flag (`#if !BSP_CFG_RTC_USED ... R_RTC->RCR2_b.RESET = 1; ...`), executed
+# during SystemInit()/BSP startup — before main(), and long before this
+# PES's own rs_rtc_logger_Open()/ConfigGen() ever run. With the flag at 0,
+# the calendar counter is forced back to its epoch default (2000-01-01)
+# on every single boot, cold or warm, regardless of anything ConfigGen()
+# supplies — no PES-level code can prevent or undo a reset that already
+# executed before it was called.
+#
+# bsp_cfg.h guards the RASC-generated value with #ifndef, so defining it
+# here on the compiler command line takes precedence unconditionally,
+# independent of whatever the r_rtc stack state happens to be in
+# configuration.xml for either board. This must NOT be "fixed" by editing
+# the generated bsp_cfg.h directly — rasc_gen_base lives in the build
+# directory and is regenerated, so any hand-edit there is silently lost on
+# the next `meson setup`/regeneration.
+common_defines += ['-DBSP_CFG_RTC_USED=1']
 
 cc = meson.get_compiler('c')
 compiler_id = cc.get_id()
