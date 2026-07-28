@@ -1,5 +1,7 @@
 # Build & Test Instructions — RTC Event Logger (Meson + LLVM/Clang)
 
+> Note: For importing/building via **e2studio** instead of the command line, see [EXAMPLES_GUIDE.md](EXAMPLES_GUIDE.md).
+
 Supports:
 - ✅ Host-based **unit tests** (Windows + Linux, no hardware)
 - ✅ Embedded firmware for **FPB-RA4E2** (Cortex-M33, R7FA4E2B93CFM)
@@ -102,8 +104,8 @@ variant) which provides `clang.exe` targeting `arm-none-eabi` with the
 correct bare-metal sysroot headers (`setjmp.h`, `string.h`, etc.) for
 Cortex-M33 firmware cross builds.
 Download: https://www.renesas.com/en/software-tool/e2studio
-Default install path:
-`C:\Users\<username>\AppData\Local\Programs\Renesas\RA\e2studio_v2025-12_fsp_v6.4.0\`
+Remember the Default install path (for example) :
+`C:\Users\<username>\AppData\Local\Programs\Renesas\RA\e2studio_v*_fsp_v6.5.0\`
 
 ATfE `clang.exe` is at:
 `...\toolchains\llvm_arm\ATfE-21.1.1-Windows-x86_64\bin\clang.exe`
@@ -159,10 +161,10 @@ Update `scripts/env.ps1` with the install path.
 
 ```
 C:\Program Files\LLVM\bin\                          # generic LLVM (clang-cl)
-C:\Users\MyPC\AppData\Local\Programs\Renesas\RA\
-  e2studio_v2025-12_fsp_v6.4.0\toolchains\
+C:\Users\<username>\AppData\Local\Programs\Renesas\RA\
+  e2studio_v*_fsp_v6.5.0\toolchains\
   llvm_arm\ATfE-21.1.1-Windows-x86_64\bin\          # ATfE (clang)
-C:\Users\MyPC\AppData\Local\Programs\Python\Python311\
+C:\Users\<username>\AppData\Local\Programs\Python\Python311\
 C:\Renesas\RA\sc_v2026-04.2_fsp_v6.5.0\eclipse\    # RASC v6.5.0
 ```
 
