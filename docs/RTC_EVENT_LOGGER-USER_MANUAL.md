@@ -21,13 +21,13 @@ guides — see the [Documentation Map](#documentation-map) below.
 | Document | What it covers | Read this when you are... |
 |---|---|---|
 | **RTC_EVENT_LOGGER-USER_MANUAL.md** *(this file)* | Use case, core capabilities, dual operating modes, reusability model | Evaluating the module for the first time |
+| [EXAMPLES_GUIDE.md](EXAMPLES_GUIDE.md) | Importing/building the example project, expected VCOM output | Running the reference demo for the first time |
+| [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Reference board assumptions, required non-default FSP settings, adapting to a new board, dependencies | Porting to your own board or peripherals |
 | [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md) | Every function — public **and** private/internal, each clearly tagged — naming conventions, state gating, hot-safe rules | Writing code against, or debugging inside, `rs_rtc_logger` |
 | [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) | Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations | Wiring the RTC Event Logger into your application |
-| [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md) | Reference board assumptions, required non-default FSP settings, adapting to a new board, dependencies | Porting to your own board or peripherals |
 | [FILE_GUIDE.md](FILE_GUIDE.md) | Core vs. demo vs. FSP-generated files, naming conventions, what is safe to modify | Deciding what to copy, keep, or replace |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Lifecycle state machine, function state gating, event/telemetry flow | Understanding internal design or debugging state issues |
 | [BEHAVIOR_AND_PERFORMANCE.md](BEHAVIOR_AND_PERFORMANCE.md) | Demonstrated behavior, ISR/UART timing, RAM budget, clock accuracy | Validating the module meets your timing/memory budget |
-| [EXAMPLES_GUIDE.md](EXAMPLES_GUIDE.md) | Importing/building the example project, expected VCOM output | Running the reference demo for the first time |
 | [REUSABILITY_GUIDE.md](REUSABILITY_GUIDE.md) | Adapting the core logic to other event sources and use cases | Reusing the module for a different use case |
 | [RELEASE_NOTES.md](RELEASE_NOTES.md) | What changes between releases, merge guidance | Adopting a newer release of this module |
 | [BUILD.md](BUILD.md) | Meson/LLVM host and firmware build instructions, FSP v6.5.0 migration notes, troubleshooting | Building, testing, or flashing from the command line |
