@@ -60,7 +60,7 @@ The core challenge the module solves is two-fold. First, RTC timestamp capture m
 | Medical Devices (Wearables) | Anomaly detection, power-on status retention |
 | Cold Chain & Asset Tracking | Temperature threshold crossings, packet drops |
 
-The module encapsulates the integration of two FSP HAL drivers — RTC (`r_rtc` / `rtc_instance_t`) and UART (`r_sci_uart` / `uart_instance_t`) — into a single reusable module. The External IRQ driver (`r_icu`) is owned and managed by the application layer; any interrupt source calls `rs_rtc_logger_EventTrigger()` to trigger a timestamped log entry. Developers do not need to manually orchestrate RTC reads, timestamp formatting, string composition, and UART transmission in every project.
+The module encapsulates the RTC HAL driver (`r_rtc` / `rtc_instance_t`) directly, and reaches UART output through a shared, vendored Buffered I/O UART driver rather than opening a `uart_instance_t` itself (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)). The External IRQ driver (`r_icu`) is owned and managed by the application layer; any interrupt source calls `rs_rtc_logger_EventTrigger()` to trigger a timestamped log entry. Developers do not need to manually orchestrate RTC reads, timestamp formatting, string composition, and UART transmission in every project.
 
 ---
 
@@ -74,8 +74,8 @@ On every `rs_rtc_logger_EventTrigger()` call, the module immediately reads the c
 **Event Buffering via Circular Buffer**
 Captured events (timestamp + sequence count + payload) are stored in a static circular buffer inside `rs_rtc_logger_ctrl_t`. The buffer decouples ISR-time capture from UART transmit time. `EventTrigger()` returns immediately after enqueuing; it never blocks the calling ISR context. Buffer depth defaults to 8 entries and is configurable at build time.
 
-**Asynchronous UART Transmission**
-A FreeRTOS consumer task (module-owned in Example Project mode, application-owned in Expert mode) drains the circular buffer and calls `rs_rtc_logger_Write()` to format and transmit each entry over UART. All UART writes are non-blocking: the write is initiated and the consumer task waits on a task notification from the UART TX-complete callback before proceeding to the next entry.
+**UART Transmission via Shared Buffered I/O**
+A FreeRTOS consumer task (module-owned in Example Project mode, application-owned in Expert mode) drains the circular buffer and calls `rs_rtc_logger_Write()` to format and transmit each entry over UART. UART writes go through `fwrite()`/`fflush(stdout)` on a shared stdio stream owned by a vendored Buffered I/O UART driver, rather than through a UART instance this module opens and tracks itself. The call returns once the write has been safely submitted (the driver briefly serializes internally if a previous transmission is still in flight). See [ARCHITECTURE.md](ARCHITECTURE.md#3-event-capture-and-telemetry-flow) for the full flow and [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update) for what changed.
 
 **Formatted Output**
 The default output format is:
@@ -89,10 +89,10 @@ For example: `[2024-07-15 14:30:05] Event Detected #3`
 Additional formats are available: time-only `[HH:MM:SS]`, compact `[YYYYMMDD-HHMMSS]`, and syslog-style `[Mon DD HH:MM:SS]`. Format is selectable at build time or changeable at runtime via `rs_rtc_logger_TimestampFormatSet()`.
 
 **Warm Reset Preservation**
-On a warm reset (any reset other than power-on reset), the RTC continues running and retains its calendar configuration. The module relies on the FSP `r_rtc` build-time property *Set Source Clock in Open* being set to `Disabled`, so `R_RTC_ClockSourceSet()` is called only when a power-on reset is detected. The event sequence counter is preserved by the reference application using a `BSP_SECTION_NOINIT` magic-sentinel pattern and restored via `rs_rtc_logger_SeqCountSet()` after `Open()`.
+On a warm reset (any reset other than power-on reset), the RTC continues running and retains its calendar configuration. The module relies on the FSP `r_rtc` build-time property *Set Source Clock in Open* being set to `Disabled`, so `R_RTC_ClockSourceSet()` is called only when a power-on reset is detected. The event sequence counter is preserved by the reference application using a `BSP_SECTION_NOINIT` magic-sentinel pattern and restored via `rs_rtc_logger_SeqCountSet()` after `Open()`. Power-on-reset detection reads the sticky `R_SYSTEM->RSTSR0_b.PORF` flag and then explicitly clears it, so the flag accurately reflects only the reset that just occurred and every subsequent reset — including genuine warm resets — is correctly identified rather than being re-treated as another power-on reset. See [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update).
 
 **Debounced Event Source (Reference Application)**
-The reference application's user-button ISR callback (`demo_button_s1_callback()`) applies a software debounce, in addition to the r_icu hardware digital filter, before calling `rs_rtc_logger_EventTrigger()`. This is demo-layer behavior, not core module behavior — the core module accepts every `EventTrigger()` call it receives regardless of source. See [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#debounce-configuration-reference-application) for tuning details.
+The reference application's user-button ISR callback (`demo_button_s1_callback()`) applies a software debounce, in addition to the r_icu hardware digital filter, before calling `rs_rtc_logger_EventTrigger()`. This is demo-layer behavior, not core module behavior — the core module accepts every `EventTrigger()` call it receives regardless of source. See [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#6-debounce-configuration-reference-application) for tuning details.
 
 **LOCO Clock Source**
 The RTC is clocked from the LOCO (Low-speed On-Chip Oscillator), which is the FSP default for the RA4E2. LOCO is less accurate than a 32.768 kHz sub-clock crystal (which is fitted on the FPB-RA4E2 as Y2 but is not used by default). For applications requiring higher time accuracy, the sub-clock alternative is documented in [REUSABILITY_GUIDE.md](REUSABILITY_GUIDE.md). A runtime LOCO drift calibration function `rs_rtc_logger_LocoCalibrationSet()` is provided to adjust the RFRL register — approximately 3906 ppm per RFRL unit, which is roughly 3.5 seconds per 15 minutes per unit.
@@ -127,8 +127,9 @@ The following table identifies which files are reusable core code and which belo
 
 | Layer | Location | Reuse Expectation |
 |---|---|---|
-| **Core** | `src/rs_rtc_logger/` (`rs_rtc_logger.c/.h`, `_types.h`, `_cfg.h`, `_format.c/.h`, `_hal.c/.h`) | Copy into your project; core logic |
-| **Preset Config** | `src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_<board>.c/.h` | Reference only — do not edit; for custom boards, use the FSP Stack Configurator path instead (see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)) |
+| **Core** | `src/rs_rtc_logger/` (`rs_rtc_logger.c/.h`, `_types.h`, `_cfg.h`, `_format.c/.h`, `_hal.c/.h`, `_stdio_console.c/.h`) | Copy into your project; core logic. `_stdio_console.c/.h` is new — a required adapter to the vendored UART driver below, not optional demo glue (see [FILE_GUIDE.md](FILE_GUIDE.md)) |
+| **Vendored** | `src/rs_stdio_uart_buffer_io/` | Buffered I/O UART driver; use verbatim, do not edit — see [FILE_GUIDE.md](FILE_GUIDE.md#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit) |
+| **Preset Config** | `src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_<board>.c/.h` | RTC instance only. Reference only — do not edit; for custom boards, use the FSP Stack Configurator path instead (see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)) |
 | **Reference App** | `src/rs_rtc_logger_demo.c`, `src/blinky_thread_entry_ra4e2.c` / `_ra6e2.c`, `src/hal_warmstart.c`, `src/fault_handler.c`, `src/hal_entry.c` | Adapt or replace entirely for your application |
 | **FSP Generated** | `ra/`, `ra_gen/` directories (example projects) / `firmware/generated/` (Meson build) | Do not edit manually; regenerate via e2studio FSP tooling or `rasc_generate` Meson target |
 

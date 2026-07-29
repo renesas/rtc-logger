@@ -6,9 +6,9 @@
 
 /**
  * @file rs_rtc_logger_format.h
- * @brief Internal timestamp formatting engine for the RTC Event Logger PES.
+ * @brief Internal timestamp formatting engine for the RTC Event Logger.
  *
- * This header is an internal PES interface — it is not part of the public API.
+ * This header is an internal RTC Event Logger interface — it is not part of the public API.
  * It declares the pure formatting function that converts rtc_time_t structures
  * to ASCII timestamp strings. No I/O, no side effects. Integer arithmetic only
  * (FR-014). Fully unit-testable in host isolation.

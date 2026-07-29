@@ -2,12 +2,12 @@
 
 ## 1. What This PES Does
 
-The RTC Event Logger PES demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the PES timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and asynchronously transmits a formatted line over UART (VCOM) without blocking the calling ISR.
+The RTC Event Logger PES demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the PES timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and transmits a formatted line over a shared UART (VCOM) through a vendored Buffered I/O UART driver, without blocking the calling ISR.
 
 The reference implementation demonstrates:
 
 - ISR-safe RTC timestamp capture, decoupled from UART transmission via a circular buffer
-- Non-blocking, asynchronous UART transmission
+- UART transmission via a shared Buffered I/O UART driver (stdio-based; see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md#2-buffered-io-over-uart-update)) — the same UART serves both the CLI console and event logging
 - Four selectable timestamp formats (ISO 8601, time-only, compact, syslog-style)
 - Warm-reset preservation of RTC configuration and event sequence numbering
 - LOCO oscillator drift calibration
@@ -16,11 +16,12 @@ The reference implementation demonstrates:
 This repository contains:
 
 - Reusable PES core source code (`src/rs_rtc_logger/`)
+- A vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`)
 - Board-specific reference/preset configuration for FPB-RA4E2 and FPB-RA6E2
 - Complete e2studio example projects for both boards
 - A Meson + LLVM/Clang build for host unit tests and command-line firmware builds
 - Integration, configuration, and troubleshooting documentation
-- Host and on-target unit test suites
+- Host and on-target unit test suites (51 Unity tests)
 
 ---
 
@@ -44,7 +45,7 @@ Use this PES if you want to:
 | Reference Board (secondary) | FPB-RA6E2 |
 | Device Family | RA4E2 / RA6E2 (Cortex-M33) |
 | RTC Driver | `r_rtc` |
-| UART Driver | `r_sci_uart` (SCI0, VCOM, 115200 8N1) |
+| UART Driver | `r_sci_uart` (SCI0, VCOM, 115200 8N1), owned by the vendored Buffered I/O UART driver — see [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md) |
 | External IRQ | `r_icu` (application-owned; User Switch S1) |
 | RTOS | FreeRTOS (bundled with FSP v6.5.0) |
 | FSP Baseline | v6.5.0 |
@@ -61,8 +62,8 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 ├── README.md                     ← This file: high-level overview, quick start, documentation map
 │
 ├── docs/
-│   ├── RTC_EVENT_LOGGER-USER_MANUAL.md  ← Start here: use case, core capabilities, documentation map
-│   ├── FUNCTIONS_GUIDE.md                ← Function reference — public and private/internal, each tagged
+│   ├── RTC_EVENT_LOGGER-USER_MANUAL.md   ← Start here: use case, core capabilities, documentation map
+│   ├── FUNCTIONS_GUIDE.md               ← Function reference — public and private/internal, each tagged; naming conventions
 │   ├── INTEGRATION_GUIDE.md              ← Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations
 │   ├── CONFIGURATION_GUIDE.md            ← Reference board config, adapting to your board, dependencies
 │   ├── FILE_GUIDE.md                     ← Core vs. demo vs. FSP-generated files; what is safe to modify
@@ -83,15 +84,22 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
 │
 ├── src/
-│   ├── rs_rtc_logger/              ← PES core source and per-board preset configuration
+│   ├── rs_rtc_logger/              ← PES core source and per-board RTC preset configuration
 │   │   ├── rs_rtc_logger.c / .h
 │   │   ├── rs_rtc_logger_cfg.h
 │   │   ├── rs_rtc_logger_format.c / .h
 │   │   ├── rs_rtc_logger_hal.c / .h
+│   │   ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter to the vendored Buffered I/O UART driver
 │   │   ├── rs_rtc_logger_types.h
 │   │   └── config/
-│   │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h
-│   │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h
+│   │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance only (no UART preset)
+│   │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance only (no UART preset)
+│   ├── rs_stdio_uart_buffer_io/     ← Vendored Buffered I/O UART driver, used unmodified
+│   │   ├── r_byteq.c / .h
+│   │   ├── rs_stdio_uart.c / .h
+│   │   ├── syscalls_picolib_stdio_to_uart.c
+│   │   ├── stdio_uart_config_ra4e2_fpb.c
+│   │   └── stdio_uart_config_ra6e2_fpb.c
 │   ├── rs_rtc_logger_demo.c        ← Reference application (shared by both boards)
 │   ├── blinky_thread_entry_ra4e2.c / _ra6e2.c   ← Per-board FreeRTOS thread entry
 │   ├── hal_entry.c                 ← FSP v6.5.0 application hook (Meson build only)
@@ -127,8 +135,7 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 
 > **Note:** A top-level `meson.build` / `meson_options.txt` and a `subprojects/` directory
 > (holding the `unity`, `fsp`, and `cmsis` Meson wraps) are required to drive the builds
-> described in [`docs/BUILD.md`](docs/BUILD.md), but were not present in this source snapshot.
-> Confirm they exist at the repository root before running the Meson commands in that guide.
+> described in [`docs/BUILD.md`](docs/BUILD.md)
 
 ---
 
@@ -144,7 +151,7 @@ examples/e2studio/RTC_Event_Logger_FPB_RA4E2
 3. Confirm the required FSP version (v6.5.0).
 4. Build the project (default: Example Project mode).
 5. Program the target board (**Run → Debug As → Renesas GDB Hardware Debugging**).
-6. Open a serial terminal on the J-Link virtual COM port at **115200 8N1**. In Setup Terminal -> Set New-line Receive to **Auto**
+6. Open a serial terminal on the J-Link virtual COM port at **115200 8N1**.
 7. Follow the date/time and LOCO calibration prompts.
 8. Press User Switch **S1** on the board to trigger a logged event.
 
@@ -155,15 +162,15 @@ See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output,
 ## 6. Key Features
 
 - ISR-safe, non-blocking event capture via `rs_rtc_logger_EventTrigger()`.
-- Static circular event buffer — no dynamic memory allocation anywhere in the PES.
-- Asynchronous, non-blocking UART transmission with task-notification-based completion.
+- Static circular event buffer — no dynamic memory allocation in the PES core itself.
+- UART transmission via a shared Buffered I/O UART driver (vendored, used unmodified) — the same UART serves both CLI console and event logging.
 - Four selectable timestamp formats; runtime-switchable.
 - Warm-reset preservation of RTC configuration and event sequence count.
 - LOCO oscillator drift calibration at runtime.
 - Two operating modes: Example Project (simple) and Expert (full lifecycle control).
-- Reference-board preset configuration for two boards (FPB-RA4E2, FPB-RA6E2).
+- Reference-board configuration for two boards (FPB-RA4E2, FPB-RA6E2): RTC preset plus a Buffered I/O UART board config for each.
 - Software debounce for the reference application's button event source.
-- Host-based Unity unit tests plus on-target Unity test firmware.
+- Host-based Unity unit tests plus on-target Unity test firmware (predates the Buffered I/O update — see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md#2-buffered-io-over-uart-update)).
 
 ---
 
@@ -182,7 +189,7 @@ rs_rtc_logger_EventTrigger(&g_logger_ctrl, (uint8_t const *)"Event Detected", 14
 ### Expert Path (full lifecycle control)
 
 ```c
-rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 rs_rtc_logger_ConfigCheck(&g_logger_cfg);
 rs_rtc_logger_Open(&g_logger_ctrl, &g_logger_cfg);
 rs_rtc_logger_Start(&g_logger_ctrl);
@@ -250,8 +257,9 @@ Current validated scope does not imply support for:
 
 - Power-down RTC retention on FPB-RA4E2 (no VBATT pin/circuit on this board — see [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md)).
 - High-accuracy timekeeping out of the box — the default LOCO clock source drifts several hundred to several thousand ppm; the sub-clock (SOSC) alternative requires manual adaptation (see [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md)).
-- Boards other than FPB-RA4E2 / FPB-RA6E2 without creating new preset configuration or switching to the FSP Stack Configurator path.
+- Boards other than FPB-RA4E2 / FPB-RA6E2 without creating new preset configuration (RTC) and a new Buffered I/O UART board config file (UART), or switching to the FSP Stack Configurator path for the RTC side.
 - Event sources other than the reference application's debounced button without independently deciding on deglitch/debounce needs for the new source.
+- The core module itself performs no dynamic allocation, but the vendored Buffered I/O UART driver calls `malloc()`/`free()` internally (see [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md)).
 
 ---
 

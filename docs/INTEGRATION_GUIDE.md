@@ -1,5 +1,6 @@
 # Integration Guide
 
+> Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map).
 > This guide covers **how to wire the PES into your application** — initialization order, task/RTOS integration, and multi-instance considerations. For **adapting the core logic to a different event source or use case**, see [REUSABILITY_GUIDE.md](REUSABILITY_GUIDE.md). For the functions referenced below, see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md).
 
 ## Table of Contents
@@ -8,7 +9,7 @@
 2. [Expert Path Integration (Full Lifecycle Control)](#2-expert-path-integration-full-lifecycle-control)
 3. [Warm-Reset Integration Ordering](#3-warm-reset-integration-ordering)
 4. [Task and RTOS Integration](#4-task-and-rtos-integration)
-5. [Multi-Instance Considerations](#5-multi-instance-considerations)
+5. [Shared UART and Multi-Instance Considerations](#5-shared-uart-and-multi-instance-considerations)
 6. [Firmware-Update Integration Pattern (Expert Mode)](#6-firmware-update-integration-pattern-expert-mode)
 
 ---
@@ -20,8 +21,8 @@ This is the recommended starting point for most integrations. Set `RS_RTC_LOGGER
 Recommended call order, from your FreeRTOS thread entry:
 
 ```c
-/* 1. Bind HAL instances (preset or FSP Stack Configurator) */
-rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+/* 1. Bind the RTC HAL instance (preset or FSP Stack Configurator) */
+rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 
 /* 2. Optional but recommended: validate configuration early */
 fsp_err_t err = rs_rtc_logger_ConfigCheck(&g_logger_cfg);
@@ -38,7 +39,9 @@ R_ICU_ExternalIrqEnable(&g_external_irq_ctrl);
 rs_rtc_logger_EventTrigger(&g_logger_ctrl, p_data, length);
 ```
 
-`rs_rtc_logger_Open()` and `rs_rtc_logger_Start()` are called automatically on the first `EventTrigger()` — you do not call them yourself in this mode. See [ARCHITECTURE.md](ARCHITECTURE.md#public-function-state-gating) footnote 1 for exactly what happens on that first call.
+> `rs_rtc_logger_ConfigGen()` takes an RTC instance. The shared UART is opened automatically the first time your application makes any stdio call (`printf`/`getchar`/`fflush`), or deterministically inside `rs_rtc_logger_Open()` itself via `rs_rtc_logger_hal_uart_open()`. You do not need to open it yourself. See [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update).
+
+`rs_rtc_logger_Open()` and `rs_rtc_logger_Start()` are called automatically on the first `EventTrigger()` — you do not call them yourself in this mode. See [ARCHITECTURE.md](ARCHITECTURE.md#2-public-function-state-gating) footnote 1 for exactly what happens on that first call.
 
 **Ordering constraint:** Step 3 (`EP_PrepareConsumerTask`) must complete *before* step 4 (enabling the interrupt), because `xTaskCreateStatic()` must not be called from ISR context and the PES has no way to defer task creation if the ISR fires first.
 
@@ -50,10 +53,11 @@ Set `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE = 0`. The application owns every tran
 
 ```c
 /* 1. Bind and validate configuration */
-rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 rs_rtc_logger_ConfigCheck(&g_logger_cfg);
 
-/* 2. Open — validates RTC oscillator, opens RTC then UART */
+/* 2. Open — validates RTC oscillator; ensures the shared Buffered I/O UART
+ *    driver is initialized and validated (see rs_rtc_logger_hal_uart_open()) */
 rs_rtc_logger_Open(&g_logger_ctrl, &g_logger_cfg);
 
 /* 3. Restore warm-reset state, if applicable — see Section 3 below */
@@ -109,7 +113,7 @@ In Example Project mode, `Open()`/`Start()` happen automatically inside the defe
 | Consumer task ownership | PES-owned (internal static task, created by `rs_rtc_logger_EP_PrepareConsumerTask()`) | Application-owned |
 | Task stack size | `RS_RTC_LOGGER_CFG_TASK_STACK_SIZE` (default 2048 bytes) | Sized by your own task creation |
 | Task priority | `RS_RTC_LOGGER_CFG_TASK_PRIORITY` (default `tskIDLE_PRIORITY + 1`) | Set by your own task creation |
-| UART TX timeout | `RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS` (default 1000 ms), guards the internal task | Your responsibility to guard if desired |
+| Consumer task wake interval | `RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS` (default 1000 ms) — periodic wake-up bound on `ulTaskNotifyTake()`, not a completion timeout (writes are synchronous — see [ARCHITECTURE.md](ARCHITECTURE.md#3-event-capture-and-telemetry-flow)) | Your responsibility to guard if desired |
 | FreeRTOS heap scheme | `heap_4` (or `heap_3`) required for `xTaskCreateStatic()` | Same requirement applies if you use static allocation |
 | `configSUPPORT_STATIC_ALLOCATION` | Must be `1` | Only required if your own task uses static allocation |
 
@@ -117,16 +121,16 @@ Tune `RS_RTC_LOGGER_CFG_TASK_PRIORITY` relative to your other application tasks 
 
 ---
 
-## 5. Multi-Instance Considerations
+## 5. Shared UART and Multi-Instance Considerations
 
-The reference implementation and its preset configuration are built and validated for **single-instance use** — one `rs_rtc_logger_ctrl_t` per application. The UART ISR callback (`rs_rtc_logger_uart_callback()`) locates its control block through `rs_rl_hal_find_ctrl()` (see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#-rs_rl_hal_find_ctrl--private)), which:
+**The RTC Event Loggers uses a Buffered I/O over UART driver** (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)). The RTC Event Logger component does not open, own, or register a callback for a UART instance.
 
-1. First checks `p_args->p_context` from the UART callback arguments — this is the **multi-instance-safe path**.
-2. Falls back to a module-global pointer (`gp_rs_rl_uart_ctrl`) — set by whichever instance most recently called `rs_rtc_logger_hal_uart_open()` — which is **only safe for a single instance**.
+The shared physical UART is owned by the **vendored Buffered I/O UART driver** (`src/rs_stdio_uart_buffer_io/`), and both the RTC Event Logger's log output and the reference application's CLI console write through the *same* stdio stream (`stdout`), via `fwrite()`/`fflush()`. This has two practical implications for integration:
 
-If your application needs more than one `rs_rtc_logger` instance (e.g. logging to two different UARTs), you must populate the `p_context` field of **each** UART instance's configuration (in `configuration.xml` or your hardware config file) with the address of that instance's own `rs_rtc_logger_ctrl_t`, so the callback can disambiguate. Without this, the second instance to call `Open()` silently overwrites the fallback pointer and the first instance's UART callback will resolve to the wrong control block.
+1. **Single shared UART, by design.** The vendored driver is written around one physical UART instance (`g_uart_jlob_vcom`) and one pair of RX/TX byte queues. If your application needs the RTC Event Logger to log to a *different* UART than your CLI console uses, you would need to either: (a) run two independent copies of the vendored driver bound to different UART instances (not a supported out-of-the-box configuration — the driver's global byte-queue state, described in `r_byteq.c`, is written for a single instance), or (b) have the RTC Event Logger's log lines share the same stream as your console, as the reference application does.
+2. **Multiple `rs_rtc_logger_ctrl_t` instances within one application** are possible in principle (the core module itself has no static state that assumes a single control block — see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md)), but since all instances would write through the same shared stdio stream, their log lines would interleave on the same physical UART. This has not been validated by the reference implementation; treat it as a case-by-case adaptation.
 
-This module has not been validated with multiple concurrent instances; treat multi-instance use as a case-by-case adaptation, not a supported out-of-the-box configuration.
+If you need genuinely independent UART channels for different purposes (e.g. one for logging, one for a separate protocol), do not attempt to share the vendored driver across them — give the second channel its own `uart_instance_t` opened directly through the FSP HAL, bypassing the Buffered I/O UART driver and `rs_rtc_logger_stdio_console.c` entirely for that channel.
 
 ---
 

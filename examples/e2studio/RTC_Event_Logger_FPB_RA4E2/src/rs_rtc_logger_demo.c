@@ -53,26 +53,21 @@
  *   - "Ready. Press S1 to log an event."
  *
  * Log message completion notes:
- *   EP mode:    All status strings are printed (TX confirmed) BEFORE
- *               rs_rtc_logger_EventTrigger() is called.  EventTrigger()
- *               wakes the consumer task which calls UART close()+reopen();
- *               any in-flight TX would be aborted mid-string at that point.
- *   Expert mode: rs_rtc_logger_Open() is called synchronously from the CLI
- *               task, always after a demo_uart_write_blocking() that has
- *               already confirmed TX_COMPLETE — no race condition exists
- *               and no special ordering is required.
+ *   The shared VCOM UART (g_uart_jlob_vcom) is opened once by the Buffered
+ *   I/O UART driver and never closed for the life of the application.
+ *   Ordering between console output and log-line output is guaranteed by
+ *   that driver's own internal serialization inside fflush().
  */
 
 #include <rs_rtc_logger/rs_rtc_logger.h>
 #include <rs_rtc_logger/rs_rtc_logger_cfg.h> /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE, RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
 #include "common_data.h"       /* g_external_irq9 */
-#include "hal_data.h"          /* g_rtc0, g_uart0 (FSP-generated) */
-#include "r_sci_uart.h"        /* R_SCI_UART_Write */
+#include "hal_data.h"          /* g_rtc0 (FSP-generated) */
 
 /* Configuration path (Section 10.1):
  *   PRESET_CONFIG_USE = 1 (default): ConfigGen uses _preset instances from
  *     the board config file — no FSP Stack Configurator re-run required.
- *   PRESET_CONFIG_USE = 0: ConfigGen uses FSP-generated g_rtc0 / g_uart0.
+ *   PRESET_CONFIG_USE = 0: ConfigGen uses FSP-generated g_rtc0.
  *
  * rs_rtc_logger_ConfigGen()/ConfigCheck()/ConfigGetSize() live in
  * board config header (moved from rs_rtc_logger.h/.c) and are declared
@@ -82,27 +77,15 @@
  * compiled on that same flag. */
 #include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h>
 
-/* Preset-mode aware UART instance for demo_uart_write_blocking() below.
- *
- * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1 (default): rs_rtc_logger_Open()
- * binds g_uart0_preset — a standalone SCI0 config with fixed 115200-baud
- * register values, independent of whatever the Stack Configurator
- * currently has set for g_uart0. All CLI writes here must go through that
- * same instance, or CLI/status output would keep using whatever (possibly
- * broken) baud rate is in the Stack Configurator while the logger's own
- * event writes use the preset — a silent mismatch between demo output and
- * logged events.
- *
- * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0: use the FSP-generated g_uart0
- * directly, matching what ConfigGen()/Open() bind in that mode.
- *
- * blinky_thread_entry.c defines the identical macro for the pre-demo
- * banner, for the same reason — keep both in sync if this changes. */
-#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
- #define DEMO_UART_INSTANCE  (&g_uart0_preset)
-#else
- #define DEMO_UART_INSTANCE  (&g_uart0)
-#endif
+/* All console I/O below goes through rs_rtc_logger_stdio_console.c, which in
+ * turn goes through the Buffered I/O UART driver's stdio stream
+ * bound to g_uart_jlob_vcom. rs_rtc_logger_ConfigGen() takes only an RTC
+ * instance (see the call sites below); this component never opens, writes,
+ * or validates a uart_instance_t. The Buffered I/O UART driver validates
+ * its own configuration independently
+ * (RS_STDIO_UART_CheckApplicationConfiguration(), wired in through
+ * rs_rtc_logger_console_init()). */
+#include "rs_rtc_logger/rs_rtc_logger_stdio_console.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -134,10 +117,6 @@
 #define DEMO_INIT_PAYLOAD               "INIT"
 #define DEMO_INIT_PAYLOAD_LEN           (sizeof(DEMO_INIT_PAYLOAD) - 1U)
 
-/** RX line buffer — filled one byte at a time by UART_EVENT_RX_CHAR ISR */
-#define DEMO_RX_BUF_SIZE                (64U)
-#define DEMO_TX_TIMEOUT_MS              (2000U)
-
 /***********************************************************************************************************************
  * RTC Event Logger control block — declared first so all functions in this file can access it
  **********************************************************************************************************************/
@@ -145,15 +124,14 @@
 static rs_rtc_logger_ctrl_t g_logger_ctrl;
 
 /***********************************************************************************************************************
- * PES configuration — non-instance fields set here; p_rtc and p_uart are
+ * Configuration — non-instance fields set here; p_rtc is
  * populated at runtime by rs_rtc_logger_ConfigGen() (Section 10.1).
  **********************************************************************************************************************/
 
 static rs_rtc_logger_cfg_t g_logger_cfg =
 {
-    /* p_rtc and p_uart set by rs_rtc_logger_ConfigGen() */
+    /* p_rtc set by rs_rtc_logger_ConfigGen() */
     .p_rtc           = NULL,
-    .p_uart          = NULL,
     .ts_format       = RS_RTC_LOGGER_TS_FORMAT_ISO8601,
     .ts_brackets     = true,
     .line_term       = RS_RTC_LOGGER_TERM_CRLF,
@@ -169,7 +147,7 @@ static rs_rtc_logger_cfg_t g_logger_cfg =
  * A magic sentinel prevents treating uninitialised POR RAM as a valid backup.
  *
  * Save   : demo_button_s1_callback() after each EventTrigger()
- * Restore: demo_cli_task() after PES init, warm reset only
+ * Restore: demo_cli_task() after RTC Event Logger init, warm reset only
  **********************************************************************************************************************/
 
 #define DEMO_SEQ_BACKUP_MAGIC  (0x5E91BA5EU)
@@ -192,86 +170,25 @@ BSP_PLACE_IN_SECTION(BSP_SECTION_NOINIT) static uint32_t g_seq_count_magic;
 BSP_PLACE_IN_SECTION(BSP_SECTION_NOINIT) static uint32_t g_time_set_magic;
 
 /***********************************************************************************************************************
- * RX ring buffer — written from UART ISR, read from CLI task
+ * Console I/O — backed by the Buffered I/O over UART driver (vendored,
+ * unmodified, in src/rs_stdio_uart_buffer_io/) via the thin non-blocking
+ * adapter in rs_rtc_logger_stdio_console.c.
  **********************************************************************************************************************/
 
-static volatile uint8_t  g_rx_buf[DEMO_RX_BUF_SIZE];
-static volatile uint32_t g_rx_head = 0U;   /* written by ISR  */
-static volatile uint32_t g_rx_tail = 0U;   /* read  by task   */
-
-/** Called from rs_rtc_logger_uart_callback (ISR context) to enqueue one RX byte. */
-void demo_uart_rx_char_enqueue(uint8_t c)
-{
-    uint32_t next = (g_rx_head + 1U) % DEMO_RX_BUF_SIZE;
-    if (next != g_rx_tail)              /* drop if full */
-    {
-        g_rx_buf[g_rx_head] = c;
-        g_rx_head = next;
-    }
-}
-
-/**
- * @brief Called from the early UART callback in blinky_thread_entry.c (ISR context).
- *
- * The UART is opened by demo_banner_setup() before the RTC Event Logger is
- * initialised.  demo_uart_write_blocking() polls g_logger_ctrl.tx_complete to
- * detect TX completion.  Until the logger opens the UART and installs its own
- * callback, no one sets that flag — so all CLI task writes appeared to hang
- * (timeout) or silently fail.
- *
- * This function is called from demo_early_uart_callback() on every
- * UART_EVENT_TX_COMPLETE so that demo_uart_write_blocking() works correctly
- * from the moment the CLI task starts, before and after the logger takes
- * ownership of the UART.
- */
-void demo_uart_early_tx_complete(void)
-{
-    g_logger_ctrl.tx_complete = true;
-}
-
-/** Dequeue one byte; returns false if buffer empty. Task context only. */
+/** Non-blocking dequeue of one console byte. Task context only. */
 static bool demo_rx_getc(uint8_t * p_c)
 {
-    if (g_rx_head == g_rx_tail)
-    {
-        return false;
-    }
-    *p_c = g_rx_buf[g_rx_tail];
-    g_rx_tail = (g_rx_tail + 1U) % DEMO_RX_BUF_SIZE;
-    return true;
+    return rs_rtc_logger_console_getc_nb(p_c);
 }
 
 /***********************************************************************************************************************
- * Blocking TX helper — uses the UART directly (bypasses RTC Event Logger log formatting)
- * for raw CLI output so the prompt appears even before the RTC Event Logger is open.
+ * TX helper — routes CLI/status output through the Buffered I/O UART driver's
+ * stdio stream (non-blocking submit; see rs_rtc_logger_console_puts()).
  **********************************************************************************************************************/
 
-static void demo_uart_write_blocking(char const * p_str)
+static void demo_uart_write(char const * p_str)
 {
-    if (NULL == p_str) { return; }
-    uint32_t len = (uint32_t)strlen(p_str);
-    if (0U == len) { return; }
-
-    /* Clear the RTC Event Logger tx_complete flag before writing so we can detect
-     * when the TX ISR fires for this specific transfer.              */
-    g_logger_ctrl.tx_complete = false;
-
-    fsp_err_t err = R_SCI_UART_Write(DEMO_UART_INSTANCE->p_ctrl,
-                                     (uint8_t const *)p_str,
-                                     len);
-    if (FSP_SUCCESS != err)
-    {
-        /* UART not open yet or error — restore flag and return */
-        g_logger_ctrl.tx_complete = true;
-        return;
-    }
-
-    /* Wait for UART_EVENT_TX_COMPLETE (set by rs_rtc_logger_uart_callback) */
-    uint32_t timeout = DEMO_TX_TIMEOUT_MS / 5U;
-    while (!g_logger_ctrl.tx_complete && timeout-- > 0U)
-    {
-        vTaskDelay(pdMS_TO_TICKS(5U));
-    }
+    rs_rtc_logger_console_puts(p_str);
 }
 
 /***********************************************************************************************************************
@@ -297,7 +214,7 @@ static void demo_uart_readline(char * buf, uint32_t buf_size)
 
         if (c == '\r' || c == '\n')
         {
-            demo_uart_write_blocking("\r\n");   /* Echo newline */
+            demo_uart_write("\r\n");   /* Echo newline */
             break;
         }
 
@@ -307,7 +224,7 @@ static void demo_uart_readline(char * buf, uint32_t buf_size)
             {
                 idx--;
                 buf[idx] = '\0';
-                demo_uart_write_blocking("\b \b");
+                demo_uart_write("\b \b");
             }
             continue;
         }
@@ -317,7 +234,7 @@ static void demo_uart_readline(char * buf, uint32_t buf_size)
             buf[idx++] = (char)c;
             /* Echo the character */
             char echo[2] = { (char)c, '\0' };
-            demo_uart_write_blocking(echo);
+            demo_uart_write(echo);
         }
     }
 }
@@ -409,12 +326,12 @@ static void demo_cli_task(void * p_arg)
     }
 
     /* ── Banner ─────────────────────────────────────────────────────────── */
-    demo_uart_write_blocking("\r\n*** RTC Event Logger Demo ***\r\n");
+    demo_uart_write("\r\n*** RTC Event Logger Demo ***\r\n");
 
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
-    demo_uart_write_blocking("Mode: Example Project\r\n");
+    demo_uart_write("Mode: Example Project\r\n");
 #else
-    demo_uart_write_blocking("Mode: Expert\r\n");
+    demo_uart_write("Mode: Expert\r\n");
 #endif
 
     /* ── Mode-specific init ──────────────────────────────────────────────── */
@@ -423,9 +340,9 @@ static void demo_cli_task(void * p_arg)
 
     /* Bind HAL instances into the RTC Event Logger configuration */
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
-    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 #else
-    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0, &g_uart0);
+    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0);
 #endif
 
     /* Validate the generated configuration before Open() — catches a bad
@@ -439,11 +356,11 @@ static void demo_cli_task(void * p_arg)
         (void)snprintf(msg, sizeof(msg),
                         "ERROR: RTC Event Logger ConfigCheck failed (err=0x%08X).\r\n",
                         (unsigned)cfg_check_err);
-        demo_uart_write_blocking(msg);
+        demo_uart_write(msg);
         for (;;) { vTaskDelay(portMAX_DELAY); }
     }
 
-    /* Report the PES control-block footprint (diagnostic only). */
+    /* Report the RTC Event Logger control-block footprint (diagnostic only). */
     {
         size_t ctrl_size = 0U;
         (void)rs_rtc_logger_ConfigGetSize(&g_logger_ctrl, &ctrl_size);
@@ -451,7 +368,7 @@ static void demo_cli_task(void * p_arg)
         (void)snprintf(msg, sizeof(msg),
                         "RTC Event Logger control block: %u bytes.\r\n",
                         (unsigned)ctrl_size);
-        demo_uart_write_blocking(msg);
+        demo_uart_write(msg);
     }
 
     g_logger_ctrl.p_cfg = &g_logger_cfg;
@@ -460,28 +377,20 @@ static void demo_cli_task(void * p_arg)
      * is enabled and before any EventTrigger() call from an ISR.
      * xTaskCreateStatic() is illegal in ISR context; this call moves task
      * creation to a safe point in the CLI task. */
-    demo_uart_write_blocking("Creating RTC Event Logger consumer task...\r\n");
+    demo_uart_write("Creating RTC Event Logger consumer task...\r\n");
     fsp_err_t prep_err = rs_rtc_logger_EP_PrepareConsumerTask(&g_logger_ctrl);
     if (FSP_SUCCESS != prep_err)
     {
-        demo_uart_write_blocking("ERROR: Failed to create RTC Event Logger consumer task.\r\n");
+        demo_uart_write("ERROR: Failed to create RTC Event Logger consumer task.\r\n");
         for (;;) { vTaskDelay(portMAX_DELAY); }
     }
-    demo_uart_write_blocking("Consumer task ready.\r\n");
+    demo_uart_write("Consumer task ready.\r\n");
 
-    /* ── Status messages MUST be printed and TX-confirmed BEFORE calling
-     * EventTrigger().  Reason: EventTrigger() wakes the consumer task, which
-     * runs rs_rtc_logger_hal_uart_open() and calls close()+reopen() to take
-     * ownership of the UART.  If a demo_uart_write_blocking() TX is in flight
-     * at that moment, close() aborts it mid-string and the consumer's INIT
-     * event is appended directly to the truncated fragment — producing output
-     * like "Waiting for[0000-00-00 00:00:00]".
-     *
-     * demo_uart_write_blocking() blocks until TX_COMPLETE before returning,
-     * so printing both lines here guarantees the UART is idle when
-     * EventTrigger() hands control to the consumer task.                    */
-    demo_uart_write_blocking("Triggering RTC Event Logger auto-init...\r\n");
-    demo_uart_write_blocking("Waiting for RTC Event Logger auto-init to complete...\r\n");
+    /* Sequencing between console output and log-line output is guaranteed by
+     * the vendored driver's own internal serialization (uart_flush()'s
+     * tx_busy spin-wait) inside fflush(), regardless of call order.        */
+    demo_uart_write("Triggering RTC Event Logger auto-init...\r\n");
+    demo_uart_write("Waiting for RTC Event Logger auto-init to complete...\r\n");
 
     (void)rs_rtc_logger_EventTrigger(&g_logger_ctrl,
                                      (uint8_t const *)DEMO_INIT_PAYLOAD,
@@ -496,18 +405,13 @@ static void demo_cli_task(void * p_arg)
         wait_count++;
         if (wait_count > 1000U)        /* 10 s timeout — should never fire */
         {
-            /* By this point the consumer task has attempted (and failed) to run
-             * auto_init.  The UART is in logger-callback mode if Open() succeeded
-             * before stalling, or still in early-callback mode if Open() itself
-             * failed.  Either way tx_complete is being driven by whichever
-             * callback is active, so demo_uart_write_blocking() will work.  */
-            demo_uart_write_blocking(
+            demo_uart_write(
                 "\r\nERROR: RTC Event Logger auto-init timed out.\r\n"
                 "Check RTC oscillator source and UART configuration.\r\n");
             for (;;) { vTaskDelay(portMAX_DELAY); }
         }
     }
-    demo_uart_write_blocking("RTC Event Logger auto-init complete.\r\n");
+    demo_uart_write("RTC Event Logger auto-init complete.\r\n");
 
     /* Validate clock state: Open() always starts with rtc_time_set = false.
      * Restore it to true only if the user confirmed a time in a previous
@@ -521,7 +425,7 @@ static void demo_cli_task(void * p_arg)
     if (!demo_is_power_on_reset() && (DEMO_SEQ_BACKUP_MAGIC == g_seq_count_magic))
     {
         (void)rs_rtc_logger_SeqCountSet(&g_logger_ctrl, g_seq_count_backup);
-        demo_uart_write_blocking("Warm reset: seq counter restored.\r\n");
+        demo_uart_write("Warm reset: seq counter restored.\r\n");
     }
 
 #else /* Expert mode */
@@ -532,17 +436,15 @@ static void demo_cli_task(void * p_arg)
      * and time-set guard monitoring loop are all in the SHARED section that follows
      * the #endif below — they apply identically to both EP and Expert modes.
      *
-     * Log message ordering: Open() is called synchronously below, always after
-     * demo_uart_write_blocking() has confirmed TX_COMPLETE.  The UART close()+reopen()
-     * inside rs_rtc_logger_hal_uart_open() therefore never interrupts an in-flight
-     * write — no special pre-Open() ordering is needed here (contrast with the
-     * EP mode path where EventTrigger() wakes the consumer task asynchronously). */
-    demo_uart_write_blocking("Opening RTC Event Logger...\r\n");
-    /* Bind HAL instances into the PES configuration (ConfigGen pattern, Section 10.1). */
+     * The shared UART is owned permanently by the Buffered I/O UART driver.
+     * Open() is called synchronously here, after demo_uart_write() has
+     * returned. */
+    demo_uart_write("Opening RTC Event Logger...\r\n");
+    /* Bind HAL instances into the RTC Event Logger configuration (ConfigGen pattern, Section 10.1). */
 #if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
-    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 #else
-    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0, &g_uart0);
+    (void)rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0);
 #endif
 
     /* Validate the generated configuration before Open() (Section 10.1 —
@@ -555,11 +457,11 @@ static void demo_cli_task(void * p_arg)
         (void)snprintf(msg, sizeof(msg),
                         "ERROR: RTC Event Logger ConfigCheck failed (err=0x%08X).\r\n",
                         (unsigned)cfg_check_err);
-        demo_uart_write_blocking(msg);
+        demo_uart_write(msg);
         for (;;) { vTaskDelay(portMAX_DELAY); }
     }
 
-    /* Report the PES control-block footprint (diagnostic only). */
+    /* Report the RTC Event Logger control-block footprint (diagnostic only). */
     {
         size_t ctrl_size = 0U;
         (void)rs_rtc_logger_ConfigGetSize(&g_logger_ctrl, &ctrl_size);
@@ -567,17 +469,17 @@ static void demo_cli_task(void * p_arg)
         (void)snprintf(msg, sizeof(msg),
                         "RTC Event Logger control block: %u bytes.\r\n",
                         (unsigned)ctrl_size);
-        demo_uart_write_blocking(msg);
+        demo_uart_write(msg);
     }
 
     g_logger_cfg.p_callback = demo_logger_callback; /* FR-084: wake demo_consumer_task on TX_COMPLETE/TX_ERROR */
     fsp_err_t err = rs_rtc_logger_Open(&g_logger_ctrl, &g_logger_cfg);
     if (FSP_SUCCESS != err)
     {
-        demo_uart_write_blocking("ERROR: rs_rtc_logger_Open failed.\r\n");
+        demo_uart_write("ERROR: rs_rtc_logger_Open failed.\r\n");
         for (;;) { vTaskDelay(portMAX_DELAY); }
     }
-    demo_uart_write_blocking("RTC Event Logger open OK.\r\n");
+    demo_uart_write("RTC Event Logger open OK.\r\n");
 
     /* Validate clock state: Open() always starts with rtc_time_set = false.
      * Restore it to true only if the user confirmed a time in a previous
@@ -591,7 +493,7 @@ static void demo_cli_task(void * p_arg)
     if (!demo_is_power_on_reset() && (DEMO_SEQ_BACKUP_MAGIC == g_seq_count_magic))
     {
         (void)rs_rtc_logger_SeqCountSet(&g_logger_ctrl, g_seq_count_backup);
-        demo_uart_write_blocking("Warm reset: seq counter restored.\r\n");
+        demo_uart_write("Warm reset: seq counter restored.\r\n");
     }
 
 #endif /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE */
@@ -600,7 +502,7 @@ static void demo_cli_task(void * p_arg)
 
     if (demo_is_power_on_reset())
     {
-        demo_uart_write_blocking("Power-on reset detected.\r\n");
+        demo_uart_write("Power-on reset detected.\r\n");
 
         /* First prompt — allow the user to skip (press Enter) and set the
          * time later via the per-event guard below.  An invalid format still
@@ -608,12 +510,12 @@ static void demo_cli_task(void * p_arg)
         bool time_set = false;
         while (!time_set)
         {
-            demo_uart_write_blocking("Enter date/time [YYYY-MM-DD HH:MM:SS] : ");
+            demo_uart_write("Enter date/time [YYYY-MM-DD HH:MM:SS] : ");
             demo_uart_readline(input_buf, sizeof(input_buf));
 
             if (input_buf[0] == '\0')
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "Time entry skipped.\r\n"
                     "Events will show [0000-00-00 00:00:00] until time is set.\r\n"
                     "You will be prompted to set the time after each event.\r\n");
@@ -622,7 +524,7 @@ static void demo_cli_task(void * p_arg)
 
             if (!demo_parse_datetime(input_buf, &rtc_time))
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "ERROR: Invalid format. Expected YYYY-MM-DD HH:MM:SS"
                     " (e.g. 2024-07-15 14:30:00)\r\n");
                 continue;   /* re-prompt */
@@ -631,7 +533,7 @@ static void demo_cli_task(void * p_arg)
             fsp_err_t set_err = rs_rtc_logger_TimeSet(&g_logger_ctrl, &rtc_time);
             if (FSP_SUCCESS == set_err)
             {
-                demo_uart_write_blocking("Time set OK.\r\n");
+                demo_uart_write("Time set OK.\r\n");
                 g_time_set_magic = DEMO_TIME_SET_MAGIC; /* persist across warm resets */
                 time_set = true;
             }
@@ -639,7 +541,7 @@ static void demo_cli_task(void * p_arg)
             {
                 /* HAL rejection (e.g. RTC not in OPEN state) — treat as a
                  * non-recoverable configuration fault rather than a user typo. */
-                demo_uart_write_blocking("WARNING: TimeSet failed — check RTC state.\r\n");
+                demo_uart_write("WARNING: TimeSet failed — check RTC state.\r\n");
                 time_set = true;
             }
         }
@@ -656,7 +558,7 @@ static void demo_cli_task(void * p_arg)
          *   Slow 1 sec/hour   → trim  -1  (RFRL 254)
          *
          * Press Enter with no input to skip and use the default RFRL.     */
-        demo_uart_write_blocking(
+        demo_uart_write(
             "LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: ");
         demo_uart_readline(input_buf, sizeof(input_buf));
 
@@ -674,7 +576,7 @@ static void demo_cli_task(void * p_arg)
                                    "WARNING: trim %+d gives RFRL %d"
                                    " -- out of range (8-510). Skipped.\r\n",
                                    trim, rfrl_new);
-                    demo_uart_write_blocking(msg);
+                    demo_uart_write(msg);
                 }
                 else
                 {
@@ -693,18 +595,18 @@ static void demo_cli_task(void * p_arg)
                                        "WARNING: LocoCalibrationSet failed (err=0x%08X).\r\n",
                                        (unsigned)cal_err);
                     }
-                    demo_uart_write_blocking(msg);
+                    demo_uart_write(msg);
                 }
             }
             else
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "WARNING: Could not parse trim value. Skipped.\r\n");
             }
         }
         else
         {
-            demo_uart_write_blocking("LOCO calibration skipped (default RFRL = 255).\r\n");
+            demo_uart_write("LOCO calibration skipped (default RFRL = 255).\r\n");
         }
     }
     else
@@ -713,11 +615,11 @@ static void demo_cli_task(void * p_arg)
          * RTC that was never set (counter sat at 2000-01-01 since cold start). */
         if (DEMO_TIME_SET_MAGIC == g_time_set_magic)
         {
-            demo_uart_write_blocking("Warm reset — RTC time retained.\r\n");
+            demo_uart_write("Warm reset — RTC time retained.\r\n");
         }
         else
         {
-            demo_uart_write_blocking(
+            demo_uart_write(
                 "Warm reset — clock was not set in previous session.\r\n"
                 "Events will show [0000-00-00 00:00:00]. Press S1 to be prompted.\r\n");
         }
@@ -726,9 +628,9 @@ static void demo_cli_task(void * p_arg)
     /* ── Expert mode: start RTC Event Logger after time is configured ────────────────── */
 
 #if !RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
-    demo_uart_write_blocking("Starting RTC Event Logger...\r\n");
+    demo_uart_write("Starting RTC Event Logger...\r\n");
     (void)rs_rtc_logger_Start(&g_logger_ctrl);
-    demo_uart_write_blocking("RTC Event Logger started.\r\n");
+    demo_uart_write("RTC Event Logger started.\r\n");
 
     if (NULL != g_demo_consumer_task_handle)
     {
@@ -737,7 +639,7 @@ static void demo_cli_task(void * p_arg)
 #endif
 
     /* ── Ready ───────────────────────────────────────────────────────────── */
-    demo_uart_write_blocking("Ready. Press S1 to log an event.\r\n");
+    demo_uart_write("Ready. Press S1 to log an event.\r\n");
 
     /* ── Time-set guard — monitor for events posted before clock is set ──
      *
@@ -773,21 +675,21 @@ static void demo_cli_task(void * p_arg)
              * covers however many S1 presses occurred during this window.   */
             last_seen = current;
 
-            demo_uart_write_blocking(
+            demo_uart_write(
                 "\r\nWARNING: event logged without a valid clock.\r\n"
                 "Enter date/time [YYYY-MM-DD HH:MM:SS] : ");
             demo_uart_readline(input_buf, sizeof(input_buf));
 
             if (input_buf[0] == '\0')
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "Skipped — press S1 to log another event and be prompted again.\r\n");
                 continue;
             }
 
             if (!demo_parse_datetime(input_buf, &rtc_time))
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "ERROR: Invalid format. Expected YYYY-MM-DD HH:MM:SS"
                     " (e.g. 2024-07-15 14:30:00)\r\n"
                     "Press S1 to be prompted again.\r\n");
@@ -797,14 +699,14 @@ static void demo_cli_task(void * p_arg)
             fsp_err_t guard_err = rs_rtc_logger_TimeSet(&g_logger_ctrl, &rtc_time);
             if (FSP_SUCCESS == guard_err)
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "Time set OK. All future events will have a valid timestamp.\r\n");
                 g_time_set_magic = DEMO_TIME_SET_MAGIC; /* persist across warm resets */
                 /* g_logger_ctrl.rtc_time_set is now true — loop exits */
             }
             else
             {
-                demo_uart_write_blocking(
+                demo_uart_write(
                     "WARNING: TimeSet failed — check RTC state.\r\n"
                     "Press S1 to be prompted again.\r\n");
             }
@@ -822,14 +724,14 @@ static void demo_cli_task(void * p_arg)
 #if !RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
 
 /**
- * @brief RTC Event Logger application callback (FR-084) — wakes demo_consumer_task on TX completion.
+ * @brief RTC Event Logger application callback (FR-084).
  *
- * Registered via g_logger_cfg.p_callback (Open() call site above). Called
- * from rs_rtc_logger_uart_callback() in ISR context on both TX_COMPLETE and
- * TX_ERROR — mirroring the unconditional `tx_complete = true` set on both
- * outcomes in the RTC Event Logger HAL — so a TX error can't stall the drain loop either.
- * This replaces polling g_logger_ctrl.tx_complete with the same notification
- * pattern the RTC Event Logger already uses internally for its own task in Example mode.
+ * Registered via g_logger_cfg.p_callback (Open() call site above), but never
+ * invoked: rs_rtc_logger_hal_uart_write() (rs_rtc_logger_hal.c) has no
+ * asynchronous TX-complete event to report, since a write only returns once
+ * it has already been safely submitted/serialized (see that function's
+ * comment). demo_consumer_task() does not depend on this callback firing
+ * (see the comment at its rs_rtc_logger_Write() call site below).
  */
 static void demo_logger_callback(rs_rtc_logger_callback_args_t * p_args)
 {
@@ -869,22 +771,11 @@ static void demo_consumer_task(void * p_arg)
 
             (void)rs_rtc_logger_Write(&g_logger_ctrl, &entry);
 
-            /* Wait for demo_logger_callback() to notify us on TX_COMPLETE/
-             * TX_ERROR (ISR context) instead of polling tx_complete.
-             *
-             * consumer task — an EventTrigger() ISR notification can wake
-             * this ulTaskNotifyTake() before the UART TX is complete, causing
-             * line_buf to be overwritten mid-transmission and producing
-             * corrupted output with dropped events.
-             *
-             * loop until g_logger_ctrl.tx_complete is actually set by
-             * the UART_EVENT_TX_COMPLETE handler in the ISR callback.
-             * tx_complete is cleared before every write and set only on
-             * genuine TX completion — so the condition is unambiguous. */
-            do
-            {
-                (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
-            } while (!g_logger_ctrl.tx_complete);
+            /* rs_rtc_logger_hal_uart_write() only returns once the line has
+             * been submitted AND any prior transmission has physically
+             * finished (see rs_rtc_logger_hal.c), so it is already safe to
+             * proceed to the next entry here. demo_logger_callback() above
+             * is never invoked; nothing waits on it. */
         }
     }
 }
