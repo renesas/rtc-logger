@@ -123,7 +123,7 @@ Tune `RS_RTC_LOGGER_CFG_TASK_PRIORITY` relative to your other application tasks 
 
 ## 5. Shared UART and Multi-Instance Considerations
 
-**The RTC Event Loggers uses a Buffered I/O over UART driver** (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)). The RTC Event Logger component does not open, own, or register a callback for a UART instance.
+**The RTC Event Logger uses a Buffered I/O over UART driver** (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)). The RTC Event Logger component does not open, own, or register a callback for a UART instance.
 
 The shared physical UART is owned by the **vendored Buffered I/O UART driver** (`src/rs_stdio_uart_buffer_io/`), and both the RTC Event Logger's log output and the reference application's CLI console write through the *same* stdio stream (`stdout`), via `fwrite()`/`fflush()`. This has two practical implications for integration:
 

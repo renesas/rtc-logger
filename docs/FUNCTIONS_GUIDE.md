@@ -3,7 +3,7 @@
 > Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map).
 > For call sequences and how these functions fit together in an application, see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
 
-This guide documents every function in the `rs_rtc_logger` PES — both the **public** functions an application calls directly, and the **private/internal** functions used only inside the module. Each function is explicitly tagged:
+This guide documents every function in the `rs_rtc_logger` — both the **public** functions an application calls directly, and the **private/internal** functions used only inside the module. Each function is explicitly tagged:
 
 | Tag | Meaning |
 |---|---|
@@ -54,13 +54,13 @@ In **Example Project mode**, this is the only function the application needs to 
 rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 ```
 
-`rs_rtc_logger_ConfigGen()`, `rs_rtc_logger_ConfigCheck()`, and `rs_rtc_logger_ConfigGetSize()` are declared in the **board-specific PES preset configuration header** (`rs_rtc_logger_data_fpb_ra4e2.h` / `rs_rtc_logger_data_fpb_ra6e2.h`), alongside the `*_preset` instance data they are most commonly paired with. They are declared and defined **unconditionally** (regardless of `RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE`), so the same three functions remain available whether the caller binds the `*_preset` RTC instance or the FSP Stack Configurator-generated `g_rtc0`.
+`rs_rtc_logger_ConfigGen()`, `rs_rtc_logger_ConfigCheck()`, and `rs_rtc_logger_ConfigGetSize()` are declared in the **board-specific preset configuration header** (`rs_rtc_logger_data_fpb_ra4e2.h` / `rs_rtc_logger_data_fpb_ra6e2.h`), alongside the `*_preset` instance data they are most commonly paired with. They are declared and defined **unconditionally** (regardless of `RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE`), so the same three functions remain available whether the caller binds the `*_preset` RTC instance or the FSP Stack Configurator-generated `g_rtc0`.
 
 >  Boards are using a Buffered I/O UART driver (FPB-RA4E2 and FPB-RA6E2 — see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)), this component never opens, writes, or validates a `uart_instance_t` at all. `rs_rtc_logger_ConfigGen()` takes **only** an RTC instance parameter. The shared UART is owned and independently validated by the vendored Buffered I/O UART driver.
 
 ### 🟢 `rs_rtc_logger_ConfigGen()`
 
-Assigns the RTC HAL instance pointer to the PES configuration structure. Called once during application initialization, before `rs_rtc_logger_Open()`.
+Assigns the RTC HAL instance pointer to the RTC Event Logger configuration structure. Called once during application initialization, before `rs_rtc_logger_Open()`.
 
 ```c
 fsp_err_t rs_rtc_logger_ConfigGen(rs_rtc_logger_cfg_t   * p_cfg,
@@ -74,11 +74,11 @@ fsp_err_t rs_rtc_logger_ConfigGen(rs_rtc_logger_cfg_t   * p_cfg,
 | `FSP_SUCCESS` | Instance pointer assigned |
 | `FSP_ERR_ASSERTION` | `p_cfg` or `p_rtc` is NULL |
 
-*Valid in any PES lifecycle state. Not ISR-safe.*
+*Valid in any RTC Event Logger lifecycle state. Not ISR-safe.*
 
 ### 🟢 `rs_rtc_logger_ConfigCheck()`
 
-Validates a PES configuration structure before `rs_rtc_logger_Open()`. Verifies that the required RTC HAL instance (and its configuration block) is present, that the RTC carry interrupt priority satisfies the constraint documented in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#3-required-non-default-fsp-settings), and that the enumerated configuration fields (`ts_format`, `line_term`, `overflow_policy`) are in range.
+Validates a configuration structure before `rs_rtc_logger_Open()`. Verifies that the required RTC HAL instance (and its configuration block) is present, that the RTC carry interrupt priority satisfies the constraint documented in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#3-required-non-default-fsp-settings), and that the enumerated configuration fields (`ts_format`, `line_term`, `overflow_policy`) are in range.
 
 ```c
 fsp_err_t rs_rtc_logger_ConfigCheck(rs_rtc_logger_cfg_t const * p_cfg);
@@ -94,11 +94,11 @@ Call any time after `rs_rtc_logger_ConfigGen()` and before `rs_rtc_logger_Open()
 | `FSP_ERR_INVALID_HW_CONDITION` | RTC `carry_ipl`/`carry_irq` is disabled or has no NVIC vector allocated |
 | `FSP_ERR_INVALID_ARGUMENT` | `ts_format`, `line_term`, or `overflow_policy` is out of range |
 
-*Valid in any PES lifecycle state. Not ISR-safe.*
+*Valid in any lifecycle state. Not ISR-safe.*
 
 ### 🟢 `rs_rtc_logger_ConfigGetSize()`
 
-Returns the size, in bytes, of the PES control block structure. Useful for confirming control-block sizing (e.g. against `RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES`) without requiring `rs_rtc_logger_Open()` to have been called first.
+Returns the size, in bytes, of the RTC Event Logger control block structure. Useful for confirming control-block sizing (e.g. against `RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES`) without requiring `rs_rtc_logger_Open()` to have been called first.
 
 ```c
 fsp_err_t rs_rtc_logger_ConfigGetSize(rs_rtc_logger_ctrl_t const * p_ctrl,
@@ -110,7 +110,7 @@ fsp_err_t rs_rtc_logger_ConfigGetSize(rs_rtc_logger_ctrl_t const * p_ctrl,
 | `FSP_SUCCESS` | Size returned in `*p_size` |
 | `FSP_ERR_ASSERTION` | `p_ctrl` or `p_size` is NULL |
 
-*Valid in any PES lifecycle state. Not ISR-safe. `p_ctrl` may point to caller-allocated storage that has not yet been `Open()`'d — it is only used for `sizeof(*p_ctrl)`.*
+*Valid in any lifecycle state. Not ISR-safe. `p_ctrl` may point to caller-allocated storage that has not yet been opened — it is only used for `sizeof(*p_ctrl)`.*
 
 Example combining all three:
 
@@ -216,7 +216,7 @@ All five are ⚫ **PRIVATE** (`static`, file-scoped).
 static bool rs_rl_is_open(rs_rtc_logger_ctrl_t const * p_ctrl);
 ```
 
-Returns `true` if the PES is in any non-CLOSED state (OPEN, STARTED, or STOPPED); `false` if CLOSED or `p_ctrl` is NULL. Used internally by the public lifecycle functions to check state before transitioning.
+Returns `true` if the RTC Event Logger is in any non-CLOSED state (OPEN, STARTED, or STOPPED); `false` if CLOSED or `p_ctrl` is NULL. Used internally by the public lifecycle functions to check state before transitioning.
 
 ### ⚫ `rs_rl_enqueue()`
 
@@ -258,13 +258,13 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg);
 #endif
 ```
 
-The PES-owned FreeRTOS task body used in Example Project mode. Waits for task notifications from `EventTrigger()` (or the UART TX-complete callback), then drains the circular buffer by calling the public `rs_rtc_logger_Write()` for each pending entry, guarded by a TX timeout (`RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS`). This is the task created by the public `rs_rtc_logger_EP_PrepareConsumerTask()`. Only compiled in when `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1`.
+The RTC Event Logger-owned FreeRTOS task body used in Example Project mode. Waits for task notifications from `EventTrigger()` (or the UART TX-complete callback), then drains the circular buffer by calling the public `rs_rtc_logger_Write()` for each pending entry, guarded by a TX timeout (`RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS`). This is the task created by the public `rs_rtc_logger_EP_PrepareConsumerTask()`. Only compiled in when `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1`.
 
 ---
 
 ## 9. Internal Functions — `rs_rtc_logger_format.c` / `.h`
 
-`rs_rtc_logger_format.h` is explicitly marked in its own file header as *"an internal PES interface — it is not part of the public API."* It declares two 🔒 **INTERNAL** functions with external linkage (callable from `rs_rtc_logger.c`), backed by six ⚫ **PRIVATE** helpers local to `rs_rtc_logger_format.c`.
+`rs_rtc_logger_format.h` is explicitly marked in its own file header as *"an internal RTC Event Logger interface — it is not part of the public API."* It declares two 🔒 **INTERNAL** functions with external linkage (callable from `rs_rtc_logger.c`), backed by six ⚫ **PRIVATE** helpers local to `rs_rtc_logger_format.c`.
 
 ### 🔒 `rs_rtc_logger_format_timestamp()` — INTERNAL
 
@@ -334,7 +334,7 @@ Low-level ASCII-writing primitives shared by `rs_rtc_logger_format_timestamp()` 
 
 | Function | Purpose |
 |---|---|
-| `rs_rtc_logger_hal_uart_open(p_ctrl)` | Calls `rs_rtc_logger_console_init()` (see [Section 11](#11-internal-functions--rs_rtc_logger_stdio_consolec--h)), which ensures the shared Buffered I/O UART driver is initialized and strictly validated against the board reference configuration. Idempotent — safe to call even if the driver already opened the UART earlier (e.g. via the reference application's sign-on banner's first `printf()`). |
+| `rs_rtc_logger_hal_uart_open(p_ctrl)` | Calls `rs_rtc_logger_console_init()` (see [Section 11](#11-internal-functions--rs_rtc_logger_stdio_consolec--h)), which ensures the shared Buffered I/O UART driver is initialized and strictly validated against the board reference configuration. It is safe to call even if the driver already opened by the UART earlier (e.g. via the reference application's sign-on banner's first `printf()`). |
 | `rs_rtc_logger_hal_uart_close(p_ctrl)` | A no-op that always returns `FSP_SUCCESS`. The shared UART is owned by the Buffered I/O UART driver and is never closed for the life of the application. |
 | `rs_rtc_logger_hal_uart_write(p_ctrl, p_data, length)` | Writes via `fwrite()` + `fflush(stdout)` on the same stdio stream the Buffered I/O UART driver owns. Returns once the write has been safely submitted/serialized (the driver's own `uart_flush()` spin-waits briefly on its internal busy flag if a previous transmission is still in flight). Increments `p_ctrl->tx_errors` and returns `FSP_ERR_WRITE_FAILED` if `fwrite()`/`fflush()` do not complete cleanly. |
 
@@ -354,7 +354,7 @@ Uses Buffered I/O over UART (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-
 
 | Function | Tag | Caller | Purpose |
 |---|---|---|---|
-| `rs_rtc_logger_console_init()` | 🔒 INTERNAL (core dependency) | `rs_rtc_logger_hal_uart_open()` — i.e. every `rs_rtc_logger_Open()` call | Forces deterministic initialization of the vendored driver (idempotent — the driver otherwise initializes lazily on first `printf()`/`getchar()`/`fflush()`) and runs the driver's own public `RS_STDIO_UART_CheckApplicationConfiguration()` exactly once, caching the result. A validation failure is returned on every subsequent call too, since misconfiguration cannot be fixed by retrying — it propagates through `rs_rtc_logger_hal_uart_open()` and `rs_rtc_logger_Open()` the same way any other `Open()` failure does. |
+| `rs_rtc_logger_console_init()` | 🔒 INTERNAL (core dependency) | `rs_rtc_logger_hal_uart_open()` — i.e. every `rs_rtc_logger_Open()` call | Forces deterministic initialization of the vendored driver (the driver otherwise initializes lazily on first `printf()`/`getchar()`/`fflush()`) and runs the driver's own public `RS_STDIO_UART_CheckApplicationConfiguration()` exactly once, caching the result. A validation failure is returned on every subsequent call too, since misconfiguration cannot be fixed by retrying — it propagates through `rs_rtc_logger_hal_uart_open()` and `rs_rtc_logger_Open()` the same way any other `Open()` failure does. |
 | `rs_rtc_logger_console_getc_nb(p_c)` | Demo-only convenience | Reference CLI task (`demo_rx_getc()`) | Non-blocking single-character read. Peeks the vendored driver's RX byte queue depth via `R_BYTEQ_Used()` — a non-public but externally-linkable symbol (`uart_rx_q_ctrl`) — before ever calling the driver's own `getchar()`, which otherwise blocks indefinitely when nothing is queued (a documented limitation of the vendored driver). Returns `false` immediately if nothing is available; never blocks. |
 | `rs_rtc_logger_console_puts(p_str)` | Demo-only convenience | Reference CLI task (`demo_uart_write()`) | Writes a NUL-terminated string via `fwrite()` then `fflush(stdout)`. Not used by `rs_rtc_logger_hal_uart_write()` itself, which calls `fwrite()`/`fflush()` directly (see [Section 10](#10-internal-functions--rs_rtc_logger_halc--h)) — this function exists purely for the reference CLI's convenience. |
 

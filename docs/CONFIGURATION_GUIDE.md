@@ -16,13 +16,13 @@
 
 ## 1. Configuration Overview
 
-The `rs_rtc_logger` PES relies on a combination of:
+The `rs_rtc_logger` relies on a combination of:
 
-- FSP-generated or PES preset RTC instance configuration
+- FSP-generated or preset RTC instance configuration
 - Build-time configuration constants in `rs_rtc_logger_cfg.h`
 - A runtime configuration structure (`rs_rtc_logger_cfg_t`) bound via `rs_rtc_logger_ConfigGen()`
 
-The reference implementation targets the **FPB-RA4E2** (primary) and **FPB-RA6E2** (secondary).
+The reference implementation targets the **FPB-RA4E2** and **FPB-RA6E2**.
 
 ---
 
@@ -63,7 +63,7 @@ The following FSP Stack Configurator settings must be configured correctly for t
 
 | Driver | Property | Required Value | Reason |
 |---|---|---|---|
-| `r_sci_uart` (`g_uart_jlob_vcom`) | Callback | Left as generated / driver-installed (`uart_jlob_vcom_callback`) | Owned by the Buffered I/O UART driver, not by this component. Do not point it at `rs_rtc_logger_uart_callback` — that function no longer exists. |
+| `r_sci_uart` (`g_uart_jlob_vcom`) | Callback | Left as generated / driver-installed (`uart_jlob_vcom_callback`) | Owned by the Buffered I/O UART driver, not by this component. |
 | `r_sci_uart` (`g_uart_jlob_vcom`) | Operating mode | Asynchronous | Required by the Buffered I/O UART driver |
 | `r_sci_uart` (`g_uart_jlob_vcom`) | Baud rate | 115200 | Matches the VCOM USB-Serial bridge default on FPB boards |
 | `r_sci_uart` (`g_uart_jlob_vcom`) | Flow control | RTS (SCI-internal; no external flow-control pin) | Matches the reference configuration validated by `RS_STDIO_UART_CheckApplicationConfiguration()` |
@@ -140,7 +140,7 @@ Use this path when targeting a board other than FPB-RA4E2/FPB-RA6E2, or when you
 | Button debounce window (reference app only) | `RS_RTC_LOGGER_CFG_DEBOUNCE_MS` in `rs_rtc_logger_cfg.h` | Default 150 ms; see [Section 6](#6-debounce-configuration-reference-application) |
 | RX/TX byte queue size (Buffered I/O UART driver) | `src/rs_stdio_uart_buffer_io/syscalls_picolib_stdio_to_uart.c` | Fixed at 256 bytes each, hard-coded in the vendored driver — not exposed via `rs_rtc_logger_cfg.h`. Edit only if you accept diverging from the vendored driver's "used unmodified" delivery model. |
 
-### FPB-RA6E2 (Secondary Target)
+### FPB-RA6E2
 
 The FPB-RA6E2 port includes the full Buffered I/O over UART update and is symmetric with FPB-RA4E2 — same core module, same `rs_rtc_logger_stdio_console.c/h` adapter, same vendored driver files, differing only in the per-board files below. Board-specific differences to address when adapting further:
 
@@ -193,7 +193,7 @@ If you replace the button ISR with a different event source (accelerometer, time
 |---|---|---|
 | Renesas FSP | v6.5.0 | Provides `r_rtc`, `r_sci_uart`, `r_icu`, BSP, startup |
 | FreeRTOS | Bundled with FSP v6.5.0 | Required for time-critical event synchronization |
-| **Buffered I/O UART driver** (`src/rs_stdio_uart_buffer_io/`) | Vendored used unmodified | hard dependency since the Buffered I/O — `rs_rtc_logger_hal_uart_open()` calls into it (via `rs_rtc_logger_console_init()`) on every `Open()`. See [Section 3](#3-required-non-default-fsp-settings) and [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update). |
+| **Buffered I/O UART driver** (`src/rs_stdio_uart_buffer_io/`) | Vendored used unmodified | hard dependency on the the Buffered I/O driver since  — `rs_rtc_logger_hal_uart_open()` calls into it (via `rs_rtc_logger_console_init()`) on every `Open()`. See [Section 3](#3-required-non-default-fsp-settings) and [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update). |
 | picolibc | Bundled with the LLVM ARM Embedded toolchain | Required by the vendored driver's stdio stream redirection (`FDEV_SETUP_STREAM`) |
 | e2studio IDE | Compatible with FSP v6.5.0 | Required to build and flash the project |
 | J-Link On-Board | — | Used for debug/flash on FPB boards |
@@ -202,7 +202,7 @@ If you replace the button ISR with a different event source (accelerometer, time
 
 The module references the RTC HAL driver exclusively through the FSP abstract interface type `rtc_instance_t *`. This means the RTC-facing core source is identical across both target boards — board-specific RTC differences are confined to `configuration.xml` and the RTC preset config files.
 
-The module `rs_rtc_logger_hal_uart_open()`/`_close()`/`_write()` goes through `rs_rtc_logger_stdio_console.c` to the vendored Buffered I/O UART driver's stdio stream. That driver owns `g_uart_jlob_vcom` (opening it on first stdio call, or deterministically via `rs_rtc_logger_console_init()`) and never closes it for the life of the application.
+The module functions `rs_rtc_logger_hal_uart_open()`/`_close()`/`_write()` goes through `rs_rtc_logger_stdio_console.c` to the vendored Buffered I/O UART driver's stdio stream. That driver owns `g_uart_jlob_vcom` (opening it on first stdio call, or deterministically via `rs_rtc_logger_console_init()`) and never closes it for the life of the application.
 
 The External IRQ driver (`r_icu`) is **not** initialized, enabled, disabled, or closed by this module. The module has no dependency on any specific interrupt source. When the `r_icu` ISR fires, the application calls `rs_rtc_logger_EventTrigger()` to pass the event to the module core.
 

@@ -3,8 +3,6 @@
 > Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map).
 > For building from the command line with Meson/LLVM instead of e2studio, see [BUILD.md](BUILD.md).
 
-> **Note:** Uses Buffered I/O over UART ([RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)), console and log output share a single UART through a vendored driver. The Buffered I/O over UART driver is used for CLI prompts, banner text, and expected output on both FPB-RA4E2 and FPB-RA6E2.
-
 ## Table of Contents
 
 1. [Prerequisites](#1-prerequisites)

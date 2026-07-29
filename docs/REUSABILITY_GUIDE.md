@@ -1,7 +1,7 @@
 # Reusability and Adaptation for Similar Use Cases
 
 > Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map).
-> This guide covers **adapting the core logic to a different event source or use case**. For **wiring the PES into your application as-is** (initialization order, task integration, multi-instance considerations, firmware-update Stop/Start pattern), see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
+> This guide covers **adapting the core logic to a different event source or use case**. For **wiring the RTC Event Logger into your application as-is** (initialization order, task integration, multi-instance considerations), see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
 
 ## Table of Contents
 

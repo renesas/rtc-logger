@@ -25,7 +25,7 @@ The following table identifies which files are reusable core code and which belo
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_types.h` | Public type definitions and enumerations | Include directly; do not modify |
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_cfg.h` | Build-time configuration constants with `#ifndef` guards | Override individual constants as needed for your project |
 | **Core** | `src/rs_rtc_logger/rs_rtc_logger_format.c/.h` | Pure timestamp formatting — converts `rtc_time_t` to ASCII string; no I/O; integer arithmetic only | Copy into your project; no board-specific content |
-| **Core** | `src/rs_rtc_logger/rs_rtc_logger_hal.c/.h` | Thin HAL shim: RTC open/close/get/set wrappers (direct raw-driver calls). UART open/close/write wrappers — they route through `rs_rtc_logger_stdio_console.c` to the shared Buffered I/O UART driver's stdio stream. This component owns no UART ISR callback (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)) | Copy into your project; board-agnostic |
+| **Core** | `src/rs_rtc_logger/rs_rtc_logger_hal.c/.h` | Thin HAL shim: RTC open/close/get/set wrappers (direct raw-driver calls). UART open/close/write wrappers — they route through `rs_rtc_logger_stdio_console.c` to the shared Buffered I/O UART driver's stdio stream. (see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)) | Copy into your project; board-agnostic |
 | **Core (new dependency)** | `src/rs_rtc_logger/rs_rtc_logger_stdio_console.c/.h` | Thin adapter bridging this module to the vendored Buffered I/O UART driver. Physically lives in the core folder; its `rs_rtc_logger_console_init()` is called from `rs_rtc_logger_hal_uart_open()`, making it a genuine core dependency, not just demo glue — see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#11-internal-functions--rs_rtc_logger_stdio_consolec--h) | Copy into your project alongside the rest of core; board-agnostic itself, but requires the vendored driver below |
 | **Vendored (new, used unmodified)** | `src/rs_stdio_uart_buffer_io/` (`r_byteq.c/.h`, `rs_stdio_uart.c/.h`, `syscalls_picolib_stdio_to_uart.c`, plus one `stdio_uart_config_<board>_fpb.c` per board) | Buffered I/O UART driver: byte-queue-backed picolibc stdio-to-UART bridge. Owns the shared physical UART (`g_uart_jlob_vcom`) for the whole application — both log output and CLI console | Use verbatim; do not modify (see [Section 4a](#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit) below). Add a new `stdio_uart_config_<board>_fpb.c` when porting to a new board. |
 | **Preset Config** | `src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.c/.h`<br>`src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.c/.h` | Pre-built **RTC-only** HAL instance definitions per board (no UART preset any more — see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#5-adapting-to-your-board)). Also declares/defines `rs_rtc_logger_ConfigGen()`, `rs_rtc_logger_ConfigCheck()`, and `rs_rtc_logger_ConfigGetSize()` (see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#2-configuration-bridge-call-before-open)) — these three functions are declared unconditionally regardless of `RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE` | Reference only — do not edit; for custom boards, use the FSP Stack Configurator path instead (see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md)) |
@@ -75,13 +75,13 @@ These files contain reusable reference code. Copy them into your project. Modify
 | `rs_rtc_logger_cfg.h` | **Yes** | Override any `#ifndef`-guarded constant with your project-specific value |
 | `rs_rtc_logger_format.c/.h` | With care | Pure formatting; portable; can be unit-tested in isolation |
 | `rs_rtc_logger_hal.c/.h` | With care | Thin HAL shim; RTC wrappers call the raw driver directly, UART wrappers route through `rs_rtc_logger_stdio_console.c` — modify only if switching UART driver variant or RTC driver |
-| `rs_rtc_logger_stdio_console.c/.h` | With care | Vendored Buffered I/O UART driver. `rs_rtc_logger_hal_uart_open()` depends on `rs_rtc_logger_console_init()` here — do not remove this file without re-pointing that dependency |
+| `rs_rtc_logger_stdio_console.c/.h` | With care | Depends on Vendored Buffered I/O UART driver. `rs_rtc_logger_hal_uart_open()` depends on `rs_rtc_logger_console_init()` here — do not remove this file without re-pointing that dependency |
 
 ---
 
 ## 4. Preset Configuration Files — Reference Only; Do Not Edit
 
-These files are pre-built for the FPB-RA4E2 and FPB-RA6E2 and are marked "do not edit." They are reference-quality reproductions of FSP-generated output for the specified board's **RTC instance only** — there is no UART preset any more (see [Section 4a](#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit) below for the UART side). To customize the RTC configuration for a different board, switch to the FSP Stack Configurator path as described in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#5-adapting-to-your-board) (`RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0`).
+These files are pre-built for the FPB-RA4E2 and FPB-RA6E2 and are marked "do not edit." They are reference-quality reproductions of FSP-generated output for the specified board's **RTC instance only** — there is no UART preset (see [Section 4a](#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit) below for the UART side). To customize the RTC configuration for a different board, switch to the FSP Stack Configurator path as described in [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#5-adapting-to-your-board) (`RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0`).
 
 | File | Notes |
 |---|---|
@@ -94,7 +94,7 @@ These files are pre-built for the FPB-RA4E2 and FPB-RA6E2 and are marked "do not
 
 ## 4a. Vendored Buffered I/O UART Driver — Reference Only; Do Not Edit
 
-The Buffered I/O over UART driver(see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)). This driver is used **verbatim, unmodified** — it is a separate component, not merged into the RTC Event Logger's own source tree, and is documented here only so you know what it is and where its board-specific boundary is.
+The Buffered I/O over UART driver(see [RELEASE_NOTES.md](RELEASE_NOTES.md#2-buffered-io-over-uart-update)) is used **verbatim, unmodified** — it is a separate component, not merged into the RTC Event Logger's own source tree, and is documented here only so you know what it is and where its board-specific boundary is.
 
 | File | Notes |
 |---|---|

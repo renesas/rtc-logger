@@ -1,6 +1,6 @@
 # Build & Test Instructions — RTC Event Logger (Meson + LLVM/Clang)
 
-> Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map). For importing/building via **e2studio** instead of the command line, see [EXAMPLES_GUIDE.md](EXAMPLES_GUIDE.md).
+> Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map). These instructions are for Host PC based build and running unit tests. For importing/building via **e2studio** instead of the command line, see [EXAMPLES_GUIDE.md](EXAMPLES_GUIDE.md).
 
 Supports:
 - ✅ Host-based **unit tests** (Windows + Linux, no hardware)

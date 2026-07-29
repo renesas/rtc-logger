@@ -5,7 +5,7 @@
 ## Table of Contents
 
 1. [Current Version](#1-current-version)
-2. [Buffered I/O over UART Update](#2-buffered-io-over-uart-update)
+2. [Buffered I/O over UART](#2-buffered-io-over-uart)
 3. [Adopting a Newer Release](#3-adopting-a-newer-release)
 4. [What Typically Changes Between Releases](#4-what-typically-changes-between-releases)
 5. [Recommended Merge Process](#5-recommended-merge-process)
@@ -21,7 +21,7 @@
 | Primary Target | FPB-RA4E2 |
 | Secondary Target | FPB-RA6E2 |
 
-Both targets include the Buffered I/O over UART update described in [Section 2](#2-buffered-io-over-uart-update) below.
+Both targets include the Buffered I/O over UART driver described in [Section 2](#2-buffered-io-over-uart) below.
 
 Query the running version at any time (including CLOSED state) via `rs_rtc_logger_VersionGet()` — see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#5-configuration-and-query-functions).
 
@@ -31,7 +31,7 @@ Query the running version at any time (including CLOSED state) via `rs_rtc_logge
 
 This release affects how the RTC Event Logger transmits and receives console/log data over UART. It shares a single physical UART with the reference application's CLI console through a vendored **Buffered I/O UART driver** (`src/rs_stdio_uart_buffer_io/`), accessed through standard C stdio (`printf`/`getchar`/`fwrite`/`fflush`).
 
-**Delivered and confirmed on both reference boards:** FPB-RA4E2 and FPB-RA6E2 (`RTC_Event_Logger_FPB_RA4E2` and `RTC_Event_Logger_FPB_RA6E2` e2studio projects). The two board ports are symmetric — same core module, same adapter, same vendored driver — differing only in the per-board files called out in [Section 2.5](#25-per-board-differences) below.
+**Delivered and confirmed on both reference boards:** FPB-RA4E2 and FPB-RA6E2 (`RTC_Event_Logger_FPB_RA4E2` and `RTC_Event_Logger_FPB_RA6E2` e2studio projects). The two board ports are symmetric — same core module, same adapter, same vendored driver — differing only in the per-board files called out in [Section 2.2](#22-per-board-differences) below.
 
 ### 2.1 New components
 
@@ -69,9 +69,9 @@ This module is delivered as reference source code. Once you incorporate and modi
 ## 4. What Typically Changes Between Releases
 
 - Core source files (`rs_rtc_logger.c`, `rs_rtc_logger_format.c`, `rs_rtc_logger_hal.c`) may receive reliability improvements, new features, or FSP version compatibility updates.
-- Public headers (`rs_rtc_logger.h`, `rs_rtc_logger_types.h`) may add new public functions or extend existing structures. Additions are generally straightforward to adopt; removals or signature changes — as in Section 2.2 — are not always accompanied by a version-number bump, so always diff the public headers rather than relying on `RS_RTC_LOGGER_VERSION` alone.
+- Public headers (`rs_rtc_logger.h`, `rs_rtc_logger_types.h`) may add new public functions or extend existing structures. Additions are generally straightforward to adopt; removals or signature changes — are not always accompanied by a version-number bump, so always diff the public headers rather than relying on `RS_RTC_LOGGER_VERSION` alone.
 - `rs_rtc_logger_cfg.h` constants may gain new `#ifndef`-guarded defaults. Your existing overrides continue to take precedence without modification.
-- Preset config files may be updated for new FSP releases or corrected for hardware errata, or — as in Section 2 — to change which peripherals the module owns directly.
+- Preset config files may be updated for new FSP releases or corrected for hardware errata, or to change which peripherals the module owns directly.
 
 ---
 
