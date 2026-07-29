@@ -1,8 +1,8 @@
 # RTC Internal Timestamp Event Logger (`rs_rtc_logger`)
 
-## 1. What This PES Does
+## 1. What This Component Does
 
-The RTC Event Logger PES demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the PES timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and transmits a formatted line over a shared UART (VCOM) through a vendored Buffered I/O UART driver, without blocking the calling ISR.
+The RTC Event Logger demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the RTC Event Logger timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and transmits a formatted line over a shared UART (VCOM) through a vendored Buffered I/O UART driver, without blocking the calling ISR.
 
 The reference implementation demonstrates:
 
@@ -15,7 +15,7 @@ The reference implementation demonstrates:
 
 This repository contains:
 
-- Reusable PES core source code (`src/rs_rtc_logger/`)
+- Reusable core source code (`src/rs_rtc_logger/`)
 - A vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`)
 - Board-specific reference/preset configuration for FPB-RA4E2 and FPB-RA6E2
 - Complete e2studio example projects for both boards
@@ -25,13 +25,13 @@ This repository contains:
 
 ---
 
-## 2. Who Should Use This PES
+## 2. Who Should Use The RTC Event Logger
 
-Use this PES if you want to:
+Use this Component if you want to:
 
 - Evaluate timestamped event logging built on the RA-family on-chip RTC and UART.
 - Learn how RTC, UART, and FreeRTOS can be combined for ISR-safe, non-blocking telemetry capture.
-- Reuse the PES core source in your own application.
+- Reuse the core source in your own application.
 - Start from a working reference implementation with warm-reset time preservation already solved.
 - Understand how to configure Renesas RA devices for RTC-timestamped serial logging.
 
@@ -84,7 +84,7 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
 │
 ├── src/
-│   ├── rs_rtc_logger/              ← PES core source and per-board RTC preset configuration
+│   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
 │   │   ├── rs_rtc_logger.c / .h
 │   │   ├── rs_rtc_logger_cfg.h
 │   │   ├── rs_rtc_logger_format.c / .h
@@ -162,7 +162,7 @@ See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output,
 ## 6. Key Features
 
 - ISR-safe, non-blocking event capture via `rs_rtc_logger_EventTrigger()`.
-- Static circular event buffer — no dynamic memory allocation in the PES core itself.
+- Static circular event buffer — no dynamic memory allocation in the component core itself.
 - UART transmission via a shared Buffered I/O UART driver (vendored, used unmodified) — the same UART serves both CLI console and event logging.
 - Four selectable timestamp formats; runtime-switchable.
 - Warm-reset preservation of RTC configuration and event sequence count.
@@ -176,7 +176,7 @@ See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output,
 
 ## 7. Public Function Model
 
-The PES supports two usage models. See [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) for complete function details, and [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for the recommended initialization sequence for each path.
+The RTC Event Logger (Component) supports two usage models. See [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) for complete function details, and [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for the recommended initialization sequence for each path.
 
 ### Simple Path (Example Project mode)
 
@@ -204,7 +204,7 @@ rs_rtc_logger_Close(&g_logger_ctrl);
 
 | Document | Purpose |
 |---|---|
-| [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md) | What the PES does, dual operating modes, core-vs-demo split, documentation map |
+| [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md) | What the RTC Event Logger does, dual operating modes, core-vs-demo split, documentation map |
 | [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) | Public **and** private/internal function behavior (each tagged), naming conventions, state gating |
 | [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) | Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations |
 | [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md) | Reference board config, required FSP settings, porting to a new board |
@@ -265,9 +265,9 @@ Current validated scope does not imply support for:
 
 ## 12. Support and Modification Note
 
-This PES is provided as reference source code.
+The RTC Event Logger is provided as reference source code.
 
-Customers may modify the source to fit their application requirements. Once modified, the resulting implementation becomes customer-owned and future PES updates may require manual review and merge of local changes. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md).
+Customers may modify the source to fit their application requirements. Once modified, the resulting implementation becomes customer-owned and future updates may require manual review and merge of local changes. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md).
 
 ---
 
@@ -275,11 +275,11 @@ Customers may modify the source to fit their application requirements. Once modi
 
 If you are:
 
-- Evaluating the PES → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
+- Evaluating the RTC Event Logger → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
 - Running the example → Read [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md).
 - Building from the command line → Read [`docs/BUILD.md`](docs/BUILD.md).
-- Integrating the PES → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
-- Writing code against the module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
+- Integrating the RTC Event Logger → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
+- Writing code against the RTC Event Logger module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
 - Porting to your board → Read [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md).
 - Reviewing what's safe to modify → Read [`docs/FILE_GUIDE.md`](docs/FILE_GUIDE.md).
 - Reusing this for a different use case → Read [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md).
