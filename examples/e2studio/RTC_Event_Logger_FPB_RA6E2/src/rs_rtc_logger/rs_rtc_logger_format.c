@@ -6,7 +6,7 @@
 
 /**
  * @file rs_rtc_logger_format.c
- * @brief Pure timestamp formatting engine for the RTC Event Logger PES.
+ * @brief Pure timestamp formatting engine for the RTC Event Logger.
  *
  * This module is intentionally pure: no I/O, no side effects, no FreeRTOS calls,
  * no FSP HAL calls. All arithmetic is integer-only (FR-014). The public surface

@@ -62,7 +62,7 @@ FSP Configuration
   RA6E2 event data
   RA Common
     Main stack size (bytes): 0x800
-    Heap size (bytes): 0
+    Heap size (bytes): 0x400
     Bootloader Secondary XIP: Disabled
     MCU Vcc (mV): 3300
     Parameter checking: Disabled
@@ -353,8 +353,8 @@ FSP Configuration
       Period Interrupt Priority: Disabled
       Carry Interrupt Priority: Priority 2
       
-    Instance "g_uart0 UART (r_sci_uart)"
-      General: Name: g_uart0
+    Instance "g_uart_jlob_vcom UART (r_sci_uart)"
+      General: Name: g_uart_jlob_vcom
       General: Channel: 0
       General: Data Bits: 8bits
       General: Parity: None
@@ -376,7 +376,7 @@ FSP Configuration
       Extra: RS-485: DE Pin Polarity: Active High
       Extra: RS-485: DE Port Number: Disabled
       Extra: RS-485: DE Pin Number: Disabled
-      Interrupts: Callback: rs_rtc_logger_uart_callback
+      Interrupts: Callback: uart_jlob_vcom_callback
       Interrupts: Receive Interrupt Priority: Priority 12
       Interrupts: Transmit Data Empty Interrupt Priority: Priority 12
       Interrupts: Transmit End Interrupt Priority: Priority 12

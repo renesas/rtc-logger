@@ -10,15 +10,15 @@
 #include "r_rtc_api.h"
 FSP_HEADER
 /** UART on SCI Instance. */
-extern const uart_instance_t g_uart0;
+extern const uart_instance_t g_uart_jlob_vcom;
 
 /** Access the UART instance using these structures when calling API functions directly (::p_api is not used). */
-extern sci_uart_instance_ctrl_t g_uart0_ctrl;
-extern const uart_cfg_t g_uart0_cfg;
-extern const sci_uart_extended_cfg_t g_uart0_cfg_extend;
+extern sci_uart_instance_ctrl_t g_uart_jlob_vcom_ctrl;
+extern const uart_cfg_t g_uart_jlob_vcom_cfg;
+extern const sci_uart_extended_cfg_t g_uart_jlob_vcom_cfg_extend;
 
-#ifndef rs_rtc_logger_uart_callback
-void rs_rtc_logger_uart_callback(uart_callback_args_t *p_args);
+#ifndef uart_jlob_vcom_callback
+void uart_jlob_vcom_callback(uart_callback_args_t *p_args);
 #endif
 /* RTC Instance. */
 extern const rtc_instance_t g_rtc0;

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * blinky_thread_entry.c — FreeRTOS thread entry for rs_rtc_logger (FPB-RA6E2)
+ * blinky_thread_entry.c — FreeRTOS thread entry for rs_rtc_logger
  *
  * Execution order:
  *   1. Open UART so the banner can be sent before anything else runs.
@@ -19,39 +19,20 @@
  *       prevents the scheduler from being suspended indefinitely.
  **********************************************************************************************************************/
 
-#include <rs_rtc_logger/rs_rtc_logger_cfg.h> /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE, RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE */
 #include "blinky_thread.h"
 #include "common_data.h"    /* g_external_irq9 */
-#include "hal_data.h"       /* g_uart0 (FSP-generated) */
-#include <rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra6e2.h> /* g_uart0_preset (when PRESET_CONFIG_USE=1) */
+#include "hal_data.h"       /* g_uart_jlob_vcom (FSP-generated; opened by the Buffered I/O UART driver) */
 #include "r_icu.h"          /* R_ICU_ExternalIrqOpen/Enable */
-#include "r_sci_uart.h"     /* R_SCI_UART_Open, R_SCI_UART_Write */
-#include <string.h>         /* strlen() */
+#include <stdio.h>          /* printf() — Buffered I/O over UART driver */
 /* board_leds.h included transitively: blinky_thread.h -> bsp_api.h -> board_cfg.h -> board.h */
 
-/* Preset-mode aware UART instance for the pre-demo banner below.
- *
- * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1 (default): rs_rtc_logger_Open()
- * will bind g_uart0_preset — a standalone SCI0 config with fixed 115200-baud
- * register values (rs_rtc_logger_data_fpb_ra6e2.c), independent of whatever
- * the Stack Configurator currently has set for g_uart0. The banner below
- * MUST open/write through that same instance, or the "ALREADY_OPEN ->
- * close+reopen" handoff inside rs_rtc_logger_hal_uart_open() targets a
- * *different* control block than the one the banner opened — banner/CLI
- * output would then keep using whatever (possibly broken) baud rate is in
- * the Stack Configurator while the logger's own event writes use the
- * preset, a silent mismatch between demo output and logged events.
- *
- * RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0: use the FSP-generated g_uart0
- * directly, matching what ConfigGen()/Open() bind in that mode.
- *
- * demo_uart_write_blocking() in rs_rtc_logger_demo.c defines the identical
- * macro for the same reason — keep both in sync if this changes. */
-#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE
- #define DEMO_UART_INSTANCE  (&g_uart0_preset)
-#else
- #define DEMO_UART_INSTANCE  (&g_uart0)
-#endif
+/* printf() below is the first stdio call in the application, so it
+ * transparently triggers the vendored Buffered I/O UART driver's lazy
+ * jlob_uart_init_once() (src/rs_stdio_uart_buffer_io/
+ * syscalls_picolib_stdio_to_uart.c), which opens g_uart_jlob_vcom and
+ * installs uart_jlob_vcom_callback as its ISR callback, once, for the life
+ * of the application. The RTC Event Logger itself never opens or closes
+ * this UART (see rs_rtc_logger_hal.c). */
 
 extern void rs_rtc_logger_demo_main(void);
 
@@ -73,79 +54,22 @@ void vApplicationIdleHook(void)
 }
 extern bsp_leds_t g_bsp_leds;
 
-/* TX-complete flag set by rs_rtc_logger_uart_callback on UART_EVENT_TX_COMPLETE.
- * Declared extern so the banner write below can poll it without a FreeRTOS delay
- * (the scheduler may not be fully up when this flag is first checked). */
-extern volatile bool g_blinky_uart_tx_done;
-volatile bool g_blinky_uart_tx_done = false;
-
-/* Set by rs_rtc_logger_demo.c: drives g_logger_ctrl.tx_complete so that
- * demo_uart_write_blocking() (which polls that flag) works before the
- * RTC Event Logger has opened the UART with its own callback.           */
-extern void demo_uart_early_tx_complete(void);
-
-/* Minimal UART callback used for the pre-demo banner write AND for all
- * demo_uart_write_blocking() calls in the CLI task that run before the
- * RTC Event Logger re-opens the UART with its own callback.
- * Sets both the local banner flag and the logger ctrl tx_complete flag. */
-static void demo_early_uart_callback(uart_callback_args_t * p_args)
-{
-    if (UART_EVENT_TX_COMPLETE == p_args->event)
-    {
-        g_blinky_uart_tx_done = true;
-        demo_uart_early_tx_complete(); /* keep g_logger_ctrl.tx_complete in sync */
-    }
-}
-
-/* Send a NUL-terminated string over VCOM and spin-wait for TX complete.\n * Called before the RTC Event Logger is open, so no FreeRTOS delays are used. */
-static void demo_banner_write(char const * p_str)
-{
-    /* DC-5 fix: use strlen() — <string.h> is already included. */
-    uint32_t len = (uint32_t)strlen(p_str);
-    if (0U == len) { return; }
-
-    g_blinky_uart_tx_done = false;
-    R_SCI_UART_Write(DEMO_UART_INSTANCE->p_ctrl, (uint8_t const *)p_str, len);
-
-    /* Spin until TX ISR sets the flag — typically <1 ms at 115200 baud */
-    uint32_t timeout = 200000U;
-    while (!g_blinky_uart_tx_done && timeout-- > 0U) { __NOP(); }
-}
-
 /* Setup Demo Banner and User Button S1 Interrupt **/
 static void demo_banner_setup(void)
 {
-    /* ── Step 1: Open UART with a temporary callback for the banner ─────── *
-     * We open with a modified cfg that points to our local callback.
-     * The RTC Event Logger will re-open the UART later (Close + Open) with its own
-     * callback, so there is no conflict. Open/write through DEMO_UART_INSTANCE
-     * (see its definition above) so this matches whichever instance
-     * rs_rtc_logger_Open() will bind — preset or FSP-generated.           */
+    /* ── Step 1: Send sign-on banner ─────────────────────────────────────
+     * printf() is the application's first stdio call, so it transparently
+     * opens g_uart_jlob_vcom via the Buffered I/O UART driver's lazy init
+     * (jlob_uart_init_once()) before anything else runs.                 */
+    printf("\r\n");
+    printf("=========================================\r\n");
+    printf("  RTC Event Logger - FPB-RA6E2\r\n");
+    printf("  FSP v6.5.0 / FreeRTOS\r\n");
+    printf("=========================================\r\n");
+    printf("UART OK. Starting ...\r\n");
 
-    uart_cfg_t early_cfg = *(DEMO_UART_INSTANCE->p_cfg);
-    early_cfg.p_callback = demo_early_uart_callback;
-    fsp_err_t err = R_SCI_UART_Open(DEMO_UART_INSTANCE->p_ctrl, &early_cfg);
-    if (FSP_SUCCESS != err)
-    {
-        /* UART failed — halt visibly; LEDs will not blink */
-        BSP_CFG_HANDLE_UNRECOVERABLE_ERROR(0);
-    }
-
-    /* ── Step 2: Send sign-on banner ────────────────────────────────────── */
-    demo_banner_write("\r\n");
-    demo_banner_write("=========================================\r\n");
-    demo_banner_write("  RTC Event Logger — FPB-RA6E2\r\n");
-    demo_banner_write("  FSP v6.5.0 / FreeRTOS\r\n");
-    demo_banner_write("=========================================\r\n");
-    demo_banner_write("UART OK. Starting ...\r\n");
-
-    /* UART is intentionally left open here.  The CLI task uses
-     * demo_uart_write_blocking() before the RTC Event Logger opens the UART.
-     * rs_rtc_logger_hal_uart_open() detects FSP_ERR_ALREADY_OPEN, closes, and
-     * reopens with the logger's own callback — no gap in console output.     */
-
-    /* ── Step 3: Open and enable user button S1 (P304 / IRQ9) ───────────── */
-    err = R_ICU_ExternalIrqOpen(g_external_irq9.p_ctrl, g_external_irq9.p_cfg);
+    /* ── Step 2: Open and enable user button S1 (P304 / IRQ9) ───────────── */
+    fsp_err_t err = R_ICU_ExternalIrqOpen(g_external_irq9.p_ctrl, g_external_irq9.p_cfg);
     if (FSP_SUCCESS != err)
     {
         BSP_CFG_HANDLE_UNRECOVERABLE_ERROR(0);

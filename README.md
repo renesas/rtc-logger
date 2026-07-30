@@ -152,7 +152,7 @@ examples/e2studio/RTC_Event_Logger_FPB_RA4E2
 4. Build the project (default: Example Project mode).
 5. Program the target board (**Run → Debug As → Renesas GDB Hardware Debugging**).
 6. Open a serial terminal on the J-Link virtual COM port at **115200 8N1**.
-7. Follow the date/time and LOCO calibration prompts.
+7. Follow the date/time and LOCO trim calibration prompts which are only available after a cold start.
 8. Press User Switch **S1** on the board to trigger a logged event.
 
 See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
