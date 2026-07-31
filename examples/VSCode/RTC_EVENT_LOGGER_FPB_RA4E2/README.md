@@ -19,6 +19,6 @@ Build: ```cmake --build build/Debug```
 Example:
 
 ```set ARM_LLVM_TOOLCHAIN_PATH=C:/LLVMEmbeddedToolchainForArm-17.0.1-Windows-x86_64/bin```
-```cd "c:/Users/a5134013/Downloads/NEW_CMAKE_RTC_EVENT_LOGGER_FPB_RA4E2" && code .```
+```cd "c:/Users/<user_name>/Downloads/RTC_EVENT_LOGGER_FPB_RA4E2" && code .```
 
 - Click build in VS Code status bar
