@@ -1,13 +1,13 @@
 # RTC Internal Timestamp Event Logger (`rs_rtc_logger`)
 
-## 1. What This PES Does
+## 1. What This Component Does
 
-The RTC Event Logger PES demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the PES timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and asynchronously transmits a formatted line over UART (VCOM) without blocking the calling ISR.
+The RTC Event Logger demonstrates **timestamped serial event logging using the MCU's on-chip Real-Time Clock (RTC)**. An application-owned interrupt source (by default, a user button) triggers a capture; the RTC Event Logger timestamps the event from the RTC at ISR time, buffers it in a static circular buffer, and transmits a formatted line over a shared UART (VCOM) through a vendored Buffered I/O UART driver, without blocking the calling ISR.
 
 The reference implementation demonstrates:
 
 - ISR-safe RTC timestamp capture, decoupled from UART transmission via a circular buffer
-- Non-blocking, asynchronous UART transmission
+- UART transmission via a shared Buffered I/O UART driver (stdio-based; see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md#2-buffered-io-over-uart-update)) — the same UART serves both the CLI console and event logging
 - Four selectable timestamp formats (ISO 8601, time-only, compact, syslog-style)
 - Warm-reset preservation of RTC configuration and event sequence numbering
 - LOCO oscillator drift calibration
@@ -15,22 +15,23 @@ The reference implementation demonstrates:
 
 This repository contains:
 
-- Reusable PES core source code (`src/rs_rtc_logger/`)
+- Reusable core source code (`src/rs_rtc_logger/`)
+- A vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`)
 - Board-specific reference/preset configuration for FPB-RA4E2 and FPB-RA6E2
 - Complete e2studio example projects for both boards
 - A Meson + LLVM/Clang build for host unit tests and command-line firmware builds
 - Integration, configuration, and troubleshooting documentation
-- Host and on-target unit test suites
+- Host and on-target unit test suites (51 Unity tests)
 
 ---
 
-## 2. Who Should Use This PES
+## 2. Who Should Use The RTC Event Logger
 
-Use this PES if you want to:
+Use this Component if you want to:
 
 - Evaluate timestamped event logging built on the RA-family on-chip RTC and UART.
 - Learn how RTC, UART, and FreeRTOS can be combined for ISR-safe, non-blocking telemetry capture.
-- Reuse the PES core source in your own application.
+- Reuse the core source in your own application.
 - Start from a working reference implementation with warm-reset time preservation already solved.
 - Understand how to configure Renesas RA devices for RTC-timestamped serial logging.
 
@@ -44,7 +45,7 @@ Use this PES if you want to:
 | Reference Board (secondary) | FPB-RA6E2 |
 | Device Family | RA4E2 / RA6E2 (Cortex-M33) |
 | RTC Driver | `r_rtc` |
-| UART Driver | `r_sci_uart` (SCI0, VCOM, 115200 8N1) |
+| UART Driver | `r_sci_uart` (SCI0, VCOM, 115200 8N1), owned by the vendored Buffered I/O UART driver — see [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md) |
 | External IRQ | `r_icu` (application-owned; User Switch S1) |
 | RTOS | FreeRTOS (bundled with FSP v6.5.0) |
 | FSP Baseline | v6.5.0 |
@@ -61,8 +62,8 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 ├── README.md                     ← This file: high-level overview, quick start, documentation map
 │
 ├── docs/
-│   ├── RTC_EVENT_LOGGER-USER_MANUAL.md  ← Start here: use case, core capabilities, documentation map
-│   ├── FUNCTIONS_GUIDE.md                ← Function reference — public and private/internal, each tagged
+│   ├── RTC_EVENT_LOGGER-USER_MANUAL.md   ← Start here: use case, core capabilities, documentation map
+│   ├── FUNCTIONS_GUIDE.md               ← Function reference — public and private/internal, each tagged; naming conventions
 │   ├── INTEGRATION_GUIDE.md              ← Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations
 │   ├── CONFIGURATION_GUIDE.md            ← Reference board config, adapting to your board, dependencies
 │   ├── FILE_GUIDE.md                     ← Core vs. demo vs. FSP-generated files; what is safe to modify
@@ -75,29 +76,29 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │
 ├── examples/
 │   └── e2studio/
-│       ├── RTC_Event_Logger_FPB_RA4E2/    ← e²studio project for FPB-RA4E2
-│       └── RTC_Event_Logger_FPB_RA6E2/    ← e²studio project for FPB-RA6E2
+│   │   ├── RTC_Event_Logger_FPB_RA4E2/    ← e²studio project for FPB-RA4E2
+│   │   └── RTC_Event_Logger_FPB_RA6E2/    ← e²studio project for FPB-RA6E2
+│   │
+│   └── VSCode
+│       │ 
+│       ├── RTC_Event_Logger_FPB_RA4E2/    ← VSCode project for FPB-RA4E2
+│       └── RTC_Event_Logger_FPB_RA6E2/    ← VSCode project for FPB-RA6E2
 │
 ├── firmware/
 │   ├── meson.build                ← Meson firmware build (per-board ELF targets)
 │   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
 │
 ├── src/
-│   ├── rs_rtc_logger/              ← PES core source and per-board preset configuration
-│   │   ├── rs_rtc_logger.c / .h
-│   │   ├── rs_rtc_logger_cfg.h
-│   │   ├── rs_rtc_logger_format.c / .h
-│   │   ├── rs_rtc_logger_hal.c / .h
-│   │   ├── rs_rtc_logger_types.h
-│   │   └── config/
-│   │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h
-│   │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h
-│   ├── rs_rtc_logger_demo.c        ← Reference application (shared by both boards)
-│   ├── blinky_thread_entry_ra4e2.c / _ra6e2.c   ← Per-board FreeRTOS thread entry
-│   ├── hal_entry.c                 ← FSP v6.5.0 application hook (Meson build only)
-│   ├── hal_warmstart.c / .h        ← Warm-start detection helper
-│   ├── fault_handler.c             ← Debug fault handler
-│   └── crt0_stub.c                 ← Weak _start stub (Meson/ATfE toolchain compatibility)
+│   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
+│       ├── rs_rtc_logger.c / .h
+│       ├── rs_rtc_logger_cfg.h
+│       ├── rs_rtc_logger_format.c / .h
+│       ├── rs_rtc_logger_hal.c / .h
+│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter to Buffered I/O UART driver
+│       ├── rs_rtc_logger_types.h
+│       └── config/
+│           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
+│           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
 │
 ├── tests/
 │   ├── meson.build                 ← Test build configuration (host vs. target tests)
@@ -118,6 +119,9 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │   ├── llvm-cortex-m23.ini         ← Meson cross file for Cortex-M23 (RA0 series)
 │   └── llvm-cortex-m33.ini         ← Meson cross file for Cortex-M23/M33 (RA2/RA4/RA6 series)
 │
+├── srec
+│   └── e2 studio example project executables in S-RECORD format
+│
 └── scripts/
     ├── env.ps1                     ← Windows PATH setup (edit before use)
     ├── run_rasc.py                 ← Headless RASC code generation + output copy
@@ -127,8 +131,7 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 
 > **Note:** A top-level `meson.build` / `meson_options.txt` and a `subprojects/` directory
 > (holding the `unity`, `fsp`, and `cmsis` Meson wraps) are required to drive the builds
-> described in [`docs/BUILD.md`](docs/BUILD.md), but were not present in this source snapshot.
-> Confirm they exist at the repository root before running the Meson commands in that guide.
+> described in [`docs/BUILD.md`](docs/BUILD.md)
 
 ---
 
@@ -144,8 +147,8 @@ examples/e2studio/RTC_Event_Logger_FPB_RA4E2
 3. Confirm the required FSP version (v6.5.0).
 4. Build the project (default: Example Project mode).
 5. Program the target board (**Run → Debug As → Renesas GDB Hardware Debugging**).
-6. Open a serial terminal on the J-Link virtual COM port at **115200 8N1**. In Setup Terminal -> Set New-line Receive to **Auto**
-7. Follow the date/time and LOCO calibration prompts.
+6. Open a serial terminal on the J-Link virtual COM port at **115200 8N1**.
+7. Follow the date/time and LOCO trim calibration prompts which are only available after a cold start.
 8. Press User Switch **S1** on the board to trigger a logged event.
 
 See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
@@ -155,21 +158,21 @@ See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output,
 ## 6. Key Features
 
 - ISR-safe, non-blocking event capture via `rs_rtc_logger_EventTrigger()`.
-- Static circular event buffer — no dynamic memory allocation anywhere in the PES.
-- Asynchronous, non-blocking UART transmission with task-notification-based completion.
+- Static circular event buffer — no dynamic memory allocation in the component core itself.
+- UART transmission via a shared Buffered I/O UART driver (vendored, used unmodified) — the same UART serves both CLI console and event logging.
 - Four selectable timestamp formats; runtime-switchable.
 - Warm-reset preservation of RTC configuration and event sequence count.
 - LOCO oscillator drift calibration at runtime.
 - Two operating modes: Example Project (simple) and Expert (full lifecycle control).
-- Reference-board preset configuration for two boards (FPB-RA4E2, FPB-RA6E2).
+- Reference-board configuration for two boards (FPB-RA4E2, FPB-RA6E2): RTC preset plus a Buffered I/O UART board config for each.
 - Software debounce for the reference application's button event source.
-- Host-based Unity unit tests plus on-target Unity test firmware.
+- Host-based Unity unit tests plus on-target Unity test firmware (predates the Buffered I/O update — see [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md#2-buffered-io-over-uart-update)).
 
 ---
 
 ## 7. Public Function Model
 
-The PES supports two usage models. See [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) for complete function details, and [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for the recommended initialization sequence for each path.
+The RTC Event Logger (Component) supports two usage models. See [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) for complete function details, and [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) for the recommended initialization sequence for each path.
 
 ### Simple Path (Example Project mode)
 
@@ -182,7 +185,7 @@ rs_rtc_logger_EventTrigger(&g_logger_ctrl, (uint8_t const *)"Event Detected", 14
 ### Expert Path (full lifecycle control)
 
 ```c
-rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset, &g_uart0_preset);
+rs_rtc_logger_ConfigGen(&g_logger_cfg, &g_rtc0_preset);
 rs_rtc_logger_ConfigCheck(&g_logger_cfg);
 rs_rtc_logger_Open(&g_logger_ctrl, &g_logger_cfg);
 rs_rtc_logger_Start(&g_logger_ctrl);
@@ -197,7 +200,7 @@ rs_rtc_logger_Close(&g_logger_ctrl);
 
 | Document | Purpose |
 |---|---|
-| [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md) | What the PES does, dual operating modes, core-vs-demo split, documentation map |
+| [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md) | What the RTC Event Logger does, dual operating modes, core-vs-demo split, documentation map |
 | [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md) | Public **and** private/internal function behavior (each tagged), naming conventions, state gating |
 | [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md) | Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations |
 | [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md) | Reference board config, required FSP settings, porting to a new board |
@@ -250,16 +253,17 @@ Current validated scope does not imply support for:
 
 - Power-down RTC retention on FPB-RA4E2 (no VBATT pin/circuit on this board — see [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md)).
 - High-accuracy timekeeping out of the box — the default LOCO clock source drifts several hundred to several thousand ppm; the sub-clock (SOSC) alternative requires manual adaptation (see [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md)).
-- Boards other than FPB-RA4E2 / FPB-RA6E2 without creating new preset configuration or switching to the FSP Stack Configurator path.
+- Boards other than FPB-RA4E2 / FPB-RA6E2 without creating new preset configuration (RTC) and a new Buffered I/O UART board config file (UART), or switching to the FSP Stack Configurator path for the RTC side.
 - Event sources other than the reference application's debounced button without independently deciding on deglitch/debounce needs for the new source.
+- The core module itself performs no dynamic allocation, but the vendored Buffered I/O UART driver calls `malloc()`/`free()` internally (see [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md)).
 
 ---
 
 ## 12. Support and Modification Note
 
-This PES is provided as reference source code.
+The RTC Event Logger is provided as reference source code.
 
-Customers may modify the source to fit their application requirements. Once modified, the resulting implementation becomes customer-owned and future PES updates may require manual review and merge of local changes. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md).
+Customers may modify the source to fit their application requirements. Once modified, the resulting implementation becomes customer-owned and future updates may require manual review and merge of local changes. See [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md).
 
 ---
 
@@ -267,11 +271,11 @@ Customers may modify the source to fit their application requirements. Once modi
 
 If you are:
 
-- Evaluating the PES → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
+- Evaluating the RTC Event Logger → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
 - Running the example → Read [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md).
 - Building from the command line → Read [`docs/BUILD.md`](docs/BUILD.md).
-- Integrating the PES → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
-- Writing code against the module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
+- Integrating the RTC Event Logger → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
+- Writing code against the RTC Event Logger module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
 - Porting to your board → Read [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md).
 - Reviewing what's safe to modify → Read [`docs/FILE_GUIDE.md`](docs/FILE_GUIDE.md).
 - Reusing this for a different use case → Read [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md).

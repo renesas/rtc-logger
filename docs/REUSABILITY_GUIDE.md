@@ -1,7 +1,7 @@
 # Reusability and Adaptation for Similar Use Cases
 
 > Part of the [`rs_rtc_logger` documentation set](RTC_EVENT_LOGGER-USER_MANUAL.md#documentation-map).
-> This guide covers **adapting the core logic to a different event source or use case**. For **wiring the PES into your application as-is** (initialization order, task integration, multi-instance considerations, firmware-update Stop/Start pattern), see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
+> This guide covers **adapting the core logic to a different event source or use case**. For **wiring the RTC Event Logger into your application as-is** (initialization order, task integration, multi-instance considerations), see [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ Note that the reference application's button-press path adds a software debounce
 
 ## 2. Portions Applicable Without Modification
 
-- All files in `src/rs_rtc_logger/` can be included directly in any FSP v6.5.0 FreeRTOS project targeting the RA4E2 or RA6E2 without modification, provided the configuration is supplied via `rs_rtc_logger_ConfigGen()`.
+- All files in `src/rs_rtc_logger/` can be included directly in any FSP v6.5.0 FreeRTOS project targeting the RA4E2 or RA6E2 without modification, provided the configuration is supplied via `rs_rtc_logger_ConfigGen()`. This requires bringing along the vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`, used unmodified) and a matching `stdio_uart_config_<board>.c` file for your target board — `rs_rtc_logger_hal_uart_open()` depends on it via `rs_rtc_logger_stdio_console.c`. See [FILE_GUIDE.md](FILE_GUIDE.md#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit).
 - The timestamp formatter (`rs_rtc_logger_format.c`) is a pure function with no I/O or side effects and can be extracted for use in unit tests or other logging implementations.
 - The circular buffer and ISR-safe enqueue logic inside `rs_rtc_logger.c` represents a portable, heap-free, single-producer/single-consumer event buffer pattern reusable in similar telemetry designs. See [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#8-internal-functions--rs_rtc_loggerc) for the internal `rs_rl_enqueue()` / `rs_rl_dequeue()` functions that implement this pattern.
 
@@ -30,7 +30,8 @@ Note that the reference application's button-press path adds a software debounce
 
 ## 3. Portions Requiring Modification
 
-- **Board-specific preset config files** (`config/rs_rtc_logger_data_fpb_<board>.c/.h`): Create new preset files for other target boards, or switch to the FSP Stack Configurator path (see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#5-adapting-to-your-board)). The UART channel, baud rate, and pin configuration are board-specific.
+- **Board-specific RTC preset config files** (`config/rs_rtc_logger_data_fpb_<board>.c/.h`): Create new preset files for other target boards, or switch to the FSP Stack Configurator path (see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#5-adapting-to-your-board)). These now cover the RTC instance only.
+- **Board-specific Buffered I/O UART config** (`src/rs_stdio_uart_buffer_io/stdio_uart_config_<board>.c`): Create a new one for other target boards, following the pattern in `stdio_uart_config_ra4e2_fpb.c` / `_ra6e2_fpb.c`. The UART channel, baud rate, and pin configuration live here now, not in the RTC preset files.
 - **Reference application** (`rs_rtc_logger_demo.c`, `blinky_thread_entry_ra4e2.c` / `_ra6e2.c`): Replace the CLI task, consumer task structure, ISR callback, and debounce logic with application-specific code. The demo application is demonstration scaffolding, not production code.
 - **RTC clock source**: Replace LOCO with the sub-clock (SOSC) for applications requiring higher time accuracy. Change the `r_rtc` clock source property in `configuration.xml` and remove or adapt the LOCO calibration prompt.
 

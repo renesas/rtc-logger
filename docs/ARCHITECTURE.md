@@ -83,13 +83,25 @@ Application ISR (r_icu button callback)
             └── rs_rtc_logger_Write(p_ctrl, &entry)
                     │
                     ├── format: "[YYYY-MM-DD HH:MM:SS] Event Detected #N\r\n"
-                    ├── uart->write(line_buf)   ← non-blocking
-                    └── wait for TX_COMPLETE callback
+                    └── rs_rtc_logger_hal_uart_write(line_buf)
                             │
-                            └── rs_rtc_logger_uart_callback() [UART ISR]
-                                    ├── tx_complete = true
-                                    └── xTaskNotifyFromISR()
+                            ├── fwrite(line_buf, ..., stdout)   ← queues into the
+                            │                                     Buffered I/O UART
+                            │                                     driver's TX byteq
+                            └── fflush(stdout)                  ← hands queued bytes
+                                    │                              to the UART driver;
+                                    │                              briefly spin-waits
+                                    │                              on the driver's own
+                                    │                              busy flag if a prior
+                                    │                              transmission is still
+                                    │                              in flight, then returns
+                                    ↓
+                    (call returns here — write is safely submitted/
+                     serialized; consumer task proceeds to the next
+                     entry immediately, no separate completion wait)
 ```
+
+`rs_rtc_logger_hal_uart_write()` goes through `fwrite()`/`fflush(stdout)` on the shared Buffered I/O UART driver's stdio stream and does not return until the write has already been safely handed off (the driver's own `uart_flush()` serializes internally).
 
 In the reference application, the button ISR path additionally applies a software debounce (`demo_button_s1_callback()`) before calling `rs_rtc_logger_EventTrigger()` — see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#6-debounce-configuration-reference-application). That debounce sits entirely in application code, upstream of the diagram above; the core module's flow is unchanged regardless of what triggers `EventTrigger()`.
 
@@ -101,8 +113,10 @@ In the reference application, the button ISR path additionally applies a softwar
 |---|---|
 | `rs_rtc_logger.c` | Lifecycle state machine; all public function entry points; state gating; `rs_rtc_logger_EventTrigger()` ISR path; circular buffer management; diagnostic counters; Example Project mode auto-lifecycle logic and internal consumer task (compiled in only when `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE` is enabled) |
 | `rs_rtc_logger_format.c` | Pure timestamp formatting — converts `rtc_time_t` plus format selection into an ASCII string in a caller-supplied buffer. No I/O. No side effects. Integer arithmetic only. Fully unit-testable in isolation. |
-| `rs_rtc_logger_hal.c` | Thin HAL shim: UART TX-complete callback registered with UART HAL; sets completion flag; notifies consumer task via `xTaskNotifyFromISR()` |
-| `rs_rtc_logger_data_fpb_<board>.c/.h` | Board preset HAL instances; also hosts `rs_rtc_logger_ConfigGen()`, `rs_rtc_logger_ConfigCheck()`, `rs_rtc_logger_ConfigGetSize()` (see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#2-configuration-bridge-call-before-open)) |
+| `rs_rtc_logger_hal.c` | Thin HAL shim: RTC open/close/get/set wrappers (direct raw-driver calls). UART open/close/write wrappers route through `rs_rtc_logger_stdio_console.c` to the shared Buffered I/O UART driver's stdio stream.
+| `rs_rtc_logger_stdio_console.c` | Thin adapter to the vendored Buffered I/O UART driver: forces deterministic driver init + validation (`rs_rtc_logger_console_init()`, called from `rs_rtc_logger_hal_uart_open()` — a genuine core dependency), plus non-blocking char read and string write used by the reference CLI |
+| `rs_rtc_logger_data_fpb_<board>.c/.h` | Board preset **RTC** instance; also hosts `rs_rtc_logger_ConfigGen()`, `rs_rtc_logger_ConfigCheck()`, `rs_rtc_logger_ConfigGetSize()` (see [FUNCTIONS_GUIDE.md](FUNCTIONS_GUIDE.md#2-configuration-bridge-call-before-open)) |
+| `rs_stdio_uart_buffer_io/*` | **Vendored, used unmodified.** Owns the shared physical UART for the whole application (log output and CLI console alike) — see [FILE_GUIDE.md](FILE_GUIDE.md#4a-vendored-buffered-io-uart-driver--reference-only-do-not-edit) |
 
 ---
 

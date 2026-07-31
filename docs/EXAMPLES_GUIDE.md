@@ -36,6 +36,7 @@ To switch to **Expert mode**, set `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE` to `0`
 ```
 *** RTC Event Logger Demo ***
 Mode: Example Project
+RTC Event Logger control block: 992 bytes.
 Creating RTC Event Logger consumer task...
 Consumer task ready.
 Triggering RTC Event Logger auto-init...
@@ -43,13 +44,13 @@ Waiting for RTC Event Logger auto-init to complete...
 [0000-00-00 00:00:00] INIT #1
 RTC Event Logger auto-init complete.
 Power-on reset detected.
-Enter date/time [YYYY-MM-DD HH:MM:SS] : 2024-07-15 14:30:00
+Enter date/time [YYYY-MM-DD HH:MM:SS] : 2026-07-30 10:38:00
 Time set OK.
-LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: +8
-LOCO calibration set: trim +8, RFRL = 263.
+LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: 3
+LOCO calibration set: trim +3, RFRL = 258.
 Ready. Press S1 to log an event.
-[2024-07-15 14:30:05] Event Detected #2
-[2024-07-15 14:30:07] Event Detected #3
+[2026-07-30 10:38:06] Event Detected #2
+[2026-07-30 10:38:07] Event Detected #3
 ```
 
 ## 4. Expected Output — Expert Mode (cold start)
@@ -58,16 +59,18 @@ Ready. Press S1 to log an event.
 *** RTC Event Logger Demo ***
 Mode: Expert
 Opening RTC Event Logger...
+RTC Event Logger control block: 984 bytes.
 RTC Event Logger open OK.
 Power-on reset detected.
-Enter date/time [YYYY-MM-DD HH:MM:SS] : 2024-07-15 14:30:00
+Enter date/time [YYYY-MM-DD HH:MM:SS] : 2026-07-30 10:54:00
 Time set OK.
-LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: +8
-LOCO calibration set: trim +8, RFRL = 263.
+LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: 3
+LOCO calibration set: trim +3, RFRL = 258.
 Starting RTC Event Logger...
 RTC Event Logger started.
 Ready. Press S1 to log an event.
-[2024-07-15 14:30:05] Event Detected #1
+[2026-07-30 10:54:05] Event Detected #1
+[2026-07-30 10:54:07] Event Detected #2
 ```
 
 ## 5. Expected Output — Warm Reset (both modes)
@@ -75,13 +78,25 @@ Ready. Press S1 to log an event.
 After pressing the reset button while USB power remains:
 
 ```
+=========================================
+  RTC Event Logger - FPB-RA4E2
+  FSP v6.5.0 / FreeRTOS
+=========================================
+UART OK. Starting ...
+
 *** RTC Event Logger Demo ***
 Mode: Example Project
-...
+RTC Event Logger control block: 992 bytes.
+Creating RTC Event Logger consumer task...
+Consumer task ready.
+Triggering RTC Event Logger auto-init...
+Waiting for RTC Event Logger auto-init to complete...
+[0000-00-00 00:00:00] INIT #1
+RTC Event Logger auto-init complete.
 Warm reset: seq counter restored.
 Warm reset — RTC time retained.
 Ready. Press S1 to log an event.
-[2024-07-15 14:31:42] Event Detected #4
+[2026-07-30 10:49:37] Event Detected #3
 ```
 
 > Note: "Warm reset: seq counter restored." appears only when a valid sequence-counter

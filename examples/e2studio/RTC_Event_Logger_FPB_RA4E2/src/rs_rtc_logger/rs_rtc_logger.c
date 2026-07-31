@@ -6,7 +6,7 @@
 
 /**
  * @file rs_rtc_logger.c
- * @brief PES public function implementations for the RTC Event Logger.
+ * @brief Public function implementations for the RTC Event Logger.
  *
  * Implements:
  *   - Lifecycle FSM: Open / Start / Stop / Close with state gating
@@ -75,10 +75,10 @@ _Static_assert(RS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT >= 8U &&
 
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
 
-/** Static TCB for the PES-owned consumer task (FR-123 — no heap) */
+/** Static TCB for the RTC Event Logger's own consumer task (FR-123 — no heap) */
 static StaticTask_t g_rs_rl_internal_task_tcb;
 
-/** Static stack for the PES-owned consumer task (FR-124) */
+/** Static stack for the RTC Event Logger's own consumer task (FR-124) */
 static StackType_t  g_rs_rl_internal_task_stack[RS_RTC_LOGGER_CFG_TASK_STACK_SIZE / sizeof(StackType_t)];
 
 #endif /* RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE */
@@ -109,9 +109,9 @@ static fsp_err_t rs_rl_auto_init(rs_rtc_logger_ctrl_t * p_ctrl);
  **********************************************************************************************************************/
 
 /**
- * @brief Check if the PES is in any non-CLOSED state.
+ * @brief Check if the RTC Event Logger is in any non-CLOSED state.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  RTC Event Logger control block.
  *
  * @return true if OPEN, STARTED, or STOPPED; false if CLOSED or p_ctrl is NULL.
  */
@@ -131,7 +131,7 @@ static bool rs_rl_is_open(rs_rtc_logger_ctrl_t const * p_ctrl)
  * or __disable_irq/__enable_irq for non-FreeRTOS builds) to atomically update
  * buffer indices and count. Applies the configured overflow policy.
  *
- * @param[in] p_ctrl      PES control block.
+ * @param[in] p_ctrl      RTC Event Logger control block.
  * @param[in] p_timestamp RTC time captured at the moment of the event.
  * @param[in] p_data      Event payload pointer.
  * @param[in] length      Event payload byte count.
@@ -240,7 +240,7 @@ static fsp_err_t rs_rl_enqueue(rs_rtc_logger_ctrl_t * p_ctrl,
  * Compiled in both Example Project mode and Expert mode so that the public
  * rs_rtc_logger_EventDequeue() wrapper can call it in either configuration.
  *
- * @param[in]  p_ctrl      PES control block.
+ * @param[in]  p_ctrl      RTC Event Logger control block.
  * @param[out] p_entry_out Entry populated on success.
  *
  * @return true if an entry was dequeued; false if buffer was empty.
@@ -286,7 +286,7 @@ static bool rs_rl_dequeue(rs_rtc_logger_ctrl_t        * p_ctrl,
  * Called from the internal consumer task after detecting auto_init_pending.
  * Guarantees the first EventTrigger() event (already enqueued) is not lost.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  RTC Event Logger control block.
  *
  * @retval FSP_SUCCESS  Auto-init completed successfully.
  * @retval (other)      Propagated from Open() or Start().
@@ -319,7 +319,7 @@ static fsp_err_t rs_rl_auto_init(rs_rtc_logger_ctrl_t * p_ctrl)
 }
 
 /**
- * @brief PES-owned internal consumer task (Example Project mode, FR-123).
+ * @brief RTC Event Logger's own internal consumer task (Example Project mode, FR-123).
  *
  * Waits for task notifications from EventTrigger() (or the UART TX-complete
  * callback), then drains the circular buffer by calling rs_rtc_logger_Write()
@@ -352,31 +352,13 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg)
                 break; /* Buffer empty */
             }
 
-            /* Transmit — blocks here until TX_COMPLETE notification or timeout */
-            fsp_err_t err = rs_rtc_logger_Write(p_ctrl, &entry);
-            if (FSP_SUCCESS == err)
-            {
-                /* Wait for UART TX complete before sending the next entry.
-                 *
-                 * rs_rtc_logger_EventTrigger() calls
-                 * vTaskNotifyGiveFromISR() on this task handle whenever a new
-                 * event arrives.  If a button press fires while we are waiting
-                 * here for TX_COMPLETE, that EventTrigger notification wakes
-                 * this ulTaskNotifyTake() prematurely — before the UART has
-                 * finished transmitting the current line_buf content.
-                 *
-                 * loop on ulTaskNotifyTake() until p_ctrl->tx_complete is
-                 * actually set by the UART ISR callback.  tx_complete is
-                 * cleared to false by rs_rtc_logger_hal_uart_write() before
-                 * every write and set to true only by the UART_EVENT_TX_COMPLETE
-                 * handler — so the condition unambiguously identifies genuine
-                 * TX completion vs. a spurious EventTrigger wake-up. */
-                do
-                {
-                    (void)ulTaskNotifyTake(pdTRUE,
-                                           pdMS_TO_TICKS(RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS));
-                } while (!p_ctrl->tx_complete);
-            }
+            /* rs_rtc_logger_hal_uart_write() only returns once the line has
+             * been handed to the UART driver AND any prior transmission has
+             * physically finished (the vendored driver's uart_flush()
+             * spin-waits on its own internal busy flag before queuing a new
+             * submission), so it is already safe to proceed to the next
+             * entry by the time rs_rtc_logger_Write() returns below. */
+            (void)rs_rtc_logger_Write(p_ctrl, &entry);
             /* On error, skip this entry and continue draining */
         }
     }
@@ -389,14 +371,14 @@ static void rs_rtc_logger_internal_consumer_task(void * p_arg)
  **********************************************************************************************************************/
 
 /**
- * @brief Validate configuration, open RTC and UART HAL drivers, prepare PES state.
+ * @brief Validate configuration, open RTC and UART HAL drivers, prepare RTC Event Logger state.
  *
  * @param[in] p_ctrl  Pointer to caller-allocated control block.
  * @param[in] p_cfg   Pointer to configuration structure.
  *
  * @retval FSP_SUCCESS              Opened successfully; state -> OPEN.
  * @retval FSP_ERR_ASSERTION        p_ctrl or p_cfg or required HAL pointers are NULL.
- * @retval FSP_ERR_ALREADY_OPEN     PES is not in CLOSED state.
+ * @retval FSP_ERR_ALREADY_OPEN     RTC Event Logger is not in CLOSED state.
  * @retval FSP_ERR_NOT_INITIALIZED  RTC oscillator not running.
  * @retval (other)                  Propagated from HAL Open() calls.
  */
@@ -407,7 +389,6 @@ fsp_err_t rs_rtc_logger_Open(rs_rtc_logger_ctrl_t       * p_ctrl,
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_ctrl,         FSP_ERR_ASSERTION);
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg,          FSP_ERR_ASSERTION);
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg->p_rtc,  FSP_ERR_ASSERTION);
-    RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg->p_uart, FSP_ERR_ASSERTION);
 
     if (RS_RTC_LOGGER_STATE_CLOSED != p_ctrl->state)
     {
@@ -552,7 +533,7 @@ fsp_err_t rs_rtc_logger_Open(rs_rtc_logger_ctrl_t       * p_ctrl,
  * call that may arrive from an ISR. xTaskCreateStatic() is illegal in ISR
  * context; this function moves task creation to a safe call site.
  *
- * @param[in] p_ctrl  PES control block. p_cfg must already be set.
+ * @param[in] p_ctrl  RTC Event Logger control block. p_cfg must already be set.
  *
  * @retval FSP_SUCCESS          Task created (or already existed).
  * @retval FSP_ERR_ASSERTION    p_ctrl or p_ctrl->p_cfg is NULL.
@@ -589,11 +570,11 @@ fsp_err_t rs_rtc_logger_EP_PrepareConsumerTask(rs_rtc_logger_ctrl_t * p_ctrl)
 /**
  * @brief Enable active UART output path.
  *
- * @param[in] p_ctrl  Pointer to PES control block.
+ * @param[in] p_ctrl  Pointer to RTC Event Logger control block.
  *
  * @retval FSP_SUCCESS           Started; state -> STARTED.
- * @retval FSP_ERR_NOT_OPEN      PES is not in OPEN or STOPPED state.
- * @retval FSP_ERR_INVALID_MODE  PES is already STARTED.
+ * @retval FSP_ERR_NOT_OPEN      RTC Event Logger is not in OPEN or STOPPED state.
+ * @retval FSP_ERR_INVALID_MODE  RTC Event Logger is already STARTED.
  */
 fsp_err_t rs_rtc_logger_Start(rs_rtc_logger_ctrl_t * p_ctrl)
 {
@@ -638,10 +619,10 @@ fsp_err_t rs_rtc_logger_Start(rs_rtc_logger_ctrl_t * p_ctrl)
 /**
  * @brief Suspend UART output, preserving configuration and buffer.
  *
- * @param[in] p_ctrl  Pointer to PES control block.
+ * @param[in] p_ctrl  Pointer to RTC Event Logger control block.
  *
  * @retval FSP_SUCCESS       Stopped; state -> STOPPED.
- * @retval FSP_ERR_NOT_OPEN  PES is not in STARTED state.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is not in STARTED state.
  */
 fsp_err_t rs_rtc_logger_Stop(rs_rtc_logger_ctrl_t * p_ctrl)
 {
@@ -665,12 +646,12 @@ fsp_err_t rs_rtc_logger_Stop(rs_rtc_logger_ctrl_t * p_ctrl)
 }
 
 /**
- * @brief Release all PES resources and close underlying HAL drivers.
+ * @brief Release all RTC Event Logger resources and close underlying HAL drivers.
  *
- * @param[in] p_ctrl  Pointer to PES control block.
+ * @param[in] p_ctrl  Pointer to RTC Event Logger control block.
  *
  * @retval FSP_SUCCESS       Closed; state -> CLOSED.
- * @retval FSP_ERR_NOT_OPEN  PES is not in OPEN or STOPPED state.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is not in OPEN or STOPPED state.
  */
 fsp_err_t rs_rtc_logger_Close(rs_rtc_logger_ctrl_t * p_ctrl)
 {
@@ -709,12 +690,12 @@ fsp_err_t rs_rtc_logger_Close(rs_rtc_logger_ctrl_t * p_ctrl)
 /**
  * @brief ISR-safe event capture entry point.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  RTC Event Logger control block.
  * @param[in] p_data  Event payload pointer.
  * @param[in] length  Payload byte count.
  *
  * @retval FSP_SUCCESS         Event enqueued.
- * @retval FSP_ERR_NOT_OPEN    Expert mode: PES not in STARTED or STOPPED state.
+ * @retval FSP_ERR_NOT_OPEN    Expert mode: RTC Event Logger not in STARTED or STOPPED state.
  * @retval FSP_ERR_OVERFLOW Buffer full and DROP_NEWEST policy.
  */
 fsp_err_t rs_rtc_logger_EventTrigger(rs_rtc_logger_ctrl_t * p_ctrl,
@@ -795,11 +776,11 @@ fsp_err_t rs_rtc_logger_EventTrigger(rs_rtc_logger_ctrl_t * p_ctrl,
 /**
  * @brief Transmit a pre-composed timestamped line over UART (VCOM).
  *
- * @param[in] p_ctrl   PES control block.
+ * @param[in] p_ctrl   RTC Event Logger control block.
  * @param[in] p_entry  Pointer to dequeued circular buffer entry.
  *
  * @retval FSP_SUCCESS           Transmission initiated.
- * @retval FSP_ERR_NOT_OPEN      PES is not in STARTED state.
+ * @retval FSP_ERR_NOT_OPEN      RTC Event Logger is not in STARTED state.
  * @retval FSP_ERR_INVALID_SIZE  Composed line exceeds line_buf.
  * @retval (other)               Propagated from UART HAL write.
  */
@@ -833,7 +814,7 @@ fsp_err_t rs_rtc_logger_Write(rs_rtc_logger_ctrl_t              * p_ctrl,
 /**
  * @brief Convenience overload: write a NUL-terminated string with live RTC timestamp.
  *
- * @param[in] p_ctrl  PES control block.
+ * @param[in] p_ctrl  RTC Event Logger control block.
  * @param[in] p_str   NUL-terminated ASCII string.
  *
  * @retval FSP_SUCCESS    Transmission initiated.
@@ -887,11 +868,11 @@ fsp_err_t rs_rtc_logger_WriteStr(rs_rtc_logger_ctrl_t * p_ctrl,
  * task.  Eliminates the need for application code to access buf_tail / buf_count
  * directly (which previously caused a TOCTOU race in demo_consumer_task()).
  *
- * @param[in]  p_ctrl      PES control block.
+ * @param[in]  p_ctrl      RTC Event Logger control block.
  * @param[out] p_entry_out Caller-allocated entry; populated on success.
  *
  * @retval FSP_SUCCESS       Entry dequeued into p_entry_out.
- * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is CLOSED.
  * @retval FSP_ERR_ASSERTION p_ctrl or p_entry_out is NULL.
  * @retval FSP_ERR_BUFFER_EMPTY Buffer empty — no entry available.
  *
@@ -923,11 +904,11 @@ fsp_err_t rs_rtc_logger_EventDequeue(rs_rtc_logger_ctrl_t        * p_ctrl,
 /**
  * @brief Change the timestamp format at runtime.
  *
- * @param[in] p_ctrl   Pointer to PES control block.
+ * @param[in] p_ctrl   Pointer to RTC Event Logger control block.
  * @param[in] format   New timestamp format.
  *
  * @retval FSP_SUCCESS       Format updated.
- * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is CLOSED.
  * @retval FSP_ERR_ASSERTION Invalid format value.
  */
 fsp_err_t rs_rtc_logger_TimestampFormatSet(rs_rtc_logger_ctrl_t    * p_ctrl,
@@ -951,11 +932,11 @@ fsp_err_t rs_rtc_logger_TimestampFormatSet(rs_rtc_logger_ctrl_t    * p_ctrl,
 /**
  * @brief Set the RTC calendar date and time.
  *
- * @param[in] p_ctrl  Pointer to PES control block.
+ * @param[in] p_ctrl  Pointer to RTC Event Logger control block.
  * @param[in] p_time  Pointer to RTC time to set.
  *
  * @retval FSP_SUCCESS   RTC time set.
- * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is CLOSED.
  * @retval (other)       Propagated from RTC HAL.
  */
 fsp_err_t rs_rtc_logger_TimeSet(rs_rtc_logger_ctrl_t * p_ctrl,
@@ -998,12 +979,12 @@ fsp_err_t rs_rtc_logger_TimeSet(rs_rtc_logger_ctrl_t * p_ctrl,
  * start would display the factory-default RTC value (2000-01-01 00:00:00)
  * instead of [0000-00-00 00:00:00].
  *
- * @param[in] p_ctrl        Pointer to PES control block.
+ * @param[in] p_ctrl        Pointer to RTC Event Logger control block.
  * @param[in] time_is_valid true  = RTC holds a user-confirmed time;
  *                          false = treat as unset (display null timestamp).
  *
  * @retval FSP_SUCCESS      Flag updated.
- * @retval FSP_ERR_NOT_OPEN PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN RTC Event Logger is CLOSED.
  * @retval FSP_ERR_ASSERTION p_ctrl is NULL.
  */
 fsp_err_t rs_rtc_logger_ClockValidate(rs_rtc_logger_ctrl_t * p_ctrl,
@@ -1026,7 +1007,7 @@ fsp_err_t rs_rtc_logger_ClockValidate(rs_rtc_logger_ctrl_t * p_ctrl,
  * See rs_rtc_logger.h for full documentation and tuning guide.
  *
  * @retval FSP_SUCCESS              RFRL updated; RTC counter restarted.
- * @retval FSP_ERR_NOT_OPEN         PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN         RTC Event Logger is CLOSED.
  * @retval FSP_ERR_INVALID_ARGUMENT rfrl_value outside valid range (8–510).
  * @retval (other)                  Propagated from RTC HAL.
  */
@@ -1046,11 +1027,11 @@ fsp_err_t rs_rtc_logger_LocoCalibrationSet(rs_rtc_logger_ctrl_t * p_ctrl,
 /**
  * @brief Restore the event sequence counter after a warm reset.
  *
- * @param[in] p_ctrl      Pointer to PES control block.
+ * @param[in] p_ctrl      Pointer to RTC Event Logger control block.
  * @param[in] seq_count   Sequence counter value to restore.
  *
  * @retval FSP_SUCCESS       Counter restored.
- * @retval FSP_ERR_NOT_OPEN  PES is not in OPEN or STOPPED state.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is not in OPEN or STOPPED state.
  */
 fsp_err_t rs_rtc_logger_SeqCountSet(rs_rtc_logger_ctrl_t * p_ctrl,
                                      uint32_t               seq_count)
@@ -1058,7 +1039,7 @@ fsp_err_t rs_rtc_logger_SeqCountSet(rs_rtc_logger_ctrl_t * p_ctrl,
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_ctrl, FSP_ERR_ASSERTION);
 
     /* Allow restore from any non-CLOSED state.
-     * In Example Project mode the PES reaches STARTED before the CLI task
+     * In Example Project mode the RTC Event Logger reaches STARTED before the CLI task
      * can call SeqCountSet() after auto-init, so OPEN and STOPPED alone are
      * too restrictive. A 32-bit aligned store is atomic on Cortex-M33. */
     if (RS_RTC_LOGGER_STATE_CLOSED == p_ctrl->state)
@@ -1076,13 +1057,13 @@ fsp_err_t rs_rtc_logger_SeqCountSet(rs_rtc_logger_ctrl_t * p_ctrl,
  **********************************************************************************************************************/
 
 /**
- * @brief Get a snapshot of PES runtime status and diagnostics.
+ * @brief Get a snapshot of RTC Event Logger runtime status and diagnostics.
  *
- * @param[in]  p_ctrl    Pointer to PES control block.
+ * @param[in]  p_ctrl    Pointer to RTC Event Logger control block.
  * @param[out] p_status  Caller-allocated status structure.
  *
  * @retval FSP_SUCCESS       Status populated.
- * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is CLOSED.
  * @retval FSP_ERR_ASSERTION p_status is NULL.
  */
 fsp_err_t rs_rtc_logger_StatusGet(rs_rtc_logger_ctrl_t   * p_ctrl,
@@ -1110,11 +1091,11 @@ fsp_err_t rs_rtc_logger_StatusGet(rs_rtc_logger_ctrl_t   * p_ctrl,
 /**
  * @brief Read the current RTC date and time directly.
  *
- * @param[in]  p_ctrl  Pointer to PES control block.
+ * @param[in]  p_ctrl  Pointer to RTC Event Logger control block.
  * @param[out] p_time  Populated with current RTC value.
  *
  * @retval FSP_SUCCESS   Time populated.
- * @retval FSP_ERR_NOT_OPEN  PES is CLOSED.
+ * @retval FSP_ERR_NOT_OPEN  RTC Event Logger is CLOSED.
  * @retval (other)       Propagated from RTC HAL.
  */
 fsp_err_t rs_rtc_logger_TimeGet(rs_rtc_logger_ctrl_t * p_ctrl,
@@ -1132,7 +1113,7 @@ fsp_err_t rs_rtc_logger_TimeGet(rs_rtc_logger_ctrl_t * p_ctrl,
 }
 
 /**
- * @brief Get PES module version.
+ * @brief Get the RTC Event Logger module version.
  *
  * @param[out] p_version  Populated with version fields.
  *

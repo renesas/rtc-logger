@@ -9,66 +9,41 @@
  * @brief HAL abstraction shim for the RTC Event Logger.
  *
  * This module is a thin wrapper around FSP HAL driver calls. It owns:
- *   - RTC open/close/get/set wrappers
- *   - UART open/close/write wrappers
- *   - The UART TX-complete callback (ISR context; must not block)
+ *   - RTC open/close/get/set wrappers (direct raw-driver calls)
+ *   - UART open/close/write wrappers (routed through the Buffered I/O
+ *     UART driver's stdio stream — see the note below)
  *
- * The UART callback uses the p_context field of the UART callback args to
- * locate the control block. At Open() time, the RTC Event Logger stores a pointer to
- * itself in the UART driver's extend structure context so the callback can
- * update tx_complete and signal the consumer task.
- *
- * Design note: The approach of finding the control block via p_context
- * requires that the application populates the UART instance's p_context
- * field with the address of the rs_rtc_logger_ctrl_t in configuration.xml
- * or via the hardware config file. This is documented in Section 10 of
- * the architecture document. Alternatively, a single global pointer
- * (g_rs_rtc_logger_uart_ctrl_ptr) is used as a fallback when p_context
- * is NULL — this is safe for single-instance usage (primary target use case).
+ * There is no UART ISR callback owned by this component: rs_rtc_logger_hal_uart_write()
+ * blocks briefly, on the calling task only, until the write is safely
+ * submitted/serialized, so there is no asynchronous TX-complete event for
+ * this component to track.
  */
 
 #include <rs_rtc_logger/rs_rtc_logger_hal.h>
-
-/* Forward declaration — implemented in rs_rtc_logger_demo.c.
- * Called from ISR context to enqueue one received character
- * into the demo CLI RX ring buffer. */
-extern void demo_uart_rx_char_enqueue(uint8_t c);
 #include <rs_rtc_logger/rs_rtc_logger.h>
+
+/* Buffered I/O over UART driver integration (single shared VCOM UART).
+ *
+ * g_uart_jlob_vcom is opened, owned, and has its ISR callback installed
+ * exclusively by the vendored Buffered I/O UART driver
+ * (src/rs_stdio_uart_buffer_io/), the moment any stdio call
+ * (printf/getchar/fflush) first runs - see jlob_uart_init_once() in that
+ * driver's syscalls_picolib_stdio_to_uart.c.
+ *
+ * Because only one driver may own a uart_instance_t at a time,
+ * rs_rtc_logger_hal_uart_open()/_close()/_write() do not call the raw UART
+ * driver API directly. Instead, log-line bytes are written through the
+ * SAME stdio stream the Buffered I/O UART driver owns, via the thin
+ * adapter in rs_rtc_logger_stdio_console.c. This keeps the two components
+ * cleanly separated (no source-level merge) while sharing the physical
+ * VCOM UART. */
+#include <stdio.h>
+#include "rs_rtc_logger_stdio_console.h"
 
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
  #include "FreeRTOS.h"
  #include "task.h"
 #endif
-
-/***********************************************************************************************************************
- * Module-scope pointer — allows the UART ISR callback to find the ctrl block.
- * Valid for single-instance usage (primary reference target use case).
- * For multi-instance, applications must supply p_context in the UART config.
- **********************************************************************************************************************/
-static rs_rtc_logger_ctrl_t * volatile gp_rs_rl_uart_ctrl = NULL;
-
-/***********************************************************************************************************************
- * Private helper functions
- **********************************************************************************************************************/
-
-/**
- * @brief Locate the control block for the UART ISR callback.
- *
- * Attempts p_context first (multi-instance safe), falls back to the
- * module-global pointer (single-instance path).
- *
- * @param[in] p_args  UART callback args from HAL.
- *
- * @return Pointer to the control block, or NULL if not found.
- */
-static rs_rtc_logger_ctrl_t * rs_rl_hal_find_ctrl(uart_callback_args_t * p_args)
-{
-    if ((NULL != p_args) && (NULL != p_args->p_context))
-    {
-        return (rs_rtc_logger_ctrl_t *)p_args->p_context;
-    }
-    return gp_rs_rl_uart_ctrl;
-}
 
 /***********************************************************************************************************************
  * RTC HAL wrappers
@@ -211,8 +186,8 @@ fsp_err_t rs_rtc_logger_hal_rtc_open(rs_rtc_logger_ctrl_t * p_ctrl)
      *
      * Explicitly call R_BSP_IrqEnable() on the carry IRQ vector, in
      * addition to setting CIE, so the carry interrupt is actually unmasked
-     * and delivered to the CPU every second for the lifetime of the PES
-     * instance.
+     * and delivered to the CPU every second for the lifetime of the RTC
+     * Event Logger instance.
      *
      * N-12 constraint: carry_ipl must be LOWER (higher preemption) than the
      * button ISR IPL so the carry ISR can always run promptly, including
@@ -299,8 +274,8 @@ static uint8_t rs_rl_bcd_to_dec (uint8_t bcd)
  *
  * **N-12 carry_ipl note (Issue4 fix):**
  * CIE is now kept permanently enabled after Open() (see hal_rtc_open()).
- * The carry ISR therefore fires every second for the lifetime of the PES
- * instance.  The N-12 constraint — carry_ipl must be LOWER (higher
+ * The carry ISR therefore fires every second for the lifetime of the RTC
+ * Event Logger instance.  The N-12 constraint — carry_ipl must be LOWER (higher
  * preemption) than the button ISR IPL — IS REQUIRED for correct operation:
  * when the sandwich loop detects a mid-carry read (sec_before != sec_after),
  * it retries; the carry ISR must be able to preempt the button ISR during
@@ -452,157 +427,85 @@ fsp_err_t rs_rtc_logger_hal_loco_freq_set(rs_rtc_logger_ctrl_t * p_ctrl,
 /**
  * @brief Open the UART HAL driver.
  *
- * Also registers the module-global control block pointer for the ISR callback
- * fallback path (single-instance use case).
+ * Ensures the shared Buffered I/O UART driver is initialized (idempotent) and
+ * strictly validated against the RA4E2 FPB reference configuration — see
+ * rs_rtc_logger_console_init(). A validation failure here is a real,
+ * non-recoverable-by-retry configuration error, and is propagated to the
+ * caller the same way any other Open() failure would be.
  *
- * @param[in] p_ctrl  control block.
+ * @param[in] p_ctrl  control block (unused).
  *
- * @retval FSP_SUCCESS  UART opened.
- * @retval (other)      Propagated from UART HAL open().
+ * @retval FSP_SUCCESS  UART ready.
+ * @retval (other)      Propagated from rs_rtc_logger_console_init().
  */
 fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
 {
-    const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    fsp_err_t               err    = p_uart->p_api->open(p_uart->p_ctrl, p_uart->p_cfg);
+    FSP_PARAMETER_NOT_USED(p_ctrl);
 
-    if (FSP_ERR_ALREADY_OPEN == err)
-    {
-        /* The UART was left open by the early banner path in blinky_thread_entry.c
-         * so that demo_uart_write_blocking() could print CLI status messages before
-         * the logger initialises.  Close it now and reopen with the logger's own
-         * callback and configuration so ownership transfers cleanly.             */
-        (void)p_uart->p_api->close(p_uart->p_ctrl);
-        err = p_uart->p_api->open(p_uart->p_ctrl, p_uart->p_cfg);
-    }
-
-    if (FSP_SUCCESS == err)
-    {
-        /* Register for ISR callback fallback path */
-        gp_rs_rl_uart_ctrl = p_ctrl;
-    }
-    return err;
+    /* The physical UART (g_uart_jlob_vcom) is opened and owned by the
+     * Buffered I/O UART driver on first stdio use - typically already done
+     * by the sign-on banner in blinky_thread_entry.c before this ever runs.
+     * rs_rtc_logger_console_init() is idempotent and simply guarantees that
+     * has happened. */
+    return rs_rtc_logger_console_init();
 }
 
 /**
  * @brief Close the UART HAL driver.
  *
+ * The physical UART is shared with (and owned by) the Buffered I/O UART
+ * driver for the CLI console, and is never closed for the life of the
+ * application, so this function is a no-op.
+ *
  * @param[in] p_ctrl  control block.
  *
- * @retval FSP_SUCCESS  UART closed.
- * @retval (other)      Propagated from UART HAL close().
+ * @retval FSP_SUCCESS  Always.
  */
 fsp_err_t rs_rtc_logger_hal_uart_close(rs_rtc_logger_ctrl_t * p_ctrl)
 {
-    const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    fsp_err_t               err    = p_uart->p_api->close(p_uart->p_ctrl);
+    FSP_PARAMETER_NOT_USED(p_ctrl);
 
-    /* Clear the global pointer if this instance is the registered one */
-    if (gp_rs_rl_uart_ctrl == p_ctrl)
-    {
-        gp_rs_rl_uart_ctrl = NULL;
-    }
-
-    return err;
+    return FSP_SUCCESS;
 }
 
 /**
- * @brief Submit a non-blocking UART write.
- *
- * Clears the tx_complete flag before submitting so the callback can set it
- * on completion.
+ * @brief Submit a UART write.
  *
  * @param[in] p_ctrl   control block.
  * @param[in] p_data   Data buffer to transmit.
  * @param[in] length   Byte count to transmit.
  *
- * @retval FSP_SUCCESS  Write submitted.
- * @retval (other)      Propagated from UART HAL write().
+ * @retval FSP_SUCCESS           Write submitted (and, per the Buffered I/O
+ *                                UART driver's fflush() semantics, serialized
+ *                                against any prior in-flight transmission).
+ * @retval FSP_ERR_WRITE_FAILED  fwrite()/fflush() did not complete cleanly.
  */
 fsp_err_t rs_rtc_logger_hal_uart_write(rs_rtc_logger_ctrl_t * p_ctrl,
                                         uint8_t        const * p_data,
                                         uint32_t               length)
 {
-    p_ctrl->tx_complete = false;
+    /* Submits the log line through the Buffered I/O UART driver's stdout
+     * stream.
+     *
+     * fwrite() queues the bytes into the driver's TX byteq; fflush() hands them
+     * to the UART driver for transmission. The driver's own uart_flush()
+     * serializes back-to-back submissions internally (it briefly waits on
+     * its internal tx_busy flag if a previous transmission from either the
+     * CLI console or a prior log line is still physically in flight) before
+     * queuing this one, so log lines are never interleaved or lost even
+     * though this call itself does not block waiting for completion of the
+     * write it just submitted. By the time this function returns, the write
+     * has been safely handed off — there is no further asynchronous
+     * completion state for the caller to wait on. */
+    size_t written = fwrite(p_data, sizeof(uint8_t), (size_t)length, stdout);
+    int    flushed = fflush(stdout);
 
-    const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    return p_uart->p_api->write(p_uart->p_ctrl, p_data, length);
-}
-
-/***********************************************************************************************************************
- * UART TX-complete callback — ISR context
- **********************************************************************************************************************/
-
-/**
- * @brief UART TX-complete callback registered with the UART HAL driver.
- *
- * Called from the UART ISR when transmission completes or an error occurs.
- * Sets tx_complete in the control block and optionally signals the consumer task.
- *
- * @param[in] p_args  UART callback arguments from the HAL driver.
- */
-void rs_rtc_logger_uart_callback(uart_callback_args_t * p_args)
-{
-    rs_rtc_logger_ctrl_t * p_ctrl = rs_rl_hal_find_ctrl(p_args);
-    if (NULL == p_ctrl)
+    if ((written != (size_t)length) || (0 != flushed))
     {
-        return; /* Defensive — should not happen in normal operation */
-    }
-
-    if (UART_EVENT_TX_COMPLETE == p_args->event)
-    {
-        p_ctrl->tx_complete = true;
-
-        /* Signal consumer task to transmit next entry */
-#if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
-        if (NULL != p_ctrl->internal_task_handle)
-        {
-            BaseType_t higher_priority_task_woken = pdFALSE;
-            vTaskNotifyGiveFromISR(p_ctrl->internal_task_handle, &higher_priority_task_woken);
-            portYIELD_FROM_ISR(higher_priority_task_woken);
-        }
-#endif
-
-        /* Application callback — TX_COMPLETE */
-        if (NULL != p_ctrl->p_cfg->p_callback)
-        {
-            rs_rtc_logger_callback_args_t args =
-            {
-                .event     = RS_RTC_LOGGER_EVENT_TX_COMPLETE,
-                .err       = FSP_SUCCESS,
-                .seq_count = p_ctrl->seq_count,
-                .p_context = p_ctrl->p_cfg->p_context,
-            };
-            p_ctrl->p_cfg->p_callback(&args);
-        }
-    }
-    else if (UART_EVENT_RX_CHAR == p_args->event)
-    {
-        /* Route received byte to the demo CLI input buffer.
-         * The RTC Event logger itself has no use for RX data; this allows the demo
-         * CLI task to read user input from VCOM without a separate
-         * UART instance. demo_uart_rx_char_enqueue() is ISR-safe. */
-        demo_uart_rx_char_enqueue((uint8_t)p_args->data);
-    }
-    else if (UART_EVENT_TX_DATA_EMPTY == p_args->event)
-    {
-        /* TX data empty — not treated as completion; ignore */
-    }
-    else
-    {
-        /* Other events (RX, error) — treat as TX error for logger purposes */
         p_ctrl->tx_errors++;
-        p_ctrl->tx_complete = true; /* Unblock consumer to allow retry / skip */
-
-        if (NULL != p_ctrl->p_cfg->p_callback)
-        {
-            rs_rtc_logger_callback_args_t args =
-            {
-                .event     = RS_RTC_LOGGER_EVENT_TX_ERROR,
-                .err       = FSP_ERR_TRANSFER_ABORTED,
-                .seq_count = p_ctrl->seq_count,
-                .p_context = p_ctrl->p_cfg->p_context,
-            };
-            p_ctrl->p_cfg->p_callback(&args);
-        }
+        return FSP_ERR_WRITE_FAILED;
     }
+
+    return FSP_SUCCESS;
 }
+
