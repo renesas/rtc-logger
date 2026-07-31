@@ -76,8 +76,13 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │
 ├── examples/
 │   └── e2studio/
-│       ├── RTC_Event_Logger_FPB_RA4E2/    ← e²studio project for FPB-RA4E2
-│       └── RTC_Event_Logger_FPB_RA6E2/    ← e²studio project for FPB-RA6E2
+│   │   ├── RTC_Event_Logger_FPB_RA4E2/    ← e²studio project for FPB-RA4E2
+│   │   └── RTC_Event_Logger_FPB_RA6E2/    ← e²studio project for FPB-RA6E2
+│   │
+│   └── VSCode
+│       │ 
+│       ├── RTC_Event_Logger_FPB_RA4E2/    ← VSCode project for FPB-RA4E2
+│       └── RTC_Event_Logger_FPB_RA6E2/    ← VSCode project for FPB-RA6E2
 │
 ├── firmware/
 │   ├── meson.build                ← Meson firmware build (per-board ELF targets)
@@ -85,27 +90,15 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │
 ├── src/
 │   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
-│   │   ├── rs_rtc_logger.c / .h
-│   │   ├── rs_rtc_logger_cfg.h
-│   │   ├── rs_rtc_logger_format.c / .h
-│   │   ├── rs_rtc_logger_hal.c / .h
-│   │   ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter to the vendored Buffered I/O UART driver
-│   │   ├── rs_rtc_logger_types.h
-│   │   └── config/
-│   │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance only (no UART preset)
-│   │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance only (no UART preset)
-│   ├── rs_stdio_uart_buffer_io/     ← Vendored Buffered I/O UART driver, used unmodified
-│   │   ├── r_byteq.c / .h
-│   │   ├── rs_stdio_uart.c / .h
-│   │   ├── syscalls_picolib_stdio_to_uart.c
-│   │   ├── stdio_uart_config_ra4e2_fpb.c
-│   │   └── stdio_uart_config_ra6e2_fpb.c
-│   ├── rs_rtc_logger_demo.c        ← Reference application (shared by both boards)
-│   ├── blinky_thread_entry_ra4e2.c / _ra6e2.c   ← Per-board FreeRTOS thread entry
-│   ├── hal_entry.c                 ← FSP v6.5.0 application hook (Meson build only)
-│   ├── hal_warmstart.c / .h        ← Warm-start detection helper
-│   ├── fault_handler.c             ← Debug fault handler
-│   └── crt0_stub.c                 ← Weak _start stub (Meson/ATfE toolchain compatibility)
+│       ├── rs_rtc_logger.c / .h
+│       ├── rs_rtc_logger_cfg.h
+│       ├── rs_rtc_logger_format.c / .h
+│       ├── rs_rtc_logger_hal.c / .h
+│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter to Buffered I/O UART driver
+│       ├── rs_rtc_logger_types.h
+│       └── config/
+│           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
+│           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
 │
 ├── tests/
 │   ├── meson.build                 ← Test build configuration (host vs. target tests)
@@ -125,6 +118,9 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 ├── toolchains/
 │   ├── llvm-cortex-m23.ini         ← Meson cross file for Cortex-M23 (RA0 series)
 │   └── llvm-cortex-m33.ini         ← Meson cross file for Cortex-M23/M33 (RA2/RA4/RA6 series)
+│
+├── srec
+│   └── e2 studio example project executables in S-RECORD format
 │
 └── scripts/
     ├── env.ps1                     ← Windows PATH setup (edit before use)
