@@ -26,6 +26,8 @@
 2. The project is fully functional upon import. The `configuration.xml` is pre-configured; no FSP Stack Configurator re-run is required for the default preset path.
 3. Build the project (**Project → Build All**). The default build target is **Example Project mode** (`RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE = 1`).
 4. Flash and debug using **Run → Debug As → Renesas GDB Hardware Debugging**.
+5. Open a serial terminal on the J-Link virtual COM port at 115200 8N1.
+6. Power cycle the target board by disconnecting and re-connecting the USB cable.
 
 To switch to **Expert mode**, set `RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE` to `0` in `rs_rtc_logger_cfg.h` (or as a project-level compiler define `-DRS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE=0`) and rebuild.
 
