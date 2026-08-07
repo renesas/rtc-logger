@@ -15,9 +15,10 @@
     "type": "renesas-hardware",
     "request": "launch",
     "target": {
-      "device": "R7FA6E2BB",
+      "debuggerType": "SEGGERJLINKARM",
       "deviceFamily": "RA",
-      "debuggerType": "SEGGERJLINKARM"
+      "board": "FPB-RA6E2",
+      "device": "R7FA6E2BB"
     },
     "cwd": "${command:renesas.debug.supportFolder}",
     "images": []

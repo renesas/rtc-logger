@@ -40,7 +40,7 @@ endif()
 cmake_minimum_required(VERSION 3.16.4)
 
 # Project configuration
-project(RTC_EVENT_LOGGER_FPB_RA6E2
+project(RTC_Event_Logger_FPB_RA6E2_cmake
 	VERSION 1.0.0
 	LANGUAGES C CXX ASM)
 
@@ -54,3 +54,42 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/GeneratedCfg.cmake)
 # If required user can amend RASC generated flags here, e.g. list(REMOVE_ITEM RASC_CMAKE_C_FLAGS "-Wall")
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/GeneratedSrc.cmake)
+
+target_compile_definitions(${PROJECT_NAME}.elf PRIVATE $<$<CONFIG:Debug>:
+    BSP_CFG_RTC_USED=1>)
+
+target_include_directories(${PROJECT_NAME}.elf
+    BEFORE
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+
+
+target_include_directories(${PROJECT_NAME}.elf
+	PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/.
+	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger
+	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger/config
+)
+
+target_link_options(${PROJECT_NAME}.elf
+    PRIVATE
+        $<$<CONFIG:Debug>:
+            "SHELL:-Wl,-z,norelro"
+        >
+)
+
+target_link_options(${PROJECT_NAME}.elf
+    PRIVATE
+        $<$<CONFIG:Release>:
+            "SHELL:-Wl,-z,norelro"
+        >
+)
+
+
+target_link_libraries(${PROJECT_NAME}.elf PRIVATE
+    crt0
+    c++abi
+)
+

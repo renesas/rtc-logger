@@ -175,7 +175,7 @@
 #define BSP_FEATURE_CGC_PLL_INPUT_PRE_DIV_MAX_HZ                        (0UL)           // Maximum input frequency of the PLL (before input divider).
 #define BSP_FEATURE_CGC_PLL_INPUT_PRE_DIV_MIN_HZ                        (0UL)           // Minimum input frequency of the PLL (before input divider).
 #define BSP_FEATURE_CGC_PLL_OUT_MAX_HZ                                  (240000000UL)   // Maximum output frequency for PLL unit 1.
-#define BSP_FEATURE_CGC_PLL_OUT_MIN_HZ                                  (120000000UL)   // Minimum output frequency for PLL unit 1.
+#define BSP_FEATURE_CGC_PLL_OUT_MIN_HZ                                  (100000000UL)   // Minimum output frequency for PLL unit 1.
 #define BSP_FEATURE_CGC_PLL1_NUM_OUTPUT_CLOCKS                          (1UL)           // Number of output clocks for PLL1.
 #define BSP_FEATURE_CGC_PLL2_NUM_OUTPUT_CLOCKS                          (0UL)           // Number of output clocks for PLL2.
 #define BSP_FEATURE_CGC_PLL2_OUT_MAX_HZ                                 (0UL)           // Maximum output frequency for PLL unit 2.
@@ -231,7 +231,7 @@
 #define BSP_FEATURE_DAC8_UNIT_COUNT                                     (0UL)           // Feature not available on this device.
 
 #define BSP_FEATURE_DAC12_IS_AVAILABLE                                  (1UL)
-#define BSP_FEATURE_DAC12_CHANNELS_PER_UNIT                             (2UL)           // Number of available channels per DAC12 instance.
+#define BSP_FEATURE_DAC12_CHANNELS_PER_UNIT                             (1UL)           // Number of available channels per DAC12 instance.
 #define BSP_FEATURE_DAC12_UNIT_COUNT                                    (1UL)           // Number of available DAC12 instance.
 
 #define BSP_FEATURE_DMAC_IS_AVAILABLE                                   (1UL)
@@ -320,17 +320,17 @@
 
 #define BSP_FEATURE_GPT_IS_AVAILABLE                                    (1UL)
 #define BSP_FEATURE_GPT_32BIT_CHANNEL_MASK                              (0x00UL)        // Mask of 32-bit GPT channel indices.
-#define BSP_FEATURE_GPT_AD_CONVERSION_START_CHANNEL_MASK                (0x3FUL)        // Mask of GPT channels supporting A/D conversion start.
+#define BSP_FEATURE_GPT_AD_CONVERSION_START_CHANNEL_MASK                (0x33UL)        // Mask of GPT channels supporting A/D conversion start.
 #define BSP_FEATURE_GPT_AD_DIRECT_START_SUPPORTED                       (0UL)           // GPT A/D conversion start request is directly output to ADC instead of via the ELC.
 #define BSP_FEATURE_GPT_CLOCK_DIVIDER_STEP_SIZE                         (2UL)           // Multiplicative step size of the clock divider (GTCR.TPCS).
 #define BSP_FEATURE_GPT_CLOCK_DIVIDER_VALUE_7_9_VALID                   (0UL)           // Whether or not the bit-values of 0b0111 and 0b1001 are valid divider settings (GTCR.TPCS).
-#define BSP_FEATURE_GPT_EVENT_COUNT_CHANNEL_MASK                        (0x3FUL)        // Mask of channels that support event count input (has GTUPSR register).
+#define BSP_FEATURE_GPT_EVENT_COUNT_CHANNEL_MASK                        (0x33UL)        // Mask of channels that support event count input (has GTUPSR register).
 #define BSP_FEATURE_GPT_EVENT_COUNT_SUPPORTED                           (1UL)           // At least one channel supports event counts.
-#define BSP_FEATURE_GPT_GPTE_CHANNEL_MASK                               (0x3FUL)        // Mask of GPT channels that are the GPTE implementation.
+#define BSP_FEATURE_GPT_GPTE_CHANNEL_MASK                               (0x33UL)        // Mask of GPT channels that are the GPTE implementation.
 #define BSP_FEATURE_GPT_GPTE_SUPPORTED                                  (1UL)           // At least one GPTE implementation is available, GPTE implementations have a GTITC register.
 #define BSP_FEATURE_GPT_GPTEH_CHANNEL_MASK                              (0x00UL)        // Mask of GPT channels that are the GPTEH implementation.
 #define BSP_FEATURE_GPT_GPTEH_SUPPORTED                                 (0UL)           // At least one GPTEH implementation is available, GPTEH implementations have a PDG module.
-#define BSP_FEATURE_GPT_GTDVU_CHANNEL_MASK                              (0x3FUL)        // Mask of channels that support dead time control.
+#define BSP_FEATURE_GPT_GTDVU_CHANNEL_MASK                              (0x33UL)        // Mask of channels that support dead time control.
 #define BSP_FEATURE_GPT_GTDVU_SUPPORTED                                 (1UL)           // At least one GPT channel with GTDVU support is available.
 #define BSP_FEATURE_GPT_MSTP_HAS_MSTPCRE                                (1UL)           // Indicates the MSTP peripheral has an MSTPCRE register.
 #define BSP_FEATURE_GPT_MSTP_MSTPD5                                     (0UL)           // GPT stop bits use MSTPCRD.MSTPD5.
@@ -480,8 +480,8 @@
 #define BSP_FEATURE_POEG_HAS_POEGG_DERRST                               (0UL)           // Indicates POEGG.DERRSTn registers are available.
 #define BSP_FEATURE_POEG_MSTP_MSTPD13                                   (0UL)           // Indicates the MSTP uses bit 13 of MSTPCRD to control the POEG.
 
-#define BSP_FEATURE_QSPI_IS_AVAILABLE                                   (1UL)
-#define BSP_FEATURE_QSPI_DEVICE_START_ADDRESS                           (0x60000000UL)  // Start address of the CS0 memory mapped region for QSPI.
+#define BSP_FEATURE_QSPI_IS_AVAILABLE                                   (0UL)
+#define BSP_FEATURE_QSPI_DEVICE_START_ADDRESS                           (0x00UL)        // Feature not available on this device.
 
 #define BSP_FEATURE_RSIP_AES_B_SUPPORTED                                (0UL)           // The device supports cryptography using AES_B.
 #define BSP_FEATURE_RSIP_AES_SUPPORTED                                  (0UL)           // The device supports cryptography using AES.
@@ -564,8 +564,8 @@
 #define BSP_FEATURE_SYSC_CLOCK_FREQ_FOUR_ROM_WAITS                      (0UL)           // The maximum frequency allowed without having four ROM wait cycles.
 #define BSP_FEATURE_SYSC_CLOCK_FREQ_NO_RAM_WAITS                        (100000000UL)   // The maximum frequency that can be used before wait cycles are necessary.
 #define BSP_FEATURE_SYSC_CLOCK_FREQ_ONE_ROM_WAITS                       (50000000UL)    // Maximum frequency allowed before requiring one wait cycle.
-#define BSP_FEATURE_SYSC_CLOCK_FREQ_THREE_ROM_WAITS                     (150000000UL)   // Maximum frequency allowed before requiring three wait cycles.
-#define BSP_FEATURE_SYSC_CLOCK_FREQ_TWO_ROM_WAITS                       (100000000UL)   // Maximum frequency allowed before requiring two wait cycles.
+#define BSP_FEATURE_SYSC_CLOCK_FREQ_THREE_ROM_WAITS                     (0UL)           // Maximum frequency allowed before requiring three wait cycles.
+#define BSP_FEATURE_SYSC_CLOCK_FREQ_TWO_ROM_WAITS                       (0UL)           // Maximum frequency allowed before requiring two wait cycles.
 
 #define BSP_FEATURE_TAU_IS_AVAILABLE                                    (0UL)
 #define BSP_FEATURE_TAU_VALID_CHANNEL_MASK                              (0x00UL)        // Feature not available on this device.

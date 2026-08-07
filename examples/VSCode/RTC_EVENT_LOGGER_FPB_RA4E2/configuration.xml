@@ -221,7 +221,6 @@
   </raComponentSelection>
   <raElcConfiguration/>
   <raIcuConfiguration/>
-  <raLinkMapConfiguration/>
   <raModuleConfiguration>
     <module id="module.driver.ioport_on_ioport.0">
       <property id="module.driver.ioport.name" value="g_ioport"/>

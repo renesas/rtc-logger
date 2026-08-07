@@ -71,7 +71,7 @@ extern "C" {
  #elif BSP_MCU_GROUP_RA4E1
   #include "R7FA4E10D.h"
  #elif BSP_MCU_GROUP_RA4E2
-  #include "R7FA4E2B9.h"
+  #include "R7FA6E2BB.h"
  #elif BSP_MCU_GROUP_RA4M1
   #include "R7FA4M1AB.h"
  #elif BSP_MCU_GROUP_RA4M2

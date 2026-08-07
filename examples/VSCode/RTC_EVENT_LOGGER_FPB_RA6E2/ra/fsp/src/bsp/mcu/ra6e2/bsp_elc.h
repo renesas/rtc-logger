@@ -131,26 +131,6 @@ typedef enum e_elc_event_ra6e2
     ELC_EVENT_GPT1_PC                       = (0x0D3), // Period count function finish
     ELC_EVENT_GPT1_AD_TRIG_A                = (0x0D4), // A/D converter start request A
     ELC_EVENT_GPT1_AD_TRIG_B                = (0x0D5), // A/D converter start request B
-    ELC_EVENT_GPT2_CAPTURE_COMPARE_A        = (0x0D6), // Capture/Compare match A
-    ELC_EVENT_GPT2_CAPTURE_COMPARE_B        = (0x0D7), // Capture/Compare match B
-    ELC_EVENT_GPT2_COMPARE_C                = (0x0D8), // Compare match C
-    ELC_EVENT_GPT2_COMPARE_D                = (0x0D9), // Compare match D
-    ELC_EVENT_GPT2_COMPARE_E                = (0x0DA), // Compare match E
-    ELC_EVENT_GPT2_COMPARE_F                = (0x0DB), // Compare match F
-    ELC_EVENT_GPT2_COUNTER_OVERFLOW         = (0x0DC), // Overflow
-    ELC_EVENT_GPT2_COUNTER_UNDERFLOW        = (0x0DD), // Underflow
-    ELC_EVENT_GPT2_AD_TRIG_A                = (0x0DF), // A/D converter start request A
-    ELC_EVENT_GPT2_AD_TRIG_B                = (0x0E0), // A/D converter start request B
-    ELC_EVENT_GPT3_CAPTURE_COMPARE_A        = (0x0E1), // Capture/Compare match A
-    ELC_EVENT_GPT3_CAPTURE_COMPARE_B        = (0x0E2), // Capture/Compare match B
-    ELC_EVENT_GPT3_COMPARE_C                = (0x0E3), // Compare match C
-    ELC_EVENT_GPT3_COMPARE_D                = (0x0E4), // Compare match D
-    ELC_EVENT_GPT3_COMPARE_E                = (0x0E5), // Compare match E
-    ELC_EVENT_GPT3_COMPARE_F                = (0x0E6), // Compare match F
-    ELC_EVENT_GPT3_COUNTER_OVERFLOW         = (0x0E7), // Overflow
-    ELC_EVENT_GPT3_COUNTER_UNDERFLOW        = (0x0E8), // Underflow
-    ELC_EVENT_GPT3_AD_TRIG_A                = (0x0EA), // A/D converter start request A
-    ELC_EVENT_GPT3_AD_TRIG_B                = (0x0EB), // A/D converter start request B
     ELC_EVENT_GPT4_CAPTURE_COMPARE_A        = (0x0EC), // Capture/Compare match A
     ELC_EVENT_GPT4_CAPTURE_COMPARE_B        = (0x0ED), // Capture/Compare match B
     ELC_EVENT_GPT4_COMPARE_C                = (0x0EE), // Compare match C
@@ -202,7 +182,6 @@ typedef enum e_elc_event_ra6e2
     ELC_EVENT_SPI1_ERI                      = (0x1CC), // Error
     ELC_EVENT_SPI1_TEI                      = (0x1CD), // Transmission complete event
     ELC_EVENT_CAN0_MRAM_ERI                 = (0x1D0), // CANFD0 ECC error
-    ELC_EVENT_QSPI_INT                      = (0x1DA), // QSPI interrupt
     ELC_EVENT_DOC_INT                       = (0x1DB), // Data operation circuit interrupt
     ELC_EVENT_I3C0_RESPONSE                 = (0x1DC), // Response status buffer full
     ELC_EVENT_I3C0_COMMAND                  = (0x1DD), // Command buffer empty
@@ -248,7 +227,6 @@ typedef enum e_elc_peripheral
     ELC_PERIPHERAL_ADC0          = (8),
     ELC_PERIPHERAL_ADC0_B        = (9),
     ELC_PERIPHERAL_DAC0          = (12),
-    ELC_PERIPHERAL_DAC1          = (13),
     ELC_PERIPHERAL_IOPORT1       = (14),
     ELC_PERIPHERAL_IOPORT2       = (15),
     ELC_PERIPHERAL_IOPORT3       = (16),
@@ -257,7 +235,7 @@ typedef enum e_elc_peripheral
 } elc_peripheral_t;
 
 /** Positions of event link set registers (ELSRs) available on this MCU */
-#define BSP_ELC_PERIPHERAL_MASK  (0x0083F3FFU)
+#define BSP_ELC_PERIPHERAL_MASK  (0x0083D3FFU)
 
 /* UNCRUSTIFY-ON */
 /** @} (end addtogroup BSP_MCU_RA6E2) */

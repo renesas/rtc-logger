@@ -1,4 +1,5 @@
 {
+  "version": "2.0.0",
   "tasks": [
     {
       "type": "cmake",
@@ -7,15 +8,15 @@
       "label": "FSP Smart Configurator",
       "detail": "Edit configuration in FSP Smart Configurator",
       "targets": [
-        "open_rasc_RTC_EVENT_LOGGER_FPB_RA6E2"
+        "open_rasc_RTC_Event_Logger_FPB_RA6E2_cmake"
       ],
       "presentation": {
-        "clear": false,
-        "showReuseMessage": false,
         "reveal": "silent",
         "focus": false,
         "echo": false,
-        "panel": "shared"
+        "panel": "shared",
+        "clear": false,
+        "showReuseMessage": false
       }
     },
     {
@@ -39,6 +40,5 @@
         "Configure Project"
       ]
     }
-  ],
-  "version": "2.0.0"
+  ]
 }

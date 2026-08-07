@@ -16,8 +16,9 @@
     "request": "launch",
     "target": {
       "debuggerType": "SEGGERJLINKARM",
-      "device": "R7FA4E2B9",
-      "deviceFamily": "RA"
+      "deviceFamily": "RA",
+      "board": "FPB-RA4E2",
+      "device": "R7FA4E2B9"
     },
     "cwd": "${command:renesas.debug.supportFolder}",
     "images": []
@@ -27,6 +28,5 @@
     "--compile-commands-dir=${workspaceFolder}",
     "--background-index"
   ],
-  "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
-  "clangd.path": "${config:renesas-platform.crossProbeClangdPath}"
+  "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json"
 }

@@ -8,15 +8,15 @@
       "label": "FSP Smart Configurator",
       "detail": "Edit configuration in FSP Smart Configurator",
       "targets": [
-        "open_rasc_NEW_CMAKE_RTC_EVENT_LOGGER_FPB_RA4E2"
+        "open_rasc_RTC_Event_Logger_FPB_RA4E2_cmake"
       ],
       "presentation": {
+        "reveal": "silent",
         "focus": false,
         "echo": false,
         "panel": "shared",
         "clear": false,
-        "showReuseMessage": false,
-        "reveal": "silent"
+        "showReuseMessage": false
       }
     },
     {

@@ -1,1 +1,1 @@
-CompileFlags: {BuiltinHeaders: QueryDriver, CompilationDatabase: ''}
+CompileFlags: {CompilationDatabase: Debug, BuiltinHeaders: QueryDriver}
