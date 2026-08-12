@@ -23,16 +23,11 @@
 #include "common_data.h"    /* g_external_irq9 */
 #include "hal_data.h"       /* g_uart_jlob_vcom (FSP-generated; opened by the Buffered I/O UART driver) */
 #include "r_icu.h"          /* R_ICU_ExternalIrqOpen/Enable */
-#include <stdio.h>          /* printf() — Buffered I/O over UART driver */
+/* Console adapter — routes to UART (backend 0) or RTT (backend 1) as chosen by
+ * RS_RTC_LOGGER_CFG_CONSOLE_BACKEND.  All banner output goes here so that the
+ * RTT build has no picolibc stdio dependency from this file. */
+#include "rs_rtc_logger/rs_rtc_logger_stdio_console.h"
 /* board_leds.h included transitively: blinky_thread.h -> bsp_api.h -> board_cfg.h -> board.h */
-
-/* printf() below is the first stdio call in the application, so it
- * transparently triggers the vendored Buffered I/O UART driver's lazy
- * jlob_uart_init_once() (src/rs_stdio_uart_buffer_io/
- * syscalls_picolib_stdio_to_uart.c), which opens g_uart_jlob_vcom and
- * installs uart_jlob_vcom_callback as its ISR callback, once, for the life
- * of the application. The RTC Event Logger itself never opens or closes
- * this UART (see rs_rtc_logger_hal.c). */
 
 extern void rs_rtc_logger_demo_main(void);
 
@@ -57,16 +52,18 @@ extern bsp_leds_t g_bsp_leds;
 /* Setup Demo Banner and User Button S1 Interrupt **/
 static void demo_banner_setup(void)
 {
-    /* ── Step 1: Send sign-on banner ─────────────────────────────────────
-     * printf() is the application's first stdio call, so it transparently
-     * opens g_uart_jlob_vcom via the Buffered I/O UART driver's lazy init
-     * (jlob_uart_init_once()) before anything else runs.                 */
-    printf("\r\n");
-    printf("=========================================\r\n");
-    printf("  RTC Event Logger - FPB-RA4E2\r\n");
-    printf("  FSP v6.5.0 / FreeRTOS\r\n");
-    printf("=========================================\r\n");
-    printf("UART OK. Starting ...\r\n");
+    /* ── Step 1: Initialise console transport and send sign-on banner ───────────
+     * rs_rtc_logger_console_init() opens the selected transport (UART or RTT)
+     * and is idempotent — calling it early here guarantees the transport is
+     * ready before the RTC Event Logger or the button ISR runs.           */
+    (void)rs_rtc_logger_console_init();
+
+    rs_rtc_logger_console_puts("\r\n");
+    rs_rtc_logger_console_puts("=========================================\r\n");
+    rs_rtc_logger_console_puts("  RTC Event Logger - FPB-RA4E2\r\n");
+    rs_rtc_logger_console_puts("  FSP v6.5.0 / FreeRTOS\r\n");
+    rs_rtc_logger_console_puts("=========================================\r\n");
+    rs_rtc_logger_console_puts("Console OK. Starting ...\r\n");
 
     /* ── Step 2: Open and enable user button S1 (P304 / IRQ9) ───────────── */
     fsp_err_t err = R_ICU_ExternalIrqOpen(g_external_irq9.p_ctrl, g_external_irq9.p_cfg);

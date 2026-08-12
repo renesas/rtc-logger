@@ -6,49 +6,30 @@
 
 /**
  * @file rs_rtc_logger_stdio_console.h
- * @brief Thin, non-blocking adapter between the RTC Event Logger demo application and the
- *        vendored Buffered I/O UART driver (src/rs_stdio_uart_buffer_io/).
+ * @brief Console adapter — transport-agnostic API, two selectable backends.
  *
  * WHY THIS FILE EXISTS
  * ---------------------
- * The Buffered I/O UART driver is used *verbatim, unmodified* (see src/rs_stdio_uart_buffer_io/)
- * as a secondary component — it is not merged into the RTC Event Logger's own source tree.
- * Its public surface is picolibc stdio (printf/fprintf/putchar/getchar/fflush).
+ * All console I/O for the RTC Event Logger demo (log lines, CLI prompts, banner)
+ * routes through the four functions declared here.  The active backend is chosen
+ * at compile time by RS_RTC_LOGGER_CFG_CONSOLE_BACKEND (rs_rtc_logger_cfg.h):
  *
- * getchar() in that driver blocks indefinitely (documented limitation — see
- * docs/README-BUFFERED-UART.md §11.1 in the driver's own repository). The RTC Event Logger's
- * CLI task must remain responsive (it also has to react to the S1 button / RTC event
- * notifications), so this adapter provides a NON-BLOCKING character read on top of the *same*
- * stdin stream, without modifying a single line of the vendored driver.
+ *   0 — Buffered I/O UART (default, unmodified vendored driver).
+ *       Implemented in rs_rtc_logger_stdio_console.c.
+ *       Uses picolibc stdio (fwrite / fflush / getchar) backed by the
+ *       rs_stdio_uart_buffer_io PES.  Non-blocking RX is achieved by peeking
+ *       the driver's internal byteq (uart_rx_q_ctrl) before calling getchar().
  *
- * HOW IT WORKS
- * ------------
- * syscalls_picolib_stdio_to_uart.c (part of the vendored driver) declares its RX byteq control
- * block, `uart_rx_q_ctrl`, at file scope WITHOUT the `static` qualifier. That makes it an
- * ordinary externally-linkable symbol, so this adapter can link against it directly and ask
- * the byteq "how many bytes are waiting?" (R_BYTEQ_Used) before ever calling stdio's getchar(),
- * which only blocks when no data is queued. No vendored source file is touched to make this work.
+ *   1 — SEGGER RTT via J-Link debug connection.
+ *       Implemented in rs_rtc_logger_rtt_console.c.
+ *       Uses SEGGER_RTT_Write (up-buffer 0) and SEGGER_RTT_GetKey (down-buffer 0).
+ *       No heap use, no UART hardware dependency, ~648 B RAM total.
  *
- * PUBLIC VS. PRIVATE SURFACE
- * --------------------------
- * This adapter prefers the driver's documented public API wherever one exists, and only reaches
- * past it where the public surface genuinely has no alternative:
- *   - Console I/O:            picolibc stdio (printf/fprintf/getchar/fflush) — fully public.
- *   - Config validation:      RS_STDIO_UART_CheckApplicationConfiguration() — declared in
- *                             rs_stdio_uart.h and explicitly documented (README §4.6, "Step 7")
- *                             as the function applications should call. rs_stdio_config_gen()
- *                             (used by the driver's own reference demo) was deliberately NOT
- *                             adopted here: it isn't declared in any header of the driver — the
- *                             demo only reaches it via an ad-hoc inline `extern` — and it only
- *                             validates the driver's static reference table against itself,
- *                             never touching the real g_uart_jlob_vcom instance, so it adds no
- *                             real assurance for this project.
- *   - Non-blocking RX peek:   R_BYTEQ_Used(&uart_rx_q_ctrl, ...) — NOT public (uart_rx_q_ctrl is
- *                             an undeclared, merely non-static symbol). Used anyway because the
- *                             driver's documented public API has no non-blocking read primitive
- *                             at all (README §11.1: RX always blocks) — there is no public
- *                             alternative for the non-blocking requirement this adapter exists
- *                             to satisfy.
+ * PUBLIC VS. PRIVATE SURFACE (UART backend notes — backend 0 only)
+ * ----------------------------------------------------------------
+ * Non-blocking RX peek uses uart_rx_q_ctrl (undeclared, non-static symbol from
+ * the vendored driver) — the only mechanism available since the driver's public
+ * API has no non-blocking read primitive (README §11.1).
  */
 
 #ifndef RS_RTC_LOGGER_STDIO_CONSOLE_H
@@ -57,34 +38,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "bsp_api.h"
+#include "rs_rtc_logger_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief Force Buffered I/O UART driver initialization deterministically, and
- *        strictly validate g_uart_jlob_vcom's configuration.
+ * @brief Initialise the active console transport.
  *
- * The driver initializes lazily on first printf()/getchar()/fflush() call
- * (jlob_uart_init_once()). Call this once, early (e.g. from the banner),
- * so the UART is guaranteed open and its ISR callback installed before any
- * other code (the RTC Event Logger itself, button ISR, etc.) runs.
+ * UART backend (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 0):
+ *   Forces deterministic early initialisation of the Buffered I/O UART driver
+ *   (normally lazy) and validates g_uart_jlob_vcom's configuration via
+ *   RS_STDIO_UART_CheckApplicationConfiguration().  Idempotent.
  *
- * Also runs the Buffered I/O UART driver's documented, public configuration
- * validation entry point — RS_STDIO_UART_CheckApplicationConfiguration()
- * (declared in rs_stdio_uart.h; this is the one function the driver's own
- * README, Section 4.6, tells applications to call) — exactly once, and
- * caches the result. This is a pure comparison against static/extern data —
- * no hardware side effects — so it's safe to call from any context that can
- * tolerate the fflush() below. If validation fails, that failure is returned
- * on every call (not just the first) since a misconfiguration cannot be
- * fixed by retrying.
+ * RTT backend (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1):
+ *   Calls SEGGER_RTT_Init() to set up the control block and channel 0
+ *   buffers.  Idempotent — safe to call more than once.
  *
- * @retval FSP_SUCCESS  Buffered I/O UART driver is open, validated, and ready.
- * @retval (other)      Validation failed (propagated from
- *                       RS_STDIO_UART_CheckApplicationConfiguration()), or
- *                       fflush() itself failed (FSP_ERR_NOT_OPEN).
+ * @retval FSP_SUCCESS  Transport initialised and ready.
+ * @retval (other)      UART validation failed (UART backend only).
  */
 fsp_err_t rs_rtc_logger_console_init(void);
 
@@ -104,19 +77,27 @@ fsp_err_t rs_rtc_logger_console_init(void);
 bool rs_rtc_logger_console_getc_nb(uint8_t * p_c);
 
 /**
- * @brief Write a NUL-terminated string to the console (non-blocking submit).
+ * @brief Write raw bytes to the active console transport.
  *
- * Queues the string through the Buffered I/O UART driver's stdout stream and
- * triggers a flush. The flush hands the queued bytes to the UART driver and
- * returns — physical transmission completes asynchronously under UART ISR
- * control (UART_EVENT_TX_COMPLETE inside the vendored driver's own callback).
+ * UART backend: queues bytes through the Buffered I/O UART driver's stdout
+ *   stream (fwrite + fflush).  Physical transmission completes asynchronously
+ *   under UART ISR control; the call itself serialises with any in-flight TX.
+ * RTT  backend: writes to SEGGER RTT up-buffer 0.  Bytes are trimmed (not
+ *   blocked) if the up-buffer is full.
  *
- * Note: if a previous flush's transmission is still physically in flight,
- * the vendored driver's uart_flush() briefly spin-waits for it internally
- * (documented behavior of the driver in its current, unmodified form) before
- * queuing the new data. For typical short CLI/log lines at 115200 baud this
- * window is well under a millisecond and only affects the calling task, never
- * an ISR.
+ * @param[in] p_data  Source data (need not be NUL-terminated).
+ * @param[in] length  Byte count to write.
+ *
+ * @retval FSP_SUCCESS           Data submitted.
+ * @retval FSP_ERR_WRITE_FAILED  Write failed (UART backend only).
+ */
+fsp_err_t rs_rtc_logger_console_write(uint8_t const * p_data, uint32_t length);
+
+/**
+ * @brief Write a NUL-terminated string to the active console transport.
+ *
+ * Convenience wrapper around rs_rtc_logger_console_write(); computes strlen
+ * and delegates.  Both backends are handled — see console_write for details.
  *
  * @param[in] p_str  NUL-terminated string to send.
  */

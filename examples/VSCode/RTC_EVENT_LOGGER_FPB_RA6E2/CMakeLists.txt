@@ -58,6 +58,37 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/GeneratedSrc.cmake)
 target_compile_definitions(${PROJECT_NAME}.elf PRIVATE $<$<CONFIG:Debug>:
     BSP_CFG_RTC_USED=1>)
 
+# ─── Console transport backend ────────────────────────────────────────────────────────
+# Set USE_RTT_CONSOLE=ON to build with SEGGER RTT instead of the Buffered I/O
+# UART driver.  This injects the C macro (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
+# AND removes the rs_stdio_uart_buffer_io source files from the build.
+#
+#   cmake -DUSE_RTT_CONSOLE=ON ...
+#   cmake -DUSE_RTT_CONSOLE=OFF ...   (default — UART backend)
+# ───────────────────────────────────────────────────────────────────────────
+# ─── Console transport backend ─────────────────────────────────────────────────
+# Set USE_RTT_CONSOLE=ON to build with SEGGER RTT instead of the Buffered I/O
+# UART driver.  This injects the C macro (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
+# AND removes the rs_stdio_uart_buffer_io source files from the build.
+#
+#   cmake -DUSE_RTT_CONSOLE=ON ...
+#   cmake -DUSE_RTT_CONSOLE=OFF ...   (default — UART backend)
+# ───────────────────────────────────────────────────────────────────────────────
+option(USE_RTT_CONSOLE "Use SEGGER RTT as the console transport (backend 1)" OFF)
+
+if(USE_RTT_CONSOLE)
+    target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
+        RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
+
+    get_target_property(_all_src ${PROJECT_NAME}.elf SOURCES)
+    list(FILTER _all_src EXCLUDE REGEX "rs_stdio_uart_buffer_io")
+    set_property(TARGET ${PROJECT_NAME}.elf PROPERTY SOURCES ${_all_src})
+
+    message(STATUS "Console backend: SEGGER RTT  (rs_stdio_uart_buffer_io excluded)")
+else()
+    message(STATUS "Console backend: Buffered I/O UART  (default)")
+endif()
+
 target_include_directories(${PROJECT_NAME}.elf
     BEFORE
     PRIVATE
@@ -71,6 +102,7 @@ target_include_directories(${PROJECT_NAME}.elf
 	${CMAKE_CURRENT_SOURCE_DIR}/.
 	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger
 	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger/config
+	${CMAKE_CURRENT_SOURCE_DIR}/src/SEGGER_RTT
 )
 
 target_link_options(${PROJECT_NAME}.elf
