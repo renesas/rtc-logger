@@ -5,7 +5,7 @@
  *
  * rs_rtc_logger_rtt_console.c — RTT backend for the RTC Event Logger console adapter.
  *
- * This file is compiled only when RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1.
+ * This file is compiled only when RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 1.
  * At backend 0 (UART default) this translation unit is empty: the three console
  * functions are defined in rs_rtc_logger_stdio_console.c instead.
  *
@@ -27,7 +27,7 @@
 
 #include "rs_rtc_logger_cfg.h"
 
-#if RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1   /* RTT backend — compile this file */
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 1   /* RTT backend — compile this file */
 
 #include "rs_rtc_logger_stdio_console.h"
 #include "SEGGER_RTT/SEGGER_RTT.h"
@@ -105,4 +105,4 @@ bool rs_rtc_logger_console_getc_nb(uint8_t * p_c)
     return true;
 }
 
-#endif /* RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1 */
+#endif /* RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 1 */

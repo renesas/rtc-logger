@@ -73,7 +73,7 @@ get_target_property(_all_src ${PROJECT_NAME}.elf SOURCES)
 
 if(USE_RTT_CONSOLE)
     target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
-        RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
+        RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1)
 
     # Drop the vendored Buffered I/O UART driver sources — not needed for RTT.
     list(FILTER _all_src EXCLUDE REGEX "rs_stdio_uart_buffer_io")

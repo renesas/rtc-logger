@@ -23,7 +23,7 @@
 #include <rs_rtc_logger/rs_rtc_logger.h>
 
 /* All console I/O routes through the transport-agnostic console adapter.
- * RS_RTC_LOGGER_CFG_CONSOLE_BACKEND selects UART (0, default) or RTT (1).
+ * RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE selects UART (0, default) or RTT (1).
  * No direct stdio or SEGGER RTT calls are made from this file. */
 #include "rs_rtc_logger_stdio_console.h"
 

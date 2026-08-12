@@ -29,10 +29,19 @@
 
 #include <rs_rtc_logger/rs_rtc_logger_hal.h>
 
+/* Console adapter used by the reusable core. Backend is selected via
+ * RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE at compile time.
+ */
+#include "rs_rtc_logger_stdio_console.h"
+
 /* Forward declaration — implemented in rs_rtc_logger_demo.c.
  * Called from ISR context to enqueue one received character
- * into the demo CLI RX ring buffer. */
+ * into the demo CLI RX ring buffer.
+ * Excluded when RTT console is enabled: p_uart is never opened so the
+ * UART callback is never registered and the symbol would be unresolved. */
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0
 extern void demo_uart_rx_char_enqueue(uint8_t c);
+#endif
 #include <rs_rtc_logger/rs_rtc_logger.h>
 
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
@@ -449,14 +458,21 @@ fsp_err_t rs_rtc_logger_hal_loco_freq_set(rs_rtc_logger_ctrl_t * p_ctrl,
 fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
 {
     const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    fsp_err_t               err    = p_uart->p_api->open(p_uart->p_ctrl, p_uart->p_cfg);
+
+    rs_rtc_logger_console_bind_ctrl(p_ctrl);
+
+    fsp_err_t err = FSP_SUCCESS;
+
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0
+    err = p_uart->p_api->open(p_uart->p_ctrl, p_uart->p_cfg);
 
     if (FSP_ERR_ALREADY_OPEN == err)
     {
         /* The UART was left open by the early banner path in blinky_thread_entry.c
          * so that demo_uart_write_blocking() could print CLI status messages before
-         * the logger initialises.  Close it now and reopen with the logger's own
-         * callback and configuration so ownership transfers cleanly.             */
+         * the logger initialises. Close it now and reopen with the logger's own
+         * callback and configuration so ownership transfers cleanly.
+         */
         (void)p_uart->p_api->close(p_uart->p_ctrl);
         err = p_uart->p_api->open(p_uart->p_ctrl, p_uart->p_cfg);
     }
@@ -466,7 +482,14 @@ fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
         /* Register for ISR callback fallback path */
         gp_rs_rl_uart_ctrl = p_ctrl;
     }
-    return err;
+#endif
+
+    if (FSP_SUCCESS != err)
+    {
+        return err;
+    }
+
+    return rs_rtc_logger_console_init();
 }
 
 /**
@@ -479,14 +502,20 @@ fsp_err_t rs_rtc_logger_hal_uart_open(rs_rtc_logger_ctrl_t * p_ctrl)
  */
 fsp_err_t rs_rtc_logger_hal_uart_close(rs_rtc_logger_ctrl_t * p_ctrl)
 {
+    fsp_err_t err = FSP_SUCCESS;
+
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0
     const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    fsp_err_t               err    = p_uart->p_api->close(p_uart->p_ctrl);
+    err = p_uart->p_api->close(p_uart->p_ctrl);
+#endif
 
     /* Clear the global pointer if this instance is the registered one */
     if (gp_rs_rl_uart_ctrl == p_ctrl)
     {
         gp_rs_rl_uart_ctrl = NULL;
     }
+
+    rs_rtc_logger_console_bind_ctrl(NULL);
 
     return err;
 }
@@ -508,10 +537,13 @@ fsp_err_t rs_rtc_logger_hal_uart_write(rs_rtc_logger_ctrl_t * p_ctrl,
                                         uint8_t        const * p_data,
                                         uint32_t               length)
 {
-    p_ctrl->tx_complete = false;
+    fsp_err_t err = rs_rtc_logger_console_write(p_data, length);
+    if (FSP_SUCCESS != err)
+    {
+        p_ctrl->tx_errors++;
+    }
 
-    const uart_instance_t * p_uart = p_ctrl->p_cfg->p_uart;
-    return p_uart->p_api->write(p_uart->p_ctrl, p_data, length);
+    return err;
 }
 
 /***********************************************************************************************************************
@@ -567,7 +599,9 @@ void rs_rtc_logger_uart_callback(uart_callback_args_t * p_args)
          * The RTC Event logger itself has no use for RX data; this allows the demo
          * CLI task to read user input from VCOM without a separate
          * UART instance. demo_uart_rx_char_enqueue() is ISR-safe. */
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0
         demo_uart_rx_char_enqueue((uint8_t)p_args->data);
+#endif
     }
     else if (UART_EVENT_TX_DATA_EMPTY == p_args->event)
     {

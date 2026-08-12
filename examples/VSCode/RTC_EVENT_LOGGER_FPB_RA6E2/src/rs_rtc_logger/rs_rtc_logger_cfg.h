@@ -274,10 +274,10 @@
  *       In CMake, set -DUSE_RTT_CONSOLE=ON to also exclude the UART driver
  *       source files from the build.
  *
- * Override at build time: -DRS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1
+ * Override at build time: -DRS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1
  */
-#ifndef RS_RTC_LOGGER_CFG_CONSOLE_BACKEND
-  #define RS_RTC_LOGGER_CFG_CONSOLE_BACKEND        (0U)
+#ifndef RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE
+  #define RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE        (0U)
 #endif
 
 #endif /* RS_RTC_LOGGER_CFG_H */

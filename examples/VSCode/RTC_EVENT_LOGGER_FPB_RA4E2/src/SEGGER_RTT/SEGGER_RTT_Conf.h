@@ -5,7 +5,7 @@
  *
  * SEGGER_RTT_Conf.h — project-specific RTT configuration for the RTC Event Logger.
  *
- * RAM budget (RTT backend, compile with RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1):
+ * RAM budget (RTT backend, compile with RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1):
  *   Up-buffer   0  "Terminal"  512 B   log output (target → J-Link host)
  *   Down-buffer 0  "Terminal"   64 B   CLI input  (J-Link host → target)
  *   Control block header         ~72 B

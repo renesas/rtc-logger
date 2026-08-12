@@ -24,7 +24,7 @@
 #include "hal_data.h"       /* g_uart_jlob_vcom (FSP-generated; opened by the Buffered I/O UART driver) */
 #include "r_icu.h"          /* R_ICU_ExternalIrqOpen/Enable */
 /* Console adapter — routes to UART (backend 0) or RTT (backend 1) as chosen by
- * RS_RTC_LOGGER_CFG_CONSOLE_BACKEND.  All banner output goes here so that the
+ * RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE.  All banner output goes here so that the
  * RTT build has no picolibc stdio dependency from this file. */
 #include "rs_rtc_logger/rs_rtc_logger_stdio_console.h"
 /* board_leds.h included transitively: blinky_thread.h -> bsp_api.h -> board_cfg.h -> board.h */

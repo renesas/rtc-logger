@@ -33,7 +33,13 @@ rtc_core_sources = files(
   'src/rs_rtc_logger/rs_rtc_logger.c',
   'src/rs_rtc_logger/rs_rtc_logger_format.c',
   'src/rs_rtc_logger/rs_rtc_logger_hal.c',
+  'src/rs_rtc_logger/rs_rtc_logger_stdio_console.c',
+  'src/rs_rtc_logger/rs_rtc_logger_rtt_console.c',
 )
+
+if get_option('rtt_console_enable') == 1
+  rtc_core_sources += files('src/SEGGER_RTT/SEGGER_RTT.c')
+endif
 
 # ------------------------------------------------------------
 # Optional firmware build (cross builds only; not subproject)

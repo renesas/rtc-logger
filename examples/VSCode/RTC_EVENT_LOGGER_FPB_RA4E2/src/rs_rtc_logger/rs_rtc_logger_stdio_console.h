@@ -12,7 +12,7 @@
  * ---------------------
  * All console I/O for the RTC Event Logger demo (log lines, CLI prompts, banner)
  * routes through the four functions declared here.  The active backend is chosen
- * at compile time by RS_RTC_LOGGER_CFG_CONSOLE_BACKEND (rs_rtc_logger_cfg.h):
+ * at compile time by RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE (rs_rtc_logger_cfg.h):
  *
  *   0 — Buffered I/O UART (default, unmodified vendored driver).
  *       Implemented in rs_rtc_logger_stdio_console.c.
@@ -47,12 +47,12 @@ extern "C" {
 /**
  * @brief Initialise the active console transport.
  *
- * UART backend (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 0):
+ * UART backend (RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0):
  *   Forces deterministic early initialisation of the Buffered I/O UART driver
  *   (normally lazy) and validates g_uart_jlob_vcom's configuration via
  *   RS_STDIO_UART_CheckApplicationConfiguration().  Idempotent.
  *
- * RTT backend (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1):
+ * RTT backend (RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 1):
  *   Calls SEGGER_RTT_Init() to set up the control block and channel 0
  *   buffers.  Idempotent — safe to call more than once.
  *

@@ -24,7 +24,7 @@
 
 /* All console I/O (log lines and CLI) routes through the transport-agnostic
  * console adapter.  The active backend (UART or RTT) is chosen at compile time
- * by RS_RTC_LOGGER_CFG_CONSOLE_BACKEND — no direct stdio or SEGGER RTT calls
+ * by RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE — no direct stdio or SEGGER RTT calls
  * are made from this file. */
 #include "rs_rtc_logger_stdio_console.h"
 

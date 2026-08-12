@@ -7,9 +7,9 @@
 /**
  * @file rs_rtc_logger_stdio_console.c
  * @brief UART-backend implementation of the console adapter
- *        (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 0, default).
+ *        (RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0, default).
  *
- * When RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 1 (RTT) the four functions are
+ * When RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 1 (RTT) the four functions are
  * defined in rs_rtc_logger_rtt_console.c instead.  This translation unit
  * becomes empty in that case — no UART or picolibc stdio symbols are pulled in.
  *
@@ -18,7 +18,7 @@
 
 #include "rs_rtc_logger_cfg.h"
 
-#if RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 0   /* UART backend — compile this file */
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0   /* UART backend — compile this file */
 
 #include "rs_rtc_logger_stdio_console.h"
 
@@ -128,4 +128,4 @@ void rs_rtc_logger_console_puts(char const * p_str)
     (void)rs_rtc_logger_console_write((uint8_t const *)p_str, (uint32_t)len);
 }
 
-#endif /* RS_RTC_LOGGER_CFG_CONSOLE_BACKEND == 0 */
+#endif /* RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0 */
