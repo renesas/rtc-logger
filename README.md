@@ -15,7 +15,9 @@ The reference implementation demonstrates:
 
 This repository contains:
 
-- Reusable core source code (`src/rs_rtc_logger/`)
+- Reusable core source code (`src/rs_rtc_logger/`) — transport-agnostic: it writes
+  through the `uart_instance_t` your application configures, with no dependency on
+  stdio, the console adapter, or SEGGER RTT (see Section 2 below).
 - A vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`)
 - Board-specific reference/preset configuration for FPB-RA4E2 and FPB-RA6E2
 - Complete e2studio example projects for both boards
@@ -34,6 +36,18 @@ Use this Component if you want to:
 - Reuse the core source in your own application.
 - Start from a working reference implementation with warm-reset time preservation already solved.
 - Understand how to configure Renesas RA devices for RTC-timestamped serial logging.
+
+> **Reusing the logger in another application:** copy `src/rs_rtc_logger/` only
+> (`rs_rtc_logger.c/h`, `rs_rtc_logger_format.c/h`, `rs_rtc_logger_hal.c/h`,
+> `rs_rtc_logger_types.h`, `rs_rtc_logger_cfg.h`, `config/`). This is the same set
+> of sources built by `firmware/meson.build`. It calls the FSP UART driver
+> directly through whatever `uart_instance_t` you assign in your own
+> configuration — it does **not** use stdio, the console adapter, or SEGGER RTT.
+> Those are demo-only glue for the CLI/banner in `examples/*/src/` (see the VSCode
+> example READMEs, e.g.
+> [`examples/VSCode/RTC_EVENT_LOGGER_FPB_RA4E2/README.md`](examples/VSCode/RTC_EVENT_LOGGER_FPB_RA4E2/README.md#console-transport-backend-uart-vs-segger-rtt),
+> for the selectable SEGGER RTT console backend) and are not required to reuse
+> the logger itself.
 
 ---
 

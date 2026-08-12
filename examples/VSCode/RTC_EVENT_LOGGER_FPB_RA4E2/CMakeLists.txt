@@ -60,29 +60,36 @@ target_compile_definitions(${PROJECT_NAME}.elf PRIVATE $<$<CONFIG:Debug>:
 
 # ─── Console transport backend ─────────────────────────────────────────────────
 # Set USE_RTT_CONSOLE=ON to build with SEGGER RTT instead of the Buffered I/O
-# UART driver.  This injects the C macro (RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
-# AND removes the rs_stdio_uart_buffer_io source files from the build — saving
-# ~3 KB Flash and ~256 B heap (uart_flush malloc buffer).
+# UART driver.  Only the selected backend's source files are compiled — the
+# other backend's files (and, for RTT, the vendored UART driver) are excluded
+# from the build entirely, saving Flash/RAM neither backend actually needs.
 #
 #   cmake -DUSE_RTT_CONSOLE=ON ...
 #   cmake -DUSE_RTT_CONSOLE=OFF ...   (default — UART backend)
 # ───────────────────────────────────────────────────────────────────────────────
 option(USE_RTT_CONSOLE "Use SEGGER RTT as the console transport (backend 1)" OFF)
 
+get_target_property(_all_src ${PROJECT_NAME}.elf SOURCES)
+
 if(USE_RTT_CONSOLE)
     target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
         RS_RTC_LOGGER_CFG_CONSOLE_BACKEND=1)
 
-    # Remove the vendored Buffered I/O UART driver sources so they are not
-    # compiled or linked at all — no dead-code elimination required.
-    get_target_property(_all_src ${PROJECT_NAME}.elf SOURCES)
+    # Drop the vendored Buffered I/O UART driver sources — not needed for RTT.
     list(FILTER _all_src EXCLUDE REGEX "rs_stdio_uart_buffer_io")
-    set_property(TARGET ${PROJECT_NAME}.elf PROPERTY SOURCES ${_all_src})
+
+    target_include_directories(${PROJECT_NAME}.elf PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/SEGGER_RTT)
 
     message(STATUS "Console backend: SEGGER RTT  (rs_stdio_uart_buffer_io excluded)")
 else()
-    message(STATUS "Console backend: Buffered I/O UART  (default)")
+    # Drop the SEGGER RTT sources — not needed for the default UART backend.
+    list(FILTER _all_src EXCLUDE REGEX "SEGGER_RTT|rs_rtc_logger_rtt_console")
+
+    message(STATUS "Console backend: Buffered I/O UART  (default, SEGGER RTT excluded)")
 endif()
+
+set_property(TARGET ${PROJECT_NAME}.elf PROPERTY SOURCES ${_all_src})
 
 target_include_directories(${PROJECT_NAME}.elf
     BEFORE
@@ -97,7 +104,6 @@ target_include_directories(${PROJECT_NAME}.elf
 	${CMAKE_CURRENT_SOURCE_DIR}/.
 	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger
 	${CMAKE_CURRENT_SOURCE_DIR}/src/rtc_event_logger/config
-	${CMAKE_CURRENT_SOURCE_DIR}/src/SEGGER_RTT
 )
 
 target_link_options(${PROJECT_NAME}.elf
