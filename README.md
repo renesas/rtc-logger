@@ -167,6 +167,26 @@ examples/e2studio/RTC_Event_Logger_FPB_RA4E2
 8. Follow the date/time and LOCO trim calibration prompts which are only available after a cold start.
 9. Press User Switch **S1** on the board to trigger a logged event.
 
+### Build with SEGGER RTT in e2studio (RA4E2 and RA6E2 examples)
+
+The e2studio example projects support compile-time transport selection.
+
+1. Open the imported project properties.
+2. Go to **C/C++ Build -> Settings -> Tool Settings -> GNU ARM Cross C Compiler -> Preprocessor**.
+3. Add this preprocessor symbol:
+
+```text
+RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1
+```
+
+4. Clean and rebuild the project.
+5. Start a debug session and open the RTT viewer/terminal in your J-Link tooling.
+
+Notes:
+- `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=0` (default) uses the Buffered I/O UART backend.
+- `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1` uses SEGGER RTT.
+- Optional size optimization for RTT builds: exclude `src/rs_stdio_uart_buffer_io/` from build in e2studio resource settings.
+
 See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
 
 ---

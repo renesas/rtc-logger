@@ -255,4 +255,29 @@
  #define RS_RTC_LOGGER_CFG_DEBOUNCE_MS    (150U)
 #endif
 
+/***********************************************************************************************************************
+ * Console transport backend
+ **********************************************************************************************************************/
+
+/**
+ * @brief Select the console I/O transport for log output and CLI.
+ *
+ *   0 = Buffered I/O UART (default, unmodified vendored driver).
+ *       Uses picolibc stdio (fwrite/fflush/getchar) routed through the
+ *       rs_stdio_uart_buffer_io PES.  All its source files are compiled
+ *       and linked.
+ *
+ *   1 = SEGGER RTT via J-Link debug connection (src/SEGGER_RTT/).
+ *       Uses SEGGER_RTT_Write / SEGGER_RTT_GetKey.
+ *       Eliminates the rs_stdio_uart_buffer_io dependency and all heap use
+ *       in the I/O path (~648 B RAM total vs ~768 B + heap for UART).
+ *       In CMake, set -DUSE_RTT_CONSOLE=ON to also exclude the UART driver
+ *       source files from the build.
+ *
+ * Override at build time: -DRS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1
+ */
+#ifndef RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE
+  #define RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE        (0U)
+#endif
+
 #endif /* RS_RTC_LOGGER_CFG_H */
