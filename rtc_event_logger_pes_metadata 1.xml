@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pesMetadata>
+    <releaseMetadata>
+        <pesName>RTC Internal Timestamp Event Logger</pesName>
+        <version>1.0.0</version>
+        <releaseDate>MISSING</releaseDate>
+        <releaseType>MISSING</releaseType>
+        <metadataSchemaVersion>1.0</metadataSchemaVersion>
+    </releaseMetadata>
+    <discoveryMetadata>
+        <targetProducts>
+            <productFamily>RA</productFamily>
+            <productSeries>RA4</productSeries>
+            <productSeries>RA6</productSeries>
+            <supportedDevices>
+                <device>
+                    <family>RA</family>
+                    <series>RA4</series>
+                    <group>RA4E2</group>
+                </device>
+                <device>
+                    <family>RA</family>
+                    <series>RA6</series>
+                    <group>RA6E2</group>
+                </device>
+            </supportedDevices>
+        </targetProducts>
+        <targetMarkets>
+            <market>Smart Utility and Energy Metering</market>
+            <market>Industrial Automation and PLCs</market>
+            <market>Remote IoT and Environment Sensors</market>
+            <market>Medical Devices and Wearables</market>
+            <market>Cold Chain and Asset Tracking</market>
+        </targetMarkets>
+        <endApplications>
+            <application>Fault detection</application>
+            <application>Tamper event logging</application>
+            <application>Power-grid failure logging</application>
+            <application>Equipment power-down logging</application>
+            <application>Over-temperature fault logging</application>
+            <application>Packet-loss logging</application>
+            <application>Anomaly detection</application>
+            <application>Battery depletion event logging</application>
+            <application>Power-on status retention</application>
+            <application>Temperature threshold crossing logging</application>
+        </endApplications>
+        <functionalTags>
+    	    <tag>Event Logging</tag>
+    	    <tag>Timestamping</tag>
+    	    <tag>Telemetry</tag>
+    	    <tag>Diagnostics</tag>
+    	    <tag>Runtime Monitoring</tag>
+    	    <tag>Instrumentation</tag>
+	</functionalTags>
+        <hardwareInterfaces>
+            <requiredPeripherals>
+                <peripheral>On-chip RTC r_rtc</peripheral>
+                <peripheral>SCI0 UART r_sci_uart</peripheral>
+                <peripheral>External IRQ r_icu</peripheral>
+            </requiredPeripherals>
+            <inputSignals>
+                <signal>Application-owned interrupt source</signal>
+                <signal>User Switch S1 via P304 IRQ9 on FPB-RA4E2</signal>
+                <signal>Direct software call to rs_rtc_logger_EventTrigger</signal>
+            </inputSignals>
+            <outputSignals>
+                <signal>Timestamped ASCII event line over shared VCOM UART</signal>
+            </outputSignals>
+            <connectedDevices>
+                <device>J-Link virtual COM USB-Serial bridge</device>
+                <device>On-board user button S1</device>
+            </connectedDevices>
+        </hardwareInterfaces>
+    </discoveryMetadata>
+    <descriptiveMetadata>
+        <anatomicalMetadata>
+            <identity>
+                <name>RTC Internal Timestamp Event Logger</name>
+                <shortName>rs_rtc_logger</shortName>
+                <category>Reference Software Component</category>
+                <pesType>Runtime-oriented reference source code</pesType>
+                <license>BSD-3-Clause</license>
+            </identity>
+            <description>
+                <summary>Demonstrates timestamped serial event logging using the MCU on-chip RTC, a static circular buffer, and shared VCOM UART output through a vendored Buffered I/O UART driver.</summary>
+                <designIntent>Capture RTC timestamps at ISR entry time without blocking the ISR, buffer events for task-context transmission, preserve RTC configuration and event sequence numbering across warm resets, and provide Example Project and Expert operating modes.</designIntent>
+            </description>
+            <classification>
+                <domain>Embedded telemetry and event logging</domain>
+                <technology>RTC, FreeRTOS, r_rtc, r_sci_uart, r_icu, Buffered I/O UART, VCOM</technology>
+                <subCategory>RTC timestamped serial event logger</subCategory>
+            </classification>
+            <supportedBoards>
+                <board>FPB-RA4E2</board>
+                <board>FPB-RA6E2</board>
+            </supportedBoards>
+            <dependencies>
+                <dependency>Renesas FSP v6.5.0</dependency>
+                <dependency>FreeRTOS bundled with FSP v6.5.0</dependency>
+                <dependency>e2studio compatible with FSP v6.5.0</dependency>
+                <dependency>On-chip RTC HAL r_rtc</dependency>
+                <dependency>SCI0 UART HAL r_sci_uart through g_uart_jlob_vcom</dependency>
+                <dependency>External IRQ HAL r_icu for reference button event source</dependency>
+                <dependency>Vendored Buffered I/O UART driver src/rs_stdio_uart_buffer_io/</dependency>
+                <dependency>picolibc bundled with the LLVM ARM Embedded toolchain</dependency>
+                <dependency>J-Link On-Board for FPB debug and flash</dependency>
+                <dependency>Meson and LLVM/Clang for command-line host tests and firmware builds</dependency>
+            </dependencies>
+            <hardwareRequirements>
+                <requirement>FPB-RA4E2 or FPB-RA6E2 reference board</requirement>
+                <requirement>RA4E2 or RA6E2 Cortex-M33 MCU</requirement>
+                <requirement>RTC clock source configured to LOCO by default</requirement>
+                <requirement>r_rtc calendar mode enabled</requirement>
+                <requirement>r_rtc Set Source Clock in Open disabled for warm-reset preservation</requirement>
+                <requirement>r_rtc carry interrupt priority must be higher-preemption than any ISR that calls rs_rtc_logger_EventTrigger</requirement>
+                <requirement>SCI0 shared VCOM UART at 115200 baud 8N1 through g_uart_jlob_vcom</requirement>
+                <requirement>r_sci_uart asynchronous mode for the vendored Buffered I/O UART driver</requirement>
+                <requirement>External IRQ r_icu for reference User Switch S1 event source</requirement>
+                <requirement>FreeRTOS heap_4 or heap_3 and configSUPPORT_STATIC_ALLOCATION = 1</requirement>
+                <requirement>FPB-RA4E2 has no VBATT power-down retention path</requirement>
+            </hardwareRequirements>
+            <artifacts>
+                <artifact>Reusable core source code in src/rs_rtc_logger/</artifact>
+                <artifact>Vendored Buffered I/O UART driver in src/rs_stdio_uart_buffer_io/</artifact>
+                <artifact>RTC preset configuration files for FPB-RA4E2 and FPB-RA6E2</artifact>
+                <artifact>Complete e2studio example projects for FPB-RA4E2 and FPB-RA6E2</artifact>
+                <artifact>VSCode projects for FPB-RA4E2 and FPB-RA6E2</artifact>
+                <artifact>Meson firmware build files</artifact>
+                <artifact>Generated RASC outputs</artifact>
+                <artifact>S-Record executables</artifact>
+                <artifact>Host and on-target Unity test suites</artifact>
+                <artifact>Robot Framework on-target unit-test runner</artifact>
+                <artifact>Documentation set in docs/</artifact>
+            </artifacts>
+            <documentation>
+                <document>README.md</document>
+                <document>RTC_EVENT_LOGGER-USER_MANUAL.md</document>
+                <document>FUNCTIONS_GUIDE.md</document>
+                <document>INTEGRATION_GUIDE.md</document>
+                <document>CONFIGURATION_GUIDE.md</document>
+                <document>FILE_GUIDE.md</document>
+                <document>ARCHITECTURE.md</document>
+                <document>BEHAVIOR_AND_PERFORMANCE.md</document>
+                <document>EXAMPLES_GUIDE.md</document>
+                <document>REUSABILITY_GUIDE.md</document>
+                <document>RELEASE_NOTES.md</document>
+                <document>BUILD.md</document>
+                <document>MRD</document>
+                <document>PES Metadata Framework</document>
+            </documentation>
+        </anatomicalMetadata>
+        <behavioralMetadata>
+            <capabilities>
+   		<capability>Timestamped Event Logging</capability>
+    		<capability>Serial Event Logging</capability>
+    		<capability>ISR-safe Event Capture</capability>
+    		<capability>Non-Blocking Logging</capability>
+    		<capability>Event Buffering</capability>
+    		<capability>Warm Reset Preservation</capability>
+    		<capability>Sequence Number Tracking</capability>
+    		<capability>Multiple Timestamp Formats</capability>
+    		<capability>Runtime Timestamp Formatting</capability>
+            </capabilities>
+            <publicInterfaces>
+                <interface>rs_rtc_logger_ConfigGen</interface>
+                <interface>rs_rtc_logger_ConfigCheck</interface>
+                <interface>rs_rtc_logger_ConfigGetSize</interface>
+                <interface>rs_rtc_logger_Open</interface>
+                <interface>rs_rtc_logger_Start</interface>
+                <interface>rs_rtc_logger_Stop</interface>
+                <interface>rs_rtc_logger_Close</interface>
+                <interface>rs_rtc_logger_EventTrigger</interface>
+                <interface>rs_rtc_logger_EventDequeue</interface>
+                <interface>rs_rtc_logger_Write</interface>
+                <interface>rs_rtc_logger_WriteStr</interface>
+                <interface>rs_rtc_logger_TimestampFormatSet</interface>
+                <interface>rs_rtc_logger_TimeSet</interface>
+                <interface>rs_rtc_logger_ClockValidate</interface>
+                <interface>rs_rtc_logger_LocoCalibrationSet</interface>
+                <interface>rs_rtc_logger_SeqCountSet</interface>
+                <interface>rs_rtc_logger_StatusGet</interface>
+                <interface>rs_rtc_logger_TimeGet</interface>
+                <interface>rs_rtc_logger_VersionGet</interface>
+                <interface>rs_rtc_logger_EP_PrepareConsumerTask</interface>
+            </publicInterfaces>
+            <configuration>
+    		<parameter>Operating Mode Selection</parameter>
+    		<parameter>RTC Configuration Source</parameter>
+   	 	<parameter>Event Buffer Depth</parameter>
+    		<parameter>Maximum Event Data Length</parameter>
+    		<parameter>Log Line Buffer Size</parameter>
+    		<parameter>Control Structure RAM Allocation Limit</parameter>
+    		<parameter>Consumer Task Stack Size</parameter>
+    		<parameter>Consumer Task Priority</parameter>
+    		<parameter>UART Transmission Timeout</parameter>
+    		<parameter>Event Source Debounce Time</parameter>
+    		<parameter>Timestamp Format</parameter>
+    		<parameter>Line Terminator Format</parameter>
+    		<parameter>Buffer Overflow Policy</parameter>
+    		<parameter>LOCO Drift Calibration</parameter>
+            </configuration>
+            <executionModel>
+    		<initialization>
+        	    Example Project mode supports automatic component lifecycle management.
+        	    Expert mode requires application-managed initialization, startup, shutdown, and resource management.
+    		</initialization>
+    		<runtimeBehavior>
+        	    Event sources trigger timestamp capture.
+        	    Events are buffered and processed asynchronously.
+        	    Formatted log entries are transmitted through a shared UART interface.
+    		</runtimeBehavior>
+
+            </executionModel>
+            <useCases>
+                <useCase>Smart utility and energy metering fault, tamper, and power-grid event logging</useCase>
+                <useCase>Industrial automation and PLC equipment power-down, over-temperature, and packet-loss logging</useCase>
+                <useCase>Remote IoT and environment sensor anomaly and battery depletion logging</useCase>
+                <useCase>Medical wearable anomaly and power-on status retention logging</useCase>
+                <useCase>Cold chain and asset tracking temperature threshold and packet-drop logging</useCase>
+                <useCase>Firmware-update UART silence and resume pattern in Expert mode</useCase>
+                <useCase>Accelerometer threshold event logging adaptation through EventTrigger</useCase>
+            </useCases>
+        </behavioralMetadata>
+        <performanceMetadata>
+            <performanceCharacteristics>
+    	    	<latency>Deterministic ISR event capture (not formally quantified)</latency>
+    	    	<throughput>UART output at 115200 baud (reference configuration)</throughput>
+	    	<memoryUsage>
+        	    Default event buffer: ~640 bytes;
+        	    Default line buffer: 256 bytes;
+        	    Example Project task stack: 2048 bytes
+    	    	</memoryUsage>
+    	        <operatingRange>
+        	    RTC accuracy dependent on selected clock source;
+        	    LOCO drift may be several hundred to several thousand ppm
+    	    	</operatingRange>
+    	    	<customMetric name="DefaultEventBufferDepth">8 events</customMetric>
+		<customMetric name="MaximumEventPayloadLength">32 bytes</customMetric>
+	    </performanceCharacteristics>
+	    <resources>
+    		<resource name="RTCPeripheral">1 RTC peripheral instance</resource>
+		<resource name="UARTPeripheral">1 UART peripheral instance</resource>
+		<resource name="ExternalInterruptSource">1 interrupt source</resource>
+		<resource name="ConsumerTask">1 FreeRTOS task</resource>
+		<resource name="EventBuffer">Configurable circular event buffer</resource>
+		<resource name="LineBuffer">Configurable log formatting buffer</resource>
+		<resource name="CommunicationInterface">UART-based Virtual COM Port</resource>
+	    </resources>
+            <validation>
+				<validationCase>
+					<validatedBoard>FPB-RA4E2</validatedBoard>
+					<validatedDevice>RA4E2</validatedDevice>
+					<validatedConfiguration>Example Project Mode</validatedConfiguration>
+					<testResult>
+						Host Unity Tests: Passed
+					</testResult>
+					<testResult>
+						Target Unity Tests: Passed
+					</testResult>
+				<validationCase>
+					<validatedBoard>FPB-RA6E2</validatedBoard>
+					<validatedDevice>RA6E2</validatedDevice>
+					<validatedConfiguration>Example Project Mode</validatedConfiguration>
+					<testResult>
+						Host Unity Tests: Passed
+					</testResult>
+					<testResult>
+						Target Unity Tests: Passed
+					</testResult>
+				</validationCase>
+			</validation>
+        </performanceMetadata>
+    </descriptiveMetadata>
+</pesMetadata>
