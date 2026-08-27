@@ -414,7 +414,11 @@ fsp_err_t rs_rtc_logger_Open(rs_rtc_logger_ctrl_t       * p_ctrl,
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_ctrl,         FSP_ERR_ASSERTION);
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg,          FSP_ERR_ASSERTION);
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg->p_rtc,  FSP_ERR_ASSERTION);
+    /* p_uart is only required when the UART HAL backend is active.
+     * The RTT backend (backend 1) does not use p_uart at all. */
+#if RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE == 0
     RS_RTC_LOGGER_ASSERT_RETURN(NULL != p_cfg->p_uart, FSP_ERR_ASSERTION);
+#endif
 
     if (RS_RTC_LOGGER_STATE_CLOSED != p_ctrl->state)
     {

@@ -24,7 +24,16 @@ rtc_core_sources = files(
   '../src/rs_rtc_logger/rs_rtc_logger.c',
   '../src/rs_rtc_logger/rs_rtc_logger_format.c',
   '../src/rs_rtc_logger/rs_rtc_logger_hal.c',
+  '../src/rs_rtc_logger/rs_rtc_logger_stdio_console.c',
+  '../src/rs_rtc_logger/rs_rtc_logger_rtt_console.c',
 )
+
+# SEGGER_RTT is only needed when console backend 1 (RTT) is selected.
+# Excluding it from the default UART build avoids pulling ~4-8 KB of unused
+# Flash into the image — mirroring the same exclusion in the CMake examples.
+if get_option('rtt_console_enable') == 1
+  rtc_core_sources += files('../src/SEGGER_RTT/SEGGER_RTT.c')
+endif
 
 # UT build excludes rs_rtc_logger_hal.c — test_rs_rtc_logger_core.c provides
 # mock HAL implementations that replace the real HAL for on-target testing.
@@ -117,6 +126,7 @@ common_defines = [
   '-D_RENESAS_RA_',
   '-D_RA_CORE=' + ra_core,
   '-D_RA_ORDINAL=' + ra_ordinal.to_string(),
+  '-DRS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=' + get_option('rtt_console_enable').to_string(),
 ]
 
 # Board-select macro for source files that must branch at compile time on

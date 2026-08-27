@@ -22,22 +22,10 @@
 #include <rs_rtc_logger/rs_rtc_logger_hal.h>
 #include <rs_rtc_logger/rs_rtc_logger.h>
 
-/* Buffered I/O over UART driver integration (single shared VCOM UART).
- *
- * g_uart_jlob_vcom is opened, owned, and has its ISR callback installed
- * exclusively by the vendored Buffered I/O UART driver
- * (src/rs_stdio_uart_buffer_io/), the moment any stdio call
- * (printf/getchar/fflush) first runs - see jlob_uart_init_once() in that
- * driver's syscalls_picolib_stdio_to_uart.c.
- *
- * Because only one driver may own a uart_instance_t at a time,
- * rs_rtc_logger_hal_uart_open()/_close()/_write() do not call the raw UART
- * driver API directly. Instead, log-line bytes are written through the
- * SAME stdio stream the Buffered I/O UART driver owns, via the thin
- * adapter in rs_rtc_logger_stdio_console.c. This keeps the two components
- * cleanly separated (no source-level merge) while sharing the physical
- * VCOM UART. */
-#include <stdio.h>
+/* All console I/O (log lines and CLI) routes through the transport-agnostic
+ * console adapter.  The active backend (UART or RTT) is chosen at compile time
+ * by RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE — no direct stdio or SEGGER RTT calls
+ * are made from this file. */
 #include "rs_rtc_logger_stdio_console.h"
 
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
@@ -478,29 +466,14 @@ fsp_err_t rs_rtc_logger_hal_uart_close(rs_rtc_logger_ctrl_t * p_ctrl)
  * @retval FSP_SUCCESS           Write submitted (and, per the Buffered I/O
  *                                UART driver's fflush() semantics, serialized
  *                                against any prior in-flight transmission).
- * @retval FSP_ERR_WRITE_FAILED  fwrite()/fflush() did not complete cleanly.
+ * @retval FSP_ERR_WRITE_FAILED  console_write() did not complete cleanly.
  */
 fsp_err_t rs_rtc_logger_hal_uart_write(rs_rtc_logger_ctrl_t * p_ctrl,
                                         uint8_t        const * p_data,
                                         uint32_t               length)
 {
-    /* Submits the log line through the Buffered I/O UART driver's stdout
-     * stream.
-     *
-     * fwrite() queues the bytes into the driver's TX byteq; fflush() hands them
-     * to the UART driver for transmission. The driver's own uart_flush()
-     * serializes back-to-back submissions internally (it briefly waits on
-     * its internal tx_busy flag if a previous transmission from either the
-     * CLI console or a prior log line is still physically in flight) before
-     * queuing this one, so log lines are never interleaved or lost even
-     * though this call itself does not block waiting for completion of the
-     * write it just submitted. By the time this function returns, the write
-     * has been safely handed off — there is no further asynchronous
-     * completion state for the caller to wait on. */
-    size_t written = fwrite(p_data, sizeof(uint8_t), (size_t)length, stdout);
-    int    flushed = fflush(stdout);
-
-    if ((written != (size_t)length) || (0 != flushed))
+    fsp_err_t err = rs_rtc_logger_console_write(p_data, length);
+    if (FSP_SUCCESS != err)
     {
         p_ctrl->tx_errors++;
         return FSP_ERR_WRITE_FAILED;

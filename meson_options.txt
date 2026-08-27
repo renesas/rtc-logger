@@ -18,3 +18,6 @@ option('ldscript', type: 'string', value: '',
 
 option('device', type: 'string', value: 'RA4E2',
        description: 'Device string for rfp-cli -d flag. RA4E2 or RA6E2. Use `rfp-cli -ld` to list available.')
+
+option('rtt_console_enable', type: 'integer', value: 0,
+       description: 'RTC logger console backend: 0=UART (default), 1=SEGGER RTT')
