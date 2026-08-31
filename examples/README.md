@@ -1,0 +1,1 @@
+https://gitlab.global.renesas.com/mcusys/pes-rtc-event-logger/-/blob/main/README.md
