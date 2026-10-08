@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>EXAMPLES_GUIDE</title>
+  <style>
+
+html {
+color: #1a1a1a;
+color: light-dark(#1a1a1a, #fdfdfd);
+background-color: #fdfdfd;
+background-color: light-dark(#fdfdfd, #1a1a1a);
+color-scheme: light dark;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+color-scheme: light only;
+}
+html, body, pre, code {
+background-color: transparent;
+}
+body, a, a:visited, blockquote {
+color: black;
+}
+pre, code {
+padding: 0;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a, a:visited {
+color: inherit;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid;
+border-color: #e6e6e6;
+border-color: light-dark(#e6e6e6, #4c4c4c);
+color: #606060;
+color: light-dark(#606060, #b6b6b6);
+}
+code {
+white-space: pre-wrap;
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid currentColor;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid currentColor;
+border-bottom: 1px solid currentColor;
+}
+th {
+border-top: 1px solid currentColor;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+</style>
+</head>
+<body>
+<h1 id="running-the-project-and-expected-output">Running the Project and
+Expected Output</h1>
+<blockquote>
+<p>Part of the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html#documentation-map"><code>rs_rtc_logger</code>
+documentation set</a>. For building from the command line with
+Meson/LLVM instead of e2studio, see <a href="BUILD.html">BUILD.html</a>.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#importing-and-building">Importing and Building</a></li>
+<li><a href="#expected-output-example-project-mode-cold-start">Expected
+Output — Example Project Mode (cold start)</a></li>
+<li><a href="#expected-output-expert-mode-cold-start">Expected Output
+— Expert Mode (cold start)</a></li>
+<li><a href="#expected-output-warm-reset-both-modes">Expected Output
+— Warm Reset (both modes)</a></li>
+<li><a href="#interaction-notes">Interaction Notes</a></li>
+</ol>
+<hr />
+<h2 id="prerequisites">1. Prerequisites</h2>
+<ul>
+<li>FPB-RA4E2 board connected via USB (provides both power and J-Link
+virtual COM)</li>
+<li>e2studio IDE with FSP v6.5.0 installed</li>
+<li>A serial terminal connected to the J-Link virtual COM port at
+<strong>115200 baud, 8N1</strong></li>
+</ul>
+<h2 id="importing-and-building">2. Importing and Building</h2>
+<ol type="1">
+<li>Import the project into e2studio using <strong>File → Import →
+Existing Projects into Workspace</strong> and select the
+<code>RTC_Event_Logger_FPB_RA4E2</code> project directory (or
+<code>RTC_Event_Logger_FPB_RA6E2</code> for the secondary target).</li>
+<li>The project is fully functional upon import. The
+<code>configuration.xml</code> is pre-configured; no FSP Stack
+Configurator re-run is required for the default preset path.</li>
+<li>Build the project (<strong>Project → Build All</strong>). The
+default build target is <strong>Example Project mode</strong>
+(<code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE = 1</code>).</li>
+<li>Flash and debug using <strong>Run → Debug As → Renesas GDB Hardware
+Debugging</strong>.</li>
+<li>Open a serial terminal on the J-Link virtual COM port at 115200
+8N1.</li>
+<li>Power cycle the target board by disconnecting and re-connecting the
+USB cable.</li>
+</ol>
+<p>To switch to <strong>Expert mode</strong>, set
+<code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE</code> to <code>0</code> in
+<code>rs_rtc_logger_cfg.h</code> (or as a project-level compiler define
+<code>-DRS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE=0</code>) and rebuild.</p>
+<blockquote>
+<p><strong>Note:</strong> If you download firmware via the e2studio
+debugger, see the e2studio reset-configuration section in <a href="BUILD.html#e2studio-debugger-reset-configuration-for-rtc">BUILD.html</a>
+— the default debugger reset behavior freezes the RTC counter, which
+affects timestamps shown below.</p>
+</blockquote>
+<h2 id="expected-output-example-project-mode-cold-start">3. Expected
+Output — Example Project Mode (cold start)</h2>
+<pre><code>*** RTC Event Logger Demo ***
+Mode: Example Project
+RTC Event Logger control block: 992 bytes.
+Creating RTC Event Logger consumer task...
+Consumer task ready.
+Triggering RTC Event Logger auto-init...
+Waiting for RTC Event Logger auto-init to complete...
+[0000-00-00 00:00:00] INIT #1
+RTC Event Logger auto-init complete.
+Power-on reset detected.
+Enter date/time [YYYY-MM-DD HH:MM:SS] : 2026-07-30 10:38:00
+Time set OK.
+LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: 3
+LOCO calibration set: trim +3, RFRL = 258.
+Ready. Press S1 to log an event.
+[2026-07-30 10:38:06] Event Detected #2
+[2026-07-30 10:38:07] Event Detected #3</code></pre>
+<h2 id="expected-output-expert-mode-cold-start">4. Expected Output —
+Expert Mode (cold start)</h2>
+<pre><code>*** RTC Event Logger Demo ***
+Mode: Expert
+Opening RTC Event Logger...
+RTC Event Logger control block: 984 bytes.
+RTC Event Logger open OK.
+Power-on reset detected.
+Enter date/time [YYYY-MM-DD HH:MM:SS] : 2026-07-30 10:54:00
+Time set OK.
+LOCO trim (fast=+, slow=-, Enter=skip) [e.g. +17 or -17]: 3
+LOCO calibration set: trim +3, RFRL = 258.
+Starting RTC Event Logger...
+RTC Event Logger started.
+Ready. Press S1 to log an event.
+[2026-07-30 10:54:05] Event Detected #1
+[2026-07-30 10:54:07] Event Detected #2</code></pre>
+<h2 id="expected-output-warm-reset-both-modes">5. Expected Output — Warm
+Reset (both modes)</h2>
+<p>After pressing the reset button while USB power remains:</p>
+<pre><code>=========================================
+  RTC Event Logger - FPB-RA4E2
+  FSP v6.5.0 / FreeRTOS
+=========================================
+UART OK. Starting ...
+
+*** RTC Event Logger Demo ***
+Mode: Example Project
+RTC Event Logger control block: 992 bytes.
+Creating RTC Event Logger consumer task...
+Consumer task ready.
+Triggering RTC Event Logger auto-init...
+Waiting for RTC Event Logger auto-init to complete...
+[0000-00-00 00:00:00] INIT #1
+RTC Event Logger auto-init complete.
+Warm reset: seq counter restored.
+Warm reset — RTC time retained.
+Ready. Press S1 to log an event.
+[2026-07-30 10:49:37] Event Detected #3</code></pre>
+<blockquote>
+<p>Note: “Warm reset: seq counter restored.” appears only when a valid
+sequence-counter backup exists from the previous session (i.e. at least
+one event was logged before the reset).</p>
+</blockquote>
+<p>The sequence counter resumes from its pre-reset value and the RTC
+continues from its running time with no re-prompting for date/time.</p>
+<h2 id="interaction-notes">6. Interaction Notes</h2>
+<ul>
+<li><strong>Date/time prompt:</strong> Enter in
+<code>YYYY-MM-DD HH:MM:SS</code> format. Press Enter with no input to
+skip; events will display <code>[0000-00-00 00:00:00]</code> and you
+will be re-prompted after each event.</li>
+<li><strong>LOCO trim prompt:</strong> Enter a signed integer
+(e.g. <code>+17</code>, <code>-8</code>, <code>0</code>) to adjust the
+RFRL register. Press Enter with no input to skip and use the default
+RFRL = 255.</li>
+<li><strong>S1 button:</strong> Press User Switch S1 on the FPB-RA4E2
+board to trigger an event. A software debounce (default 150 ms,
+<code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code>) suppresses spurious
+re-triggers from mechanical switch bounce — see <a href="CONFIGURATION_GUIDE.html#debounce-configuration-reference-application">CONFIGURATION_GUIDE.html</a>.
+Presses spaced closer than the debounce window will not produce a second
+logged event.</li>
+</ul>
+<hr />
+<p><em>Return to the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">User
+Manual</a>.</em></p>
+</body>
+</html>

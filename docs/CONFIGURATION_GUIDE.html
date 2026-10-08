@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CONFIGURATION_GUIDE</title>
+  <style>
+
+html {
+color: #1a1a1a;
+color: light-dark(#1a1a1a, #fdfdfd);
+background-color: #fdfdfd;
+background-color: light-dark(#fdfdfd, #1a1a1a);
+color-scheme: light dark;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+color-scheme: light only;
+}
+html, body, pre, code {
+background-color: transparent;
+}
+body, a, a:visited, blockquote {
+color: black;
+}
+pre, code {
+padding: 0;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a, a:visited {
+color: inherit;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid;
+border-color: #e6e6e6;
+border-color: light-dark(#e6e6e6, #4c4c4c);
+color: #606060;
+color: light-dark(#606060, #b6b6b6);
+}
+code {
+white-space: pre-wrap;
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid currentColor;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid currentColor;
+border-bottom: 1px solid currentColor;
+}
+th {
+border-top: 1px solid currentColor;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+</head>
+<body>
+<h1 id="configuration-guide">Configuration Guide</h1>
+<blockquote>
+<p>Part of the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html#documentation-map"><code>rs_rtc_logger</code>
+documentation set</a>.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#configuration-overview">Configuration Overview</a></li>
+<li><a href="#configuration-assumptions-for-the-reference-board">Configuration
+Assumptions for the Reference Board</a></li>
+<li><a href="#required-non-default-fsp-settings">Required Non-Default
+FSP Settings</a></li>
+<li><a href="#rtc_time_t-field-conventions"><code>rtc_time_t</code>
+Field Conventions</a></li>
+<li><a href="#adapting-to-your-board">Adapting to Your Board</a></li>
+<li><a href="#debounce-configuration-reference-application">Debounce
+Configuration (Reference Application)</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+</ol>
+<hr />
+<h2 id="configuration-overview">1. Configuration Overview</h2>
+<p>The <code>rs_rtc_logger</code> relies on a combination of:</p>
+<ul>
+<li>FSP-generated or preset RTC instance configuration</li>
+<li>Build-time configuration constants in
+<code>rs_rtc_logger_cfg.h</code></li>
+<li>A runtime configuration structure (<code>rs_rtc_logger_cfg_t</code>)
+bound via <code>rs_rtc_logger_ConfigGen()</code></li>
+</ul>
+<p>The reference implementation targets the <strong>FPB-RA4E2</strong>
+and <strong>FPB-RA6E2</strong>.</p>
+<hr />
+<h2 id="configuration-assumptions-for-the-reference-board">2.
+Configuration Assumptions for the Reference Board</h2>
+<p>The reference implementation targets the <strong>FPB-RA4E2</strong>
+with the following board-specific assumptions. These are reference
+assumptions for the demo hardware, not requirements for your
+application.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Reference Assumption</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCU</td>
+<td>RA4E2 (Cortex-M33, 64-pin QFN, R7FA4E2B93CFM)</td>
+<td>Primary development target</td>
+</tr>
+<tr>
+<td>UART channel</td>
+<td>SCI0 (USB-Serial VCOM bridge via J-Link), owned by the vendored
+Buffered I/O UART driver</td>
+<td>Schematic page 7: P410(RX)/P411(TX); see <a href="#required-non-default-fsp-settings">Section 3</a></td>
+</tr>
+<tr>
+<td>UART baud rate</td>
+<td>115200 baud, async, 8N1</td>
+<td>VCOM USB-Serial bridge default</td>
+</tr>
+<tr>
+<td>RTC clock source</td>
+<td>LOCO (Low-speed On-Chip Oscillator)</td>
+<td>FSP default; see clock accuracy note in <a href="BEHAVIOR_AND_PERFORMANCE.html">BEHAVIOR_AND_PERFORMANCE.html</a></td>
+</tr>
+<tr>
+<td>Sub-clock crystal</td>
+<td>Y2 (32.768 kHz) populated but not used by default</td>
+<td>Available as a higher-accuracy alternative</td>
+</tr>
+<tr>
+<td>External IRQ</td>
+<td>P304 / IRQ9 / User Switch S1</td>
+<td>Schematic page 2; application-owned</td>
+</tr>
+<tr>
+<td>Power supply</td>
+<td>USB 5V → 3.3V linear regulator (no VBATT)</td>
+<td>No battery backup; see power-down limitation in <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">RTC_EVENT_LOGGER-USER_MANUAL.html</a></td>
+</tr>
+<tr>
+<td>FreeRTOS heap</td>
+<td>heap_4</td>
+<td>Required for <code>xTaskCreateStatic()</code></td>
+</tr>
+<tr>
+<td>FreeRTOS static allocation</td>
+<td><code>configSUPPORT_STATIC_ALLOCATION = 1</code></td>
+<td>Required for static task creation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="required-non-default-fsp-settings">3. Required Non-Default FSP
+Settings</h2>
+<p>The following FSP Stack Configurator settings must be configured
+correctly for the module to operate. These are values that differ from
+FSP defaults and must be set in <code>configuration.xml</code> when not
+using the preset configuration path (see <a href="#adapting-to-your-board">Section 5</a>).</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Driver</th>
+<th>Property</th>
+<th>Required Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r_rtc</code></td>
+<td>Clock source</td>
+<td>LOCO</td>
+<td>Specifies the LOCO oscillator as the RTC clock source</td>
+</tr>
+<tr>
+<td><code>r_rtc</code></td>
+<td>Calendar mode</td>
+<td>Enabled</td>
+<td>Required for <code>R_RTC_CalendarTimeGet()</code> and
+<code>R_RTC_CalendarTimeSet()</code></td>
+</tr>
+<tr>
+<td><code>r_rtc</code></td>
+<td>Set Source Clock in Open</td>
+<td><strong>Disabled</strong></td>
+<td>Required for warm-reset RTC preservation — prevents
+<code>R_RTC_ClockSourceSet()</code> from being called on every open,
+which would reset the running clock</td>
+</tr>
+<tr>
+<td><code>r_rtc</code></td>
+<td>RTC interrupt priority</td>
+<td>Non-zero (≥ 2)</td>
+<td>Required; must be lower than the FreeRTOS max syscall priority</td>
+</tr>
+<tr>
+<td><code>r_rtc</code></td>
+<td>Carry interrupt priority (<code>carry_ipl</code>)</td>
+<td>≤ 4 (e.g. 2)</td>
+<td><code>R_RTC_CalendarTimeGet()</code> is called from
+<code>EventTrigger()</code> in ISR context and spins waiting for the
+carry ISR. The carry ISR MUST have higher preemption (lower IPL number)
+than every ISR that calls <code>EventTrigger()</code>. The demo button
+ISR is at IPL 5; carry must be &lt; 5. The FSP-generated
+<code>hal_data.c</code> default of 12 will cause an <strong>infinite
+loop/deadlock</strong> when <code>EventTrigger()</code> is called from
+an ISR. The preset config uses <code>carry_ipl = 2</code> (safe).
+<code>rs_rtc_logger_Open()</code> checks this at runtime and returns
+<code>FSP_ERR_INVALID_HW_CONDITION</code> if the limit is exceeded.</td>
+</tr>
+<tr>
+<td><code>r_icu</code></td>
+<td>IRQ channel</td>
+<td>IRQ9 (P304)</td>
+<td>On-board user button S1; configured and owned by the
+application</td>
+</tr>
+<tr>
+<td>FreeRTOS</td>
+<td>Heap scheme</td>
+<td>heap_4 (or heap_3)</td>
+<td>Required for <code>xTaskCreateStatic()</code></td>
+</tr>
+<tr>
+<td>FreeRTOS</td>
+<td><code>configSUPPORT_STATIC_ALLOCATION</code></td>
+<td>1</td>
+<td>Required for static task creation (no heap used for task stack or
+control block)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>The Buffered I/O UART is not configured by this
+component.</strong> The RTC Event Logger does not open, own, or
+configure the UART instance. The shared VCOM UART is opened and owned by
+the vendored <strong>Buffered I/O UART driver</strong>
+(<code>src/rs_stdio_uart_buffer_io/</code>), bound to the FSP Stack
+Configurator-generated <code>g_uart_jlob_vcom</code> instance. The table
+below lists the UART-related settings that driver requires — set them on
+<code>g_uart_jlob_vcom</code> in <code>configuration.xml</code>. The
+vendored driver installs its own (<code>uart_jlob_vcom_callback</code>)
+the first time any stdio call
+(<code>printf</code>/<code>getchar</code>/<code>fflush</code>) runs.</p>
+</blockquote>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Driver</th>
+<th>Property</th>
+<th>Required Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>Callback</td>
+<td>Left as generated / driver-installed
+(<code>uart_jlob_vcom_callback</code>)</td>
+<td>Owned by the Buffered I/O UART driver, not by this component.</td>
+</tr>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>Operating mode</td>
+<td>Asynchronous</td>
+<td>Required by the Buffered I/O UART driver</td>
+</tr>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>Baud rate</td>
+<td>115200</td>
+<td>Matches the VCOM USB-Serial bridge default on FPB boards</td>
+</tr>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>Flow control</td>
+<td>RTS (SCI-internal; no external flow-control pin)</td>
+<td>Matches the reference configuration validated by
+<code>RS_STDIO_UART_CheckApplicationConfiguration()</code></td>
+</tr>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>DMA/DTC transfer instances
+(<code>p_transfer_tx</code>/<code>p_transfer_rx</code>)</td>
+<td>Not set (NULL)</td>
+<td>The vendored driver’s config check explicitly rejects a
+DMA/DTC-backed transfer instance</td>
+</tr>
+<tr>
+<td><code>r_sci_uart</code> (<code>g_uart_jlob_vcom</code>)</td>
+<td>rxi/txi/tei/eri interrupt priority and vector</td>
+<td>Enabled, valid NVIC vector allocated</td>
+<td>Same failure mode as the old <code>r_sci_uart</code> requirement: if
+the stack is removed, IRQs fall back to
+<code>FSP_INVALID_VECTOR</code>/<code>BSP_IRQ_DISABLED</code> and the
+Buffered I/O UART driver’s own validation
+(<code>RS_STDIO_UART_CheckApplicationConfiguration()</code>, invoked via
+<code>rs_rtc_logger_console_init()</code> during
+<code>rs_rtc_logger_Open()</code>) will reject it</td>
+</tr>
+<tr>
+<td>Clock tree</td>
+<td>HOCO</td>
+<td>20 MHz (both boards)</td>
+<td>Required by the reference baud-rate register values baked into the
+board config file</td>
+</tr>
+<tr>
+<td>Clock tree</td>
+<td>PCLKA</td>
+<td><strong>100 MHz on FPB-RA4E2</strong>, <strong>50 MHz on
+FPB-RA6E2</strong></td>
+<td>Different PLL configuration per board (see <a href="RELEASE_NOTES.html#per-board-differences">RELEASE_NOTES.html</a>);
+the driver’s config check validates against the value for the board it
+was built for</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="rtc_time_t-field-conventions">4. <code>rtc_time_t</code> Field
+Conventions</h2>
+<p>The FSP <code>rtc_time_t</code> type is an alias for the C Standard
+<code>struct tm</code>. Two fields require an offset conversion before
+display:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+<th>Display conversion for <code>[YYYY-MM-DD HH:MM:SS]</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tm_year</code></td>
+<td>Years since 1900</td>
+<td>Add 1900: <code>tm_year + 1900</code></td>
+</tr>
+<tr>
+<td><code>tm_mon</code></td>
+<td>Months since January (0–11)</td>
+<td>Add 1: <code>tm_mon + 1</code></td>
+</tr>
+<tr>
+<td><code>tm_mday</code></td>
+<td>Day of month (1–31)</td>
+<td>Direct use</td>
+</tr>
+<tr>
+<td><code>tm_hour</code></td>
+<td>Hours (0–23)</td>
+<td>Direct use — 24-hour mode only</td>
+</tr>
+<tr>
+<td><code>tm_min</code></td>
+<td>Minutes (0–59)</td>
+<td>Direct use</td>
+</tr>
+<tr>
+<td><code>tm_sec</code></td>
+<td>Seconds (0–60)</td>
+<td>Direct use</td>
+</tr>
+</tbody>
+</table>
+<p>The FSP RTC operates exclusively in 24-hour mode. The timestamp
+formatter inside the module handles all of these conversions
+automatically.</p>
+<hr />
+<h2 id="adapting-to-your-board">5. Adapting to Your Board</h2>
+<h3 id="configuration-path-options">Configuration Path Options</h3>
+<p>The module supports two ways to supply RTC hardware configuration,
+selected by <code>RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE</code> in
+<code>rs_rtc_logger_cfg.h</code>. This selection covers the
+<strong>RTC</strong> instance only — see the Buffered I/O UART note
+below for how the shared UART is configured.</p>
+<p><strong>Preset Path (default,
+<code>RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 1</code>):</strong>
+Pre-built RTC HAL instance definitions for the FPB-RA4E2 (or FPB-RA6E2)
+are provided in
+<code>src/rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.c/.h</code>
+(or <code>_ra6e2.c/.h</code>). The project builds and runs without
+opening the FSP Stack Configurator. This path is recommended for initial
+evaluation.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#if RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h&quot;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#endif</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span></code></pre></div>
+<p><strong>FSP Stack Configurator Path
+(<code>RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE = 0</code>):</strong>
+Configure the <code>r_rtc</code> stack in the e2studio FSP Stack
+Configurator for your target board. FSP tooling generates a
+<code>g_rtc0</code> symbol in <code>ra_gen/</code>. Pass it to
+<code>rs_rtc_logger_ConfigGen()</code> instead of the preset
+instance.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0<span class="op">);</span></span></code></pre></div>
+<p>Use this path when targeting a board other than FPB-RA4E2/FPB-RA6E2,
+or when you need to customize the RTC clock source or any other
+FSP-configurable RTC property. Validate your binding with
+<code>rs_rtc_logger_ConfigCheck()</code> — see <a href="FUNCTIONS_GUIDE.html#configuration-bridge-call-before-open">FUNCTIONS_GUIDE.html</a>.</p>
+<blockquote>
+<p><code>rs_rtc_logger_ConfigGen()</code> takes an RTC instance. The
+shared UART is configured entirely separately, through the vendored
+Buffered I/O UART driver’s own per-board config file
+(<code>src/rs_stdio_uart_buffer_io/stdio_uart_config_ra4e2_fpb.c</code>
+or <code>_ra6e2_fpb.c</code>), which binds to the FSP Stack
+Configurator-generated <code>g_uart_jlob_vcom</code> instance and is
+validated independently via
+<code>RS_STDIO_UART_CheckApplicationConfiguration()</code> (wired in
+through <code>rs_rtc_logger_console_init()</code>, called from
+<code>rs_rtc_logger_hal_uart_open()</code> during <code>Open()</code>).
+There is no equivalent “preset vs. FSP Stack Configurator” choice for
+the UART side — the driver always binds to
+<code>g_uart_jlob_vcom</code>. See <a href="RELEASE_NOTES.html#buffered-io-over-uart">RELEASE_NOTES.html</a>
+for the full change and <a href="FILE_GUIDE.html">FILE_GUIDE.html</a> for
+which files are safe to modify when porting the UART side to a new
+board.</p>
+</blockquote>
+<h3 id="key-adaptation-points">Key Adaptation Points</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Adaptation</th>
+<th>Location</th>
+<th>What to Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Target board / RTC instance</td>
+<td><code>src/rs_rtc_logger/config/</code></td>
+<td>Create a new preset config file for your board, or switch to the FSP
+Stack Configurator path</td>
+</tr>
+<tr>
+<td>Target board / shared UART</td>
+<td><code>src/rs_stdio_uart_buffer_io/</code></td>
+<td>Add a new <code>stdio_uart_config_&lt;board&gt;.c</code> file
+following the pattern in <code>stdio_uart_config_ra4e2_fpb.c</code> /
+<code>_ra6e2_fpb.c</code> — reference pins, baud registers, and
+<code>RS_STDIO_UART_CheckApplicationConfiguration()</code> reference
+values for your board</td>
+</tr>
+<tr>
+<td>External interrupt source</td>
+<td>Application ISR callback</td>
+<td><code>r_icu</code> is application-owned; replace with any interrupt
+source (accelerometer callback, timer, GPIO)</td>
+</tr>
+<tr>
+<td>RTC clock source</td>
+<td><code>configuration.xml</code> r_rtc properties</td>
+<td>Change from LOCO if the sub-clock or another source is
+preferred</td>
+</tr>
+<tr>
+<td>Event payload string</td>
+<td>Call site of <code>rs_rtc_logger_EventTrigger()</code></td>
+<td>Replace <code>&quot;Event Detected&quot;</code> with your application-specific
+event description</td>
+</tr>
+<tr>
+<td>Timestamp format</td>
+<td><code>rs_rtc_logger_cfg_t.ts_format</code> or
+<code>rs_rtc_logger_TimestampFormatSet()</code></td>
+<td>Select ISO8601 (default), time-only, compact, or syslog format</td>
+</tr>
+<tr>
+<td>Buffer depth</td>
+<td><code>RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH</code> in
+<code>rs_rtc_logger_cfg.h</code></td>
+<td>Increase for higher burst event rates; decrease to save RAM</td>
+</tr>
+<tr>
+<td>Consumer task priority</td>
+<td><code>RS_RTC_LOGGER_CFG_TASK_PRIORITY</code></td>
+<td>Tune relative to other application tasks</td>
+</tr>
+<tr>
+<td>Consumer task stack size</td>
+<td><code>RS_RTC_LOGGER_CFG_TASK_STACK_SIZE</code></td>
+<td>Default 2048 bytes; increase if deeper call stacks are needed</td>
+</tr>
+<tr>
+<td>Operating mode</td>
+<td><code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE</code></td>
+<td>Set to <code>0</code> (Expert mode) to own the full lifecycle</td>
+</tr>
+<tr>
+<td>Overflow policy</td>
+<td><code>rs_rtc_logger_cfg_t.overflow_policy</code></td>
+<td>Switch to <code>DROP_NEWEST</code> if strict event ordering must be
+preserved</td>
+</tr>
+<tr>
+<td>Sequence counter on warm reset</td>
+<td>Application: call <code>rs_rtc_logger_SeqCountSet()</code> after
+<code>Open()</code></td>
+<td>Restore from application-managed non-volatile storage</td>
+</tr>
+<tr>
+<td>LOCO drift compensation</td>
+<td><code>rs_rtc_logger_LocoCalibrationSet()</code> at runtime, or
+<code>RS_RTC_LOGGER_CFG_LOCO_RFRL_DEFAULT</code> at build time</td>
+<td>Adjust RFRL register to compensate for observed oscillator
+error</td>
+</tr>
+<tr>
+<td>RTC carry interrupt priority (<code>carry_ipl</code>)</td>
+<td><code>configuration.xml</code> r_rtc properties → Carry Interrupt
+Priority</td>
+<td>Must be strictly lower number (higher preemption) than the IPL of
+every ISR that calls <code>rs_rtc_logger_EventTrigger()</code>. The FSP
+Stack Configurator default is <code>carry_ipl = 12</code>, which is
+lower preemption than the demo button ISR at <code>ipl = 5</code>. Set
+<code>carry_ipl</code> to a value ≤
+<code>RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT</code> (default 4).
+<code>rs_rtc_logger_Open()</code> returns
+<code>FSP_ERR_INVALID_HW_CONDITION</code> if this is violated.</td>
+</tr>
+<tr>
+<td>Button debounce window (reference app only)</td>
+<td><code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code> in
+<code>rs_rtc_logger_cfg.h</code></td>
+<td>Default 150 ms; see <a href="#debounce-configuration-reference-application">Section
+6</a></td>
+</tr>
+<tr>
+<td>RX/TX byte queue size (Buffered I/O UART driver)</td>
+<td><code>src/rs_stdio_uart_buffer_io/syscalls_picolib_stdio_to_uart.c</code></td>
+<td>Fixed at 256 bytes each, hard-coded in the vendored driver — not
+exposed via <code>rs_rtc_logger_cfg.h</code>. Edit only if you accept
+diverging from the vendored driver’s “used unmodified” delivery
+model.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fpb-ra6e2">FPB-RA6E2</h3>
+<p>The FPB-RA6E2 port includes the full Buffered I/O over UART update
+and is symmetric with FPB-RA4E2 — same core module, same
+<code>rs_rtc_logger_stdio_console.c/h</code> adapter, same vendored
+driver files, differing only in the per-board files below.
+Board-specific differences to address when adapting further:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>FPB-RA4E2</th>
+<th>FPB-RA6E2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RTC preset config</td>
+<td><code>rs_rtc_logger_data_fpb_ra4e2.c/.h</code></td>
+<td><code>rs_rtc_logger_data_fpb_ra6e2.c/.h</code></td>
+</tr>
+<tr>
+<td>Buffered I/O UART board config</td>
+<td><code>stdio_uart_config_ra4e2_fpb.c</code> (guard:
+<code>BOARD_RA4E2_FPB</code>)</td>
+<td><code>stdio_uart_config_ra6e2_fpb.c</code> (guard:
+<code>BOARD_RA6E2_FPB</code>)</td>
+</tr>
+<tr>
+<td>UART baud register (<code>brr</code>)</td>
+<td>53</td>
+<td>26</td>
+</tr>
+<tr>
+<td>PCLKA</td>
+<td>100 MHz</td>
+<td>50 MHz</td>
+</tr>
+<tr>
+<td>HOCO</td>
+<td>20 MHz</td>
+<td>20 MHz</td>
+</tr>
+<tr>
+<td>UART pins</td>
+<td>P410 (RX) / P411 (TX)</td>
+<td>P410 (RX) / P411 (TX)</td>
+</tr>
+<tr>
+<td>RTC <code>carry_ipl</code></td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>Additional items to confirm independently of this update: - The RA6E2
+includes TrustZone. The module targets the non-secure partition by
+default. The reference application must use the BSP TrustZone template
+configured as a non-secure project. This has not been specifically
+re-assessed against the Buffered I/O UART driver as part of this update.
+- Confirm VBATT schematic support on FPB-RA6E2 if power-down RTC
+retention is required.</p>
+<hr />
+<h2 id="debounce-configuration-reference-application">6. Debounce
+Configuration (Reference Application)</h2>
+<p>This is <strong>reference application behavior</strong>, not core
+module behavior. The core module
+(<code>rs_rtc_logger_EventTrigger()</code>) has no concept of debouncing
+and accepts every call it receives from any source.</p>
+<p>The FPB boards’ <code>r_icu</code> hardware digital filter is set to
+<code>PCLKB_div_1</code> (120 ns at 25 MHz), which is far shorter than
+the 5–20 ms bounce period of a mechanical button. Every bounce edge
+triggers the ISR, producing 7–13 spurious <code>EventTrigger()</code>
+calls per physical button press if left unfiltered.</p>
+<p>The reference application implements a software debounce inside
+<code>demo_button_s1_callback()</code> (in
+<code>rs_rtc_logger_demo.c</code>), using the FreeRTOS tick count
+(<code>xTaskGetTickCountFromISR()</code>) to reject ISR firings that
+arrive sooner than <code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code> after the
+last accepted event. This covers typical button bounce while allowing
+rapid intentional presses spaced apart.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Default</th>
+<th>Location</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code></td>
+<td><code>150U</code></td>
+<td><code>rs_rtc_logger_cfg.h</code></td>
+<td>Minimum milliseconds between accepted button-triggered events. Set
+to <code>0</code> to disable the software debounce and rely on the
+hardware filter only.</td>
+</tr>
+</tbody>
+</table>
+<p>If you replace the button ISR with a different event source
+(accelerometer, timer, GPIO), decide independently whether that source
+needs its own debounce/deglitch strategy — the
+<code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code> constant and its consuming
+code are specific to the demo’s button callback and are not part of the
+reusable core.</p>
+<hr />
+<h2 id="dependencies">7. Dependencies</h2>
+<h3 id="hardware-dependencies">Hardware Dependencies</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Usage</th>
+<th>Owned By</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>On-chip RTC (<code>r_rtc</code>)</td>
+<td>Calendar time read/set; clock source initialization</td>
+<td>This module</td>
+</tr>
+<tr>
+<td>UART — SCI0 (<code>r_sci_uart</code>,
+<code>g_uart_jlob_vcom</code>)</td>
+<td>Shared VCOM serial I/O at 115200 baud (both log output and CLI
+console)</td>
+<td><strong>Vendored Buffered I/O UART driver</strong>
+(<code>src/rs_stdio_uart_buffer_io/</code>) — not this module</td>
+</tr>
+<tr>
+<td>External IRQ (<code>r_icu</code>) — P304/IRQ9</td>
+<td>User button S1 interrupt detection</td>
+<td><strong>Application</strong></td>
+</tr>
+<tr>
+<td>USB-Serial bridge (J-Link virtual COM)</td>
+<td>VCOM physical layer</td>
+<td>Board hardware</td>
+</tr>
+</tbody>
+</table>
+<h3 id="software-dependencies">Software Dependencies</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Renesas FSP</td>
+<td>v6.5.0</td>
+<td>Provides <code>r_rtc</code>, <code>r_sci_uart</code>,
+<code>r_icu</code>, BSP, startup</td>
+</tr>
+<tr>
+<td>FreeRTOS</td>
+<td>Bundled with FSP v6.5.0</td>
+<td>Required for time-critical event synchronization</td>
+</tr>
+<tr>
+<td><strong>Buffered I/O UART driver</strong>
+(<code>src/rs_stdio_uart_buffer_io/</code>)</td>
+<td>Vendored used unmodified</td>
+<td>hard dependency on the the Buffered I/O driver since —
+<code>rs_rtc_logger_hal_uart_open()</code> calls into it (via
+<code>rs_rtc_logger_console_init()</code>) on every <code>Open()</code>.
+See <a href="#required-non-default-fsp-settings">Section 3</a> and <a href="RELEASE_NOTES.html#buffered-io-over-uart">RELEASE_NOTES.html</a>.</td>
+</tr>
+<tr>
+<td>picolibc</td>
+<td>Bundled with the LLVM ARM Embedded toolchain</td>
+<td>Required by the vendored driver’s stdio stream redirection
+(<code>FDEV_SETUP_STREAM</code>)</td>
+</tr>
+<tr>
+<td>e2studio IDE</td>
+<td>Compatible with FSP v6.5.0</td>
+<td>Required to build and flash the project</td>
+</tr>
+<tr>
+<td>J-Link On-Board</td>
+<td>—</td>
+<td>Used for debug/flash on FPB boards</td>
+</tr>
+</tbody>
+</table>
+<h3 id="driver-dependency-details">Driver Dependency Details</h3>
+<p>The module references the RTC HAL driver exclusively through the FSP
+abstract interface type <code>rtc_instance_t *</code>. This means the
+RTC-facing core source is identical across both target boards —
+board-specific RTC differences are confined to
+<code>configuration.xml</code> and the RTC preset config files.</p>
+<p>The module functions
+<code>rs_rtc_logger_hal_uart_open()</code>/<code>_close()</code>/<code>_write()</code>
+goes through <code>rs_rtc_logger_stdio_console.c</code> to the vendored
+Buffered I/O UART driver’s stdio stream. That driver owns
+<code>g_uart_jlob_vcom</code> (opening it on first stdio call, or
+deterministically via <code>rs_rtc_logger_console_init()</code>) and
+never closes it for the life of the application.</p>
+<p>The External IRQ driver (<code>r_icu</code>) is <strong>not</strong>
+initialized, enabled, disabled, or closed by this module. The module has
+no dependency on any specific interrupt source. When the
+<code>r_icu</code> ISR fires, the application calls
+<code>rs_rtc_logger_EventTrigger()</code> to pass the event to the
+module core.</p>
+<h3 id="external-module-dependencies">External Module Dependencies</h3>
+<p><strong>Buffered I/O over UART.</strong> This module depends on one
+other component: the vendored Buffered I/O UART driver
+(<code>src/rs_stdio_uart_buffer_io/</code>), used verbatim/unmodified,
+for all UART I/O. If you replace or remove the vendored driver,
+<code>rs_rtc_logger_hal_uart_open()</code>/<code>_close()</code>/<code>_write()</code>
+(via <code>rs_rtc_logger_stdio_console.c</code>) will need to be
+re-pointed at whatever UART I/O mechanism you substitute.</p>
+<hr />
+<p><em>Return to the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">User
+Manual</a>.</em></p>
+</body>
+</html>
