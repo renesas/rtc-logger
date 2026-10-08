@@ -15,7 +15,10 @@ The reference implementation demonstrates:
 
 This repository contains:
 
-- Reusable core source code (`src/rs_rtc_logger/`)
+- Reusable core source code (`src/rs_rtc_logger/`) with a selectable console
+  transport backend (`RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE`):
+  - `0` = direct UART HAL path (default)
+  - `1` = SEGGER RTT path via J-Link
 - A vendored Buffered I/O UART driver (`src/rs_stdio_uart_buffer_io/`)
 - Board-specific reference/preset configuration for FPB-RA4E2 and FPB-RA6E2
 - Complete e2studio example projects for both boards
@@ -34,6 +37,16 @@ Use this Component if you want to:
 - Reuse the core source in your own application.
 - Start from a working reference implementation with warm-reset time preservation already solved.
 - Understand how to configure Renesas RA devices for RTC-timestamped serial logging.
+
+> **Reusing the logger in another application:** copy `src/rs_rtc_logger/`.
+> For RTT backend support, also copy `src/SEGGER_RTT/`.
+>
+> Select backend with `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE`:
+> - `0` (default): direct UART HAL write path
+> - `1`: SEGGER RTT transport
+>
+> In Meson firmware builds, set this with:
+> `meson setup build --cross-file meson/llvm-cortex-m33.ini -Drtt_console_enable=1`
 
 ---
 
@@ -94,11 +107,13 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │       ├── rs_rtc_logger_cfg.h
 │       ├── rs_rtc_logger_format.c / .h
 │       ├── rs_rtc_logger_hal.c / .h
-│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter to Buffered I/O UART driver
+│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
+│       ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
 │       ├── rs_rtc_logger_types.h
 │       └── config/
 │           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
 │           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
+│   └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
 │
 ├── tests/
 │   ├── meson.build                 ← Test build configuration (host vs. target tests)
@@ -152,6 +167,26 @@ examples/e2studio/RTC_Event_Logger_FPB_RA4E2
 8. Follow the date/time and LOCO trim calibration prompts which are only available after a cold start.
 9. Press User Switch **S1** on the board to trigger a logged event.
 
+### Build with SEGGER RTT in e2studio (RA4E2 and RA6E2 examples)
+
+The e2studio example projects support compile-time transport selection.
+
+1. Open the imported project properties.
+2. Go to **C/C++ Build -> Settings -> Tool Settings -> GNU ARM Cross C Compiler -> Preprocessor**.
+3. Add this preprocessor symbol:
+
+```text
+RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1
+```
+
+4. Clean and rebuild the project.
+5. Start a debug session and open the RTT viewer/terminal in your J-Link tooling.
+
+Notes:
+- `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=0` (default) uses the Buffered I/O UART backend.
+- `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1` uses SEGGER RTT.
+- Optional size optimization for RTT builds: exclude `src/rs_stdio_uart_buffer_io/` from build in e2studio resource settings.
+
 See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
 
 ---
@@ -160,7 +195,7 @@ See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output,
 
 - ISR-safe, non-blocking event capture via `rs_rtc_logger_EventTrigger()`.
 - Static circular event buffer — no dynamic memory allocation in the component core itself.
-- UART transmission via a shared Buffered I/O UART driver (vendored, used unmodified) — the same UART serves both CLI console and event logging.
+- Selectable console backend: direct UART HAL (default) or SEGGER RTT.
 - Four selectable timestamp formats; runtime-switchable.
 - Warm-reset preservation of RTC configuration and event sequence count.
 - LOCO oscillator drift calibration at runtime.
