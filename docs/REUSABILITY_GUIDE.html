@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>REUSABILITY_GUIDE</title>
+  <style>
+
+html {
+color: #1a1a1a;
+color: light-dark(#1a1a1a, #fdfdfd);
+background-color: #fdfdfd;
+background-color: light-dark(#fdfdfd, #1a1a1a);
+color-scheme: light dark;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+color-scheme: light only;
+}
+html, body, pre, code {
+background-color: transparent;
+}
+body, a, a:visited, blockquote {
+color: black;
+}
+pre, code {
+padding: 0;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a, a:visited {
+color: inherit;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid;
+border-color: #e6e6e6;
+border-color: light-dark(#e6e6e6, #4c4c4c);
+color: #606060;
+color: light-dark(#606060, #b6b6b6);
+}
+code {
+white-space: pre-wrap;
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid currentColor;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid currentColor;
+border-bottom: 1px solid currentColor;
+}
+th {
+border-top: 1px solid currentColor;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+</head>
+<body>
+<h1 id="reusability-and-adaptation-for-similar-use-cases">Reusability
+and Adaptation for Similar Use Cases</h1>
+<blockquote>
+<p>Part of the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html#documentation-map"><code>rs_rtc_logger</code>
+documentation set</a>. This guide covers <strong>adapting the core logic
+to a different event source or use case</strong>. For <strong>wiring the
+RTC Event Logger into your application as-is</strong> (initialization
+order, task integration, multi-instance considerations), see <a href="INTEGRATION_GUIDE.html">INTEGRATION_GUIDE.html</a>.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#core-function-reusability">Core Function
+Reusability</a></li>
+<li><a href="#portions-applicable-without-modification">Portions
+Applicable Without Modification</a></li>
+<li><a href="#portions-requiring-modification">Portions Requiring
+Modification</a></li>
+<li><a href="#example-adapting-for-an-accelerometer-event-source">Example:
+Adapting for an Accelerometer Event Source</a></li>
+</ol>
+<hr />
+<h2 id="core-function-reusability">1. Core Function Reusability</h2>
+<p>The <code>rs_rtc_logger_EventTrigger()</code> function is the
+universal entry point and is by design <strong>agnostic to the source of
+the external interrupt</strong>. The core module has no knowledge of
+what generated the call. Any interrupt source — <code>r_icu</code> GPIO,
+accelerometer callback, timer expiry, UART RX, or a direct software call
+— can trigger a timestamped log entry by calling this one function. No
+changes to the core source are required when switching interrupt
+sources.</p>
+<p>Note that the reference application’s button-press path adds a
+software debounce (<code>demo_button_s1_callback()</code>,
+<code>RS_RTC_LOGGER_CFG_DEBOUNCE_MS</code> — see <a href="CONFIGURATION_GUIDE.html#debounce-configuration-reference-application">CONFIGURATION_GUIDE.html</a>)
+<em>before</em> calling <code>EventTrigger()</code>. That debounce is
+specific to a mechanical switch and is not carried along automatically
+when you swap in a different event source — decide independently whether
+your new source needs deglitching.</p>
+<hr />
+<h2 id="portions-applicable-without-modification">2. Portions Applicable
+Without Modification</h2>
+<ul>
+<li>All files in <code>src/rs_rtc_logger/</code> can be included
+directly in any FSP v6.5.0 FreeRTOS project targeting the RA4E2 or RA6E2
+without modification, provided the configuration is supplied via
+<code>rs_rtc_logger_ConfigGen()</code>. This requires bringing along the
+vendored Buffered I/O UART driver
+(<code>src/rs_stdio_uart_buffer_io/</code>, used unmodified) and a
+matching <code>stdio_uart_config_&lt;board&gt;.c</code> file for your
+target board — <code>rs_rtc_logger_hal_uart_open()</code> depends on it
+via <code>rs_rtc_logger_stdio_console.c</code>. See <a href="FILE_GUIDE.html#a.-vendored-buffered-io-uart-driver-reference-only-do-not-edit">FILE_GUIDE.html</a>.</li>
+<li>The timestamp formatter (<code>rs_rtc_logger_format.c</code>) is a
+pure function with no I/O or side effects and can be extracted for use
+in unit tests or other logging implementations.</li>
+<li>The circular buffer and ISR-safe enqueue logic inside
+<code>rs_rtc_logger.c</code> represents a portable, heap-free,
+single-producer/single-consumer event buffer pattern reusable in similar
+telemetry designs. See <a href="FUNCTIONS_GUIDE.html#internal-functions-rs_rtc_logger.c">FUNCTIONS_GUIDE.html</a>
+for the internal <code>rs_rl_enqueue()</code> /
+<code>rs_rl_dequeue()</code> functions that implement this pattern.</li>
+</ul>
+<hr />
+<h2 id="portions-requiring-modification">3. Portions Requiring
+Modification</h2>
+<ul>
+<li><strong>Board-specific RTC preset config files</strong>
+(<code>config/rs_rtc_logger_data_fpb_&lt;board&gt;.c/.h</code>): Create
+new preset files for other target boards, or switch to the FSP Stack
+Configurator path (see <a href="CONFIGURATION_GUIDE.html#adapting-to-your-board">CONFIGURATION_GUIDE.html</a>).
+These now cover the RTC instance only.</li>
+<li><strong>Board-specific Buffered I/O UART config</strong>
+(<code>src/rs_stdio_uart_buffer_io/stdio_uart_config_&lt;board&gt;.c</code>):
+Create a new one for other target boards, following the pattern in
+<code>stdio_uart_config_ra4e2_fpb.c</code> / <code>_ra6e2_fpb.c</code>.
+The UART channel, baud rate, and pin configuration live here now, not in
+the RTC preset files.</li>
+<li><strong>Reference application</strong>
+(<code>rs_rtc_logger_demo.c</code>,
+<code>blinky_thread_entry_ra4e2.c</code> / <code>_ra6e2.c</code>):
+Replace the CLI task, consumer task structure, ISR callback, and
+debounce logic with application-specific code. The demo application is
+demonstration scaffolding, not production code.</li>
+<li><strong>RTC clock source</strong>: Replace LOCO with the sub-clock
+(SOSC) for applications requiring higher time accuracy. Change the
+<code>r_rtc</code> clock source property in
+<code>configuration.xml</code> and remove or adapt the LOCO calibration
+prompt.</li>
+</ul>
+<hr />
+<h2 id="example-adapting-for-an-accelerometer-event-source">4. Example:
+Adapting for an Accelerometer Event Source</h2>
+<p>Replace the <code>r_icu</code> button ISR callback with an
+accelerometer driver callback:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// In your accelerometer interrupt callback:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> accel_threshold_callback<span class="op">(</span>accel_callback_args_t <span class="op">*</span> p_args<span class="op">)</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">(</span><span class="dt">void</span><span class="op">)</span>p_args<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    rs_rtc_logger_EventTrigger<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                               <span class="op">(</span><span class="dt">uint8_t</span> <span class="dt">const</span> <span class="op">*)</span><span class="st">&quot;Threshold Exceeded&quot;</span><span class="op">,</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                               <span class="dv">18</span><span class="bu">U</span><span class="op">);</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>No changes to the core module source are required. The module is
+entirely agnostic to the interrupt source. If your accelerometer can
+produce rapid repeated triggers that should be coalesced (analogous to
+mechanical switch bounce), add your own deglitch logic in this callback
+— the button debounce in the reference application does not apply
+here.</p>
+<p>For the initialization order, task integration, and multi-instance
+considerations relevant to wiring this new event source in, see <a href="INTEGRATION_GUIDE.html">INTEGRATION_GUIDE.html</a>.</p>
+<hr />
+<p><em>Return to the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">User
+Manual</a>.</em></p>
+</body>
+</html>

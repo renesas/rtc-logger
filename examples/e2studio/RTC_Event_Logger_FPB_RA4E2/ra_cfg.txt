@@ -249,7 +249,7 @@ FSP Configuration
   Module "FreeRTOS Port (rm_freertos_port)"
   Module "Realtime Clock (r_rtc)"
     Parameter Checking: Default (BSP)
-    Set Source Clock in Open: Enabled
+    Set Source Clock in Open: Disabled
     
   Module "UART (r_sci_uart)"
     Parameter Checking: Default (BSP)
@@ -285,7 +285,7 @@ FSP Configuration
     General: Use Mutexes: Disabled
     General: Use Recursive Mutexes: Disabled
     General: Use Counting Semaphores: Enabled
-    Hooks: Check For Stack Overflow: Disabled
+    Hooks: Check For Stack Overflow: Enabled
     General: Queue Registry Size: 10
     General: Use Queue Sets: Disabled
     General: Use Time Slicing: Disabled
@@ -316,7 +316,7 @@ FSP Configuration
     Optional Functions: vTaskDelay() Function: Enabled
     Optional Functions: xTaskGetSchedulerState() Function: Enabled
     Optional Functions: xTaskGetCurrentTaskHandle() Function: Enabled
-    Optional Functions: uxTaskGetStackHighWaterMark() Function: Disabled
+    Optional Functions: uxTaskGetStackHighWaterMark() Function: Enabled
     Optional Functions: xTaskGetIdleTaskHandle() Function: Disabled
     Optional Functions: eTaskGetState() Function: Disabled
     Optional Functions: xEventGroupSetBitFromISR() Function: Enabled
@@ -351,7 +351,7 @@ FSP Configuration
       Callback: NULL
       Alarm Interrupt Priority: Disabled
       Period Interrupt Priority: Disabled
-      Carry Interrupt Priority: Priority 12
+      Carry Interrupt Priority: Priority 2
       
     Instance "g_uart0 UART (r_sci_uart)"
       General: Name: g_uart0
@@ -376,7 +376,7 @@ FSP Configuration
       Extra: RS-485: DE Pin Polarity: Active High
       Extra: RS-485: DE Port Number: Disabled
       Extra: RS-485: DE Pin Number: Disabled
-      Interrupts: Callback: rm_rtc_logger_uart_callback
+      Interrupts: Callback: rs_rtc_logger_uart_callback
       Interrupts: Receive Interrupt Priority: Priority 12
       Interrupts: Transmit Data Empty Interrupt Priority: Priority 12
       Interrupts: Transmit End Interrupt Priority: Priority 12

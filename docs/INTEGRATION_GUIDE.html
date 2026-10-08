@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>INTEGRATION_GUIDE</title>
+  <style>
+
+html {
+color: #1a1a1a;
+color: light-dark(#1a1a1a, #fdfdfd);
+background-color: #fdfdfd;
+background-color: light-dark(#fdfdfd, #1a1a1a);
+color-scheme: light dark;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+color-scheme: light only;
+}
+html, body, pre, code {
+background-color: transparent;
+}
+body, a, a:visited, blockquote {
+color: black;
+}
+pre, code {
+padding: 0;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a, a:visited {
+color: inherit;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid;
+border-color: #e6e6e6;
+border-color: light-dark(#e6e6e6, #4c4c4c);
+color: #606060;
+color: light-dark(#606060, #b6b6b6);
+}
+code {
+white-space: pre-wrap;
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid currentColor;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid currentColor;
+border-bottom: 1px solid currentColor;
+}
+th {
+border-top: 1px solid currentColor;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+</head>
+<body>
+<h1 id="integration-guide">Integration Guide</h1>
+<blockquote>
+<p>Part of the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html#documentation-map"><code>rs_rtc_logger</code>
+documentation set</a>. This guide covers <strong>how to wire the PES
+into your application</strong> — initialization order, task/RTOS
+integration, and multi-instance considerations. For <strong>adapting the
+core logic to a different event source or use case</strong>, see <a href="REUSABILITY_GUIDE.html">REUSABILITY_GUIDE.html</a>. For the functions
+referenced below, see <a href="FUNCTIONS_GUIDE.html">FUNCTIONS_GUIDE.html</a>.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#simple-path-integration-example-project-mode">Simple
+Path Integration (Example Project Mode)</a></li>
+<li><a href="#expert-path-integration-full-lifecycle-control">Expert
+Path Integration (Full Lifecycle Control)</a></li>
+<li><a href="#warm-reset-integration-ordering">Warm-Reset Integration
+Ordering</a></li>
+<li><a href="#task-and-rtos-integration">Task and RTOS
+Integration</a></li>
+<li><a href="#shared-uart-and-multi-instance-considerations">Shared
+UART and Multi-Instance Considerations</a></li>
+<li><a href="#firmware-update-integration-pattern-expert-mode">Firmware-Update
+Integration Pattern (Expert Mode)</a></li>
+</ol>
+<hr />
+<h2 id="simple-path-integration-example-project-mode">1. Simple Path
+Integration (Example Project Mode)</h2>
+<p>This is the recommended starting point for most integrations. Set
+<code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE = 1</code> (the default) in
+<code>rs_rtc_logger_cfg.h</code>.</p>
+<p>Recommended call order, from your FreeRTOS thread entry:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">/* 1. Bind the RTC HAL instance (preset or FSP Stack Configurator) */</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">/* 2. Optional but recommended: validate configuration early */</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>fsp_err_t err <span class="op">=</span> rs_rtc_logger_ConfigCheck<span class="op">(&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>FSP_SUCCESS <span class="op">!=</span> err<span class="op">)</span> <span class="op">{</span> <span class="co">/* handle bad configuration */</span> <span class="op">}</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">/* 3. Create the PES-owned consumer task — task context only, before enabling any IRQ */</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EP_PrepareConsumerTask<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">/* 4. Enable your event source&#39;s interrupt (e.g. r_icu external IRQ) */</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>R_ICU_ExternalIrqOpen<span class="op">(&amp;</span>g_external_irq_ctrl<span class="op">,</span> <span class="op">&amp;</span>g_external_irq_cfg<span class="op">);</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>R_ICU_ExternalIrqEnable<span class="op">(&amp;</span>g_external_irq_ctrl<span class="op">);</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">/* 5. From here on, your ISR calls only: */</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EventTrigger<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> p_data<span class="op">,</span> length<span class="op">);</span></span></code></pre></div>
+<blockquote>
+<p><code>rs_rtc_logger_ConfigGen()</code> takes an RTC instance. The
+shared UART is opened automatically the first time your application
+makes any stdio call
+(<code>printf</code>/<code>getchar</code>/<code>fflush</code>), or
+deterministically inside <code>rs_rtc_logger_Open()</code> itself via
+<code>rs_rtc_logger_hal_uart_open()</code>. You do not need to open it
+yourself. See <a href="RELEASE_NOTES.html#buffered-io-over-uart">RELEASE_NOTES.html</a>.</p>
+</blockquote>
+<p><code>rs_rtc_logger_Open()</code> and
+<code>rs_rtc_logger_Start()</code> are called automatically on the first
+<code>EventTrigger()</code> — you do not call them yourself in this
+mode. See <a href="ARCHITECTURE.html#public-function-state-gating">ARCHITECTURE.html</a>
+footnote 1 for exactly what happens on that first call.</p>
+<p><strong>Ordering constraint:</strong> Step 3
+(<code>EP_PrepareConsumerTask</code>) must complete <em>before</em> step
+4 (enabling the interrupt), because <code>xTaskCreateStatic()</code>
+must not be called from ISR context and the PES has no way to defer task
+creation if the ISR fires first.</p>
+<hr />
+<h2 id="expert-path-integration-full-lifecycle-control">2. Expert Path
+Integration (Full Lifecycle Control)</h2>
+<p>Set <code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE = 0</code>. The
+application owns every transition and must provide its own consumer
+task.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">/* 1. Bind and validate configuration */</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigCheck<span class="op">(&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">/* 2. Open — validates RTC oscillator; ensures the shared Buffered I/O UART</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"> *    driver is initialized and validated (see rs_rtc_logger_hal_uart_open()) */</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Open<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">/* 3. Restore warm-reset state, if applicable — see Section 3 below */</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">/* 4. Start — enables the UART output path */</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Start<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">/* 5. Create your own consumer task, which loops on: */</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_event_entry_t entry<span class="op">;</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>FSP_SUCCESS <span class="op">==</span> rs_rtc_logger_EventDequeue<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>entry<span class="op">))</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    rs_rtc_logger_Write<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>entry<span class="op">);</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">/* 6. Enable your event source&#39;s interrupt — safe any time after Start() */</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">/* 7. Application-driven shutdown, if needed */</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Stop<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Close<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span></code></pre></div>
+<p>Your consumer task can use whatever wait strategy fits your
+application (polling <code>EventDequeue()</code>, a task notification
+triggered from your own ISR path, a queue, etc.) — the PES does not
+prescribe one in Expert mode, unlike the internal consumer task used in
+Example Project mode.</p>
+<hr />
+<h2 id="warm-reset-integration-ordering">3. Warm-Reset Integration
+Ordering</h2>
+<p>On a warm reset (detected via <code>R_SYSTEM-&gt;RSTSR0</code> POR
+flag), the RTC keeps running and its configuration is retained, but the
+PES’s own state (sequence counter, “is the clock trustworthy” flag)
+resets with the rest of RAM unless your application restores it from
+non-volatile/<code>BSP_SECTION_NOINIT</code> storage. Integrate the
+restore calls <strong>after <code>Open()</code>, before enabling any
+interrupt source that calls <code>EventTrigger()</code></strong>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Open<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>warm_reset_detected<span class="op">)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    rs_rtc_logger_SeqCountSet<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> restored_seq_count<span class="op">);</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    rs_rtc_logger_ClockValidate<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="kw">true</span><span class="op">);</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Start<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">/* enable interrupt source only after this point */</span></span></code></pre></div>
+<p><strong>Why ordering matters:</strong> if an
+<code>EventTrigger()</code> ISR fires between the moment your
+application chooses the restore value and the <code>SeqCountSet()</code>
+store executing, the ISR’s <code>seq_count++</code> is overwritten by
+the restore, silently creating a duplicate sequence number in the
+output. <code>rs_rtc_logger_Open()</code> always initializes the “clock
+is trustworthy” flag to <code>false</code>; skipping
+<code>ClockValidate(true)</code> on a warm reset causes the first few
+events to display <code>[0000-00-00 00:00:00]</code> even though the RTC
+actually holds a valid, previously-set time.</p>
+<p>In Example Project mode, <code>Open()</code>/<code>Start()</code>
+happen automatically inside the deferred auto-init path — if you need
+<code>SeqCountSet()</code>/<code>ClockValidate()</code> restored before
+the first event is transmitted, call them from your own warm-reset
+detection code <em>before</em> the first <code>EventTrigger()</code>
+call, so they land before the auto-init sequence starts.</p>
+<hr />
+<h2 id="task-and-rtos-integration">4. Task and RTOS Integration</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Consideration</th>
+<th>Example Project Mode</th>
+<th>Expert Mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consumer task ownership</td>
+<td>PES-owned (internal static task, created by
+<code>rs_rtc_logger_EP_PrepareConsumerTask()</code>)</td>
+<td>Application-owned</td>
+</tr>
+<tr>
+<td>Task stack size</td>
+<td><code>RS_RTC_LOGGER_CFG_TASK_STACK_SIZE</code> (default 2048
+bytes)</td>
+<td>Sized by your own task creation</td>
+</tr>
+<tr>
+<td>Task priority</td>
+<td><code>RS_RTC_LOGGER_CFG_TASK_PRIORITY</code> (default
+<code>tskIDLE_PRIORITY + 1</code>)</td>
+<td>Set by your own task creation</td>
+</tr>
+<tr>
+<td>Consumer task wake interval</td>
+<td><code>RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS</code> (default 1000 ms) —
+periodic wake-up bound on <code>ulTaskNotifyTake()</code>, not a
+completion timeout (writes are synchronous — see <a href="ARCHITECTURE.html#event-capture-and-telemetry-flow">ARCHITECTURE.html</a>)</td>
+<td>Your responsibility to guard if desired</td>
+</tr>
+<tr>
+<td>FreeRTOS heap scheme</td>
+<td><code>heap_4</code> (or <code>heap_3</code>) required for
+<code>xTaskCreateStatic()</code></td>
+<td>Same requirement applies if you use static allocation</td>
+</tr>
+<tr>
+<td><code>configSUPPORT_STATIC_ALLOCATION</code></td>
+<td>Must be <code>1</code></td>
+<td>Only required if your own task uses static allocation</td>
+</tr>
+</tbody>
+</table>
+<p>Tune <code>RS_RTC_LOGGER_CFG_TASK_PRIORITY</code> relative to your
+other application tasks — see the adaptation table in <a href="CONFIGURATION_GUIDE.html#key-adaptation-points">CONFIGURATION_GUIDE.html</a>.</p>
+<hr />
+<h2 id="shared-uart-and-multi-instance-considerations">5. Shared UART
+and Multi-Instance Considerations</h2>
+<p><strong>The RTC Event Logger uses a Buffered I/O over UART
+driver</strong> (see <a href="RELEASE_NOTES.html#buffered-io-over-uart">RELEASE_NOTES.html</a>).
+The RTC Event Logger component does not open, own, or register a
+callback for a UART instance.</p>
+<p>The shared physical UART is owned by the <strong>vendored Buffered
+I/O UART driver</strong> (<code>src/rs_stdio_uart_buffer_io/</code>),
+and both the RTC Event Logger’s log output and the reference
+application’s CLI console write through the <em>same</em> stdio stream
+(<code>stdout</code>), via <code>fwrite()</code>/<code>fflush()</code>.
+This has two practical implications for integration:</p>
+<ol type="1">
+<li><strong>Single shared UART, by design.</strong> The vendored driver
+is written around one physical UART instance
+(<code>g_uart_jlob_vcom</code>) and one pair of RX/TX byte queues. If
+your application needs the RTC Event Logger to log to a
+<em>different</em> UART than your CLI console uses, you would need to
+either: (a) run two independent copies of the vendored driver bound to
+different UART instances (not a supported out-of-the-box configuration —
+the driver’s global byte-queue state, described in
+<code>r_byteq.c</code>, is written for a single instance), or (b) have
+the RTC Event Logger’s log lines share the same stream as your console,
+as the reference application does.</li>
+<li><strong>Multiple <code>rs_rtc_logger_ctrl_t</code> instances within
+one application</strong> are possible in principle (the core module
+itself has no static state that assumes a single control block — see <a href="FUNCTIONS_GUIDE.html">FUNCTIONS_GUIDE.html</a>), but since all
+instances would write through the same shared stdio stream, their log
+lines would interleave on the same physical UART. This has not been
+validated by the reference implementation; treat it as a case-by-case
+adaptation.</li>
+</ol>
+<p>If you need genuinely independent UART channels for different
+purposes (e.g. one for logging, one for a separate protocol), do not
+attempt to share the vendored driver across them — give the second
+channel its own <code>uart_instance_t</code> opened directly through the
+FSP HAL, bypassing the Buffered I/O UART driver and
+<code>rs_rtc_logger_stdio_console.c</code> entirely for that
+channel.</p>
+<hr />
+<h2 id="firmware-update-integration-pattern-expert-mode">6.
+Firmware-Update Integration Pattern (Expert Mode)</h2>
+<p>In Expert mode, the
+<code>rs_rtc_logger_Stop()</code>/<code>rs_rtc_logger_Start()</code>
+pair can be used to silence UART activity during a firmware write
+operation while continuing to buffer events:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Before firmware write — silence UART output</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Stop<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">// ... firmware write executes here ...</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">// rs_rtc_logger_EventTrigger() events continue to buffer silently</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">// After firmware verify — resume logging from same seq_count</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Start<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Buffered events are transmitted in order</span></span></code></pre></div>
+<p>The <code>seq_count</code> and circular buffer are preserved across
+<code>rs_rtc_logger_Stop()</code>/<code>rs_rtc_logger_Start()</code>.
+Events that arrived during the STOPPED window are transmitted in order
+once STARTED. This pattern is not applicable in Example Project mode,
+since the PES owns the lifecycle transitions automatically in that
+mode.</p>
+<hr />
+<p><em>Return to the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">User
+Manual</a>. For adapting the core logic to a different event source or
+use case, see <a href="REUSABILITY_GUIDE.html">REUSABILITY_GUIDE.html</a>.</em></p>
+</body>
+</html>

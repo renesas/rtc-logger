@@ -6,9 +6,9 @@
 
 /**
  * @file rs_rtc_logger_format.h
- * @brief Internal timestamp formatting engine for the RTC Event Logger PES.
+ * @brief Internal timestamp formatting engine for the RTC Event Logger.
  *
- * This header is an internal PES interface — it is not part of the public API.
+ * This header is an internal RTC Event Logger interface — it is not part of the public API.
  * It declares the pure formatting function that converts rtc_time_t structures
  * to ASCII timestamp strings. No I/O, no side effects. Integer arithmetic only
  * (FR-014). Fully unit-testable in host isolation.
@@ -52,25 +52,6 @@ uint32_t rs_rtc_logger_format_timestamp(rtc_time_t              const * p_time,
                                          bool                            ts_brackets,
                                          char                          * p_buf,
                                          uint32_t                        buf_size);
-
-/**
- * @brief Append the line terminator string to a caller-supplied buffer.
- *
- * Writes the appropriate line terminator (CRLF, LF, or CR) into p_buf
- * starting at offset, and NUL-terminates. Returns the number of terminator
- * characters appended (not including NUL).
- *
- * @param[in]  term      Line terminator selection.
- * @param[out] p_buf     Caller-supplied buffer.
- * @param[in]  offset    Byte offset into p_buf at which to begin writing.
- * @param[in]  buf_size  Total size of p_buf in bytes.
- *
- * @return Number of terminator characters written (1 or 2), or 0 if insufficient space.
- */
-uint32_t rs_rtc_logger_format_terminator(rs_rtc_logger_term_t   term,
-                                          char                 * p_buf,
-                                          uint32_t               offset,
-                                          uint32_t               buf_size);
 
 /**
  * @brief Compose a complete formatted log line from a buffer entry.

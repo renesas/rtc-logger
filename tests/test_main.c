@@ -2,8 +2,10 @@
 
 static void RunAllTests(void)
 {
-    RUN_TEST_GROUP(picolibc_stdio_to_sci_uart_init);
-    RUN_TEST_GROUP(picolibc_stdio_to_sci_uart_rxtx);
+    RUN_TEST_GROUP(RtcFormat);
+    RUN_TEST_GROUP(RtcFormatLine);
+    RUN_TEST_GROUP(RtcLoggerLifecycle);
+    RUN_TEST_GROUP(RtcLoggerBuffer);
 }
 
 int main(int argc, const char * argv[])

@@ -1,79 +1,56 @@
 project(
-  'picolibc_stdio',
+  'rtc_event_logger',
   'c',
+  version: '1.0.0',
   default_options: [
-    'c_std=c11',
-    'warning_level=2'
+    'c_std=c99',
+    'warning_level=2',
   ]
 )
 
-# -------------------------------------------------------------------
-# ByteQ dependency (from subproject)
-# -------------------------------------------------------------------
+# ------------------------------------------------------------
+# Pure formatting engine — no FSP / FreeRTOS dependency.
+# Compiles on host (used by host unit tests) and on target.
+# ------------------------------------------------------------
 
-byteq_dep = dependency('data_queues', fallback: ['pes-queues', 'byteq_dep'])
-byteq_host_dep = dependency('data_queues', fallback: ['pes-queues', 'byteq_host_dep'])
-# -------------------------------------------------------------------
-# Common sources (your module only)
-# -------------------------------------------------------------------
-
-stdio_to_uart_src = files(
-  'src/syscalls_picolib_stdio_to_uart.c'
+rtc_format_sources = files(
+  'src/rs_rtc_logger/rs_rtc_logger_format.c',
 )
 
-stdio_to_uart_dep = declare_dependency(
-  sources: stdio_to_uart_src,
-  dependencies: byteq_dep
+rtc_src_inc = include_directories('src')
+
+# Stub include dir for host unit tests
+stub_inc = include_directories('tests/stubs')
+
+# Host-testable dep: format engine + stubs (no HAL, no RTOS)
+rtc_format_host_dep = declare_dependency(
+  sources: rtc_format_sources,
+  include_directories: [rtc_src_inc, stub_inc],
 )
 
-# -------------------------------------------------------------------
-# Build example (cross only)
-# -------------------------------------------------------------------
+# Full source set for firmware builds (core + HAL; board config added per-board)
+rtc_core_sources = files(
+  'src/rs_rtc_logger/rs_rtc_logger.c',
+  'src/rs_rtc_logger/rs_rtc_logger_format.c',
+  'src/rs_rtc_logger/rs_rtc_logger_hal.c',
+  'src/rs_rtc_logger/rs_rtc_logger_stdio_console.c',
+  'src/rs_rtc_logger/rs_rtc_logger_rtt_console.c',
+)
 
-if meson.is_cross_build()
-  fs = import('fs')
-
-  # -------------------------------------------------------------------
-  # Options
-  # -------------------------------------------------------------------
-
-  mcu      = get_option('mcu')
-  board    = mcu + '_' + get_option('board')
-  example  = get_option('example')
-  ide = get_option('ide')
-  example_name = example + '_on_' + get_option('board') + '_' + mcu
-
-  if mcu == '' or board == '' or example == ''
-    error('You must set -Dmcu= -Dboard= -Dexample=')
-  endif
-
-  # -------------------------------------------------------------------
-  # Resolve project path
-  # -------------------------------------------------------------------
-
-  example_dir = join_paths(
-    'examples',
-    ide,
-    example_name
-  )
-
-  if not fs.exists(example_dir)
-    error('Example not found: ' + example_dir)
-  endif
-
-  subdir('tests')
-  subdir(example_dir)
-else
-  subdir('tests')
-
-  run_target(
-    'dev_flow',
-    command: [
-      find_program('python'),
-      join_paths(meson.project_source_root(), 'scripts','dev_flow.py'),
-      join_paths(meson.project_source_root(), 'build-msvc'),
-      join_paths(meson.project_source_root(), 'build-ra0l1'),
-    ]
-  )
-
+if get_option('rtt_console_enable') == 1
+  rtc_core_sources += files('src/SEGGER_RTT/SEGGER_RTT.c')
 endif
+
+# ------------------------------------------------------------
+# Optional firmware build (cross builds only; not subproject)
+# ------------------------------------------------------------
+
+if (meson.is_cross_build()) and (false == meson.is_subproject())
+  subdir('firmware')
+endif
+
+# ------------------------------------------------------------
+# Tests (host only; cross builds skip inside subdir)
+# ------------------------------------------------------------
+
+subdir('tests')

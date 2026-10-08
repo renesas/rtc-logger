@@ -6,10 +6,10 @@
 
 /**
  * @file rs_rtc_logger_types.h
- * @brief Public type definitions and enumerations for the RTC Event Logger PES.
+ * @brief Public type definitions and enumerations for the RTC Event Logger.
  *
  * This header is included by rs_rtc_logger.h and may be included directly
- * by application code that needs to reference PES types without including
+ * by application code that needs to reference RTC Event Logger types without including
  * the full public interface header.
  */
 
@@ -23,7 +23,6 @@
 #ifndef RS_RTC_LOGGER_TEST_HOST_BUILD
  #include "bsp_api.h"
  #include "r_rtc_api.h"
- #include "r_uart_api.h"
  #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
   #include "FreeRTOS.h"
   #include "task.h"
@@ -36,7 +35,7 @@
  * Enumerations
  **********************************************************************************************************************/
 
-/** PES lifecycle states — mirrors the standard PES Runtime-Control lifecycle model */
+/** RTC Event Logger lifecycle states — mirrors the standard Runtime-Control lifecycle model */
 typedef enum
 {
     RS_RTC_LOGGER_STATE_CLOSED  = 0,   ///< Resources not allocated
@@ -113,20 +112,31 @@ typedef struct
 } rs_rtc_logger_event_entry_t;
 
 /**
- * @brief PES instance configuration — populated by FSP tooling from
+ * @brief RTC Event Logger instance configuration — populated by FSP tooling from
  *        property selections in the IDE configurator.
  *
  * Must remain valid (const-correct, static storage) for the full
- * lifetime of the PES instance (until Close() is called).
+ * lifetime of the RTC Event Logger instance (until Close() is called).
  */
 typedef struct
 {
-    /** HAL instance pointers — bound at configuration time */
+    /** HAL instance pointer — bound at configuration time */
     rtc_instance_t  const * p_rtc;              ///< RTC HAL instance (r_rtc)
-    uart_instance_t const * p_uart;             ///< UART HAL instance (r_sci_b_uart)
+
+    /* This component never opens, writes, or otherwise touches a
+     * uart_instance_t directly (see rs_rtc_logger_hal.c) — the shared UART
+     * is owned entirely by the Buffered I/O UART driver, which validates
+     * its own configuration via its own public entry point
+     * (RS_STDIO_UART_CheckApplicationConfiguration(), wired in through
+     * rs_rtc_logger_console_init()). */
 
     /** Timestamp formatting options */
-    rs_rtc_logger_ts_format_t   ts_format;      ///< Timestamp format (default: ISO8601)
+    rs_rtc_logger_ts_format_t   ts_format;      ///< Timestamp format (default: ISO8601).
+                                                 ///< @note N-10: Effective only at Open() time.
+                                                 ///< To change the format at runtime after Open(),
+                                                 ///< call rs_rtc_logger_TimestampFormatSet() —
+                                                 ///< Write() reads from the ctrl shadow field,
+                                                 ///< not directly from this cfg field.
     bool                        ts_brackets;    ///< Wrap timestamp in [ ] (default: true)
 
     /** Output formatting */
@@ -141,14 +151,14 @@ typedef struct
 } rs_rtc_logger_cfg_t;
 
 /**
- * @brief PES instance control block.
+ * @brief RTC Event Logger instance control block.
  *
  * Declare as static in the application. Do not access fields directly —
- * all state transitions occur exclusively through PES public functions.
+ * all state transitions occur exclusively through this component's public functions.
  *
  * Per FR-095: declared in public header rs_rtc_logger.h (upper layers may inspect).
  * Per FR-096: version and size are first two elements.
- * Per FR-097: both PES-owned DMI instance pointers are recorded here.
+ * Per FR-097: the HAL instance pointer this component owns is recorded here.
  *
  * RAM budget: verified at build time via static_assert against
  * RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES.
@@ -162,7 +172,7 @@ typedef struct
 typedef struct
 {
     /* --- Versioning (FR-096 — must remain first two fields) -------------- */
-    uint32_t    version;                        ///< PES module version (encoded MAJOR.MINOR.PATCH)
+    uint32_t    version;                        ///< RTC Event Logger module version (encoded MAJOR.MINOR.PATCH)
     uint32_t    ctrl_size;                      ///< sizeof(rs_rtc_logger_ctrl_t) for compatibility checking
 
     /* --- Lifecycle state ------------------------------------------------- */
@@ -170,6 +180,14 @@ typedef struct
 
     /* --- Bound configuration --------------------------------------------- */
     rs_rtc_logger_cfg_t const * p_cfg;          ///< Pointer to cfg passed at Open()
+
+    /* --- Hot-mutable configuration shadow (avoids const-cast on p_cfg) --- */
+    /**
+     * Shadow of p_cfg->ts_format, kept here so rs_rtc_logger_TimestampFormatSet()
+     * can update it without casting away const from p_cfg.  Initialised from
+     * p_cfg->ts_format in Open() and used exclusively by Write() / WriteStr().
+     */
+    rs_rtc_logger_ts_format_t   ts_format;
 
     /* --- Circular event buffer (FR-110; static — no heap) ---------------- */
     rs_rtc_logger_event_entry_t event_buf[RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH];
@@ -183,9 +201,6 @@ typedef struct
     /* --- Output line buffer (static; no heap) ---------------------------- */
     char    line_buf[RS_RTC_LOGGER_CFG_LINE_BUF_SIZE]; ///< Composed output line
 
-    /* --- UART TX completion flag (set by HAL callback) ------------------- */
-    volatile bool       tx_complete;            ///< Set by UART TX-complete callback; cleared before each write
-
     /* --- RTC time validity guard ----------------------------------------- */
     /**
      * Set false on every cold start (power-on reset) until rs_rtc_logger_TimeSet()
@@ -198,7 +213,7 @@ typedef struct
 
     /* --- Example Project mode internal state (FR-121-FR-123) ------------- */
 #if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE
-    TaskHandle_t    internal_task_handle;       ///< Handle to PES-owned consumer task (NULL until created)
+    TaskHandle_t    internal_task_handle;       ///< Handle to this component's own consumer task (NULL until created)
     volatile bool   auto_init_pending;          ///< True after first EventTrigger() before Open()/Start() complete
     volatile bool   auto_init_done;             ///< True once auto-Open()/Start() sequence has completed
 #endif

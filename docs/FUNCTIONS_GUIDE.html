@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.12.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>FUNCTIONS_GUIDE</title>
+  <style>
+
+html {
+color: #1a1a1a;
+color: light-dark(#1a1a1a, #fdfdfd);
+background-color: #fdfdfd;
+background-color: light-dark(#fdfdfd, #1a1a1a);
+color-scheme: light dark;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+color-scheme: light only;
+}
+html, body, pre, code {
+background-color: transparent;
+}
+body, a, a:visited, blockquote {
+color: black;
+}
+pre, code {
+padding: 0;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a, a:visited {
+color: inherit;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid;
+border-color: #e6e6e6;
+border-color: light-dark(#e6e6e6, #4c4c4c);
+color: #606060;
+color: light-dark(#606060, #b6b6b6);
+}
+code {
+white-space: pre-wrap;
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid currentColor;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid currentColor;
+border-bottom: 1px solid currentColor;
+}
+th {
+border-top: 1px solid currentColor;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+</head>
+<body>
+<h1 id="functions-guide-public-and-private-functions">Functions Guide —
+Public and Private Functions</h1>
+<blockquote>
+<p>Part of the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html#documentation-map"><code>rs_rtc_logger</code>
+documentation set</a>. For call sequences and how these functions fit
+together in an application, see <a href="INTEGRATION_GUIDE.html">INTEGRATION_GUIDE.html</a>.</p>
+</blockquote>
+<p>This guide documents every function in the <code>rs_rtc_logger</code>
+— both the <strong>public</strong> functions an application calls
+directly, and the <strong>private/internal</strong> functions used only
+inside the module. Each function is explicitly tagged:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🟢 <strong>PUBLIC</strong></td>
+<td>Declared in <code>rs_rtc_logger.h</code> or a board config header
+(<code>rs_rtc_logger_data_fpb_&lt;board&gt;.h</code>). Part of the
+supported application-facing interface. Naming:
+<code>rs_rtc_logger_OperationName()</code>.</td>
+</tr>
+<tr>
+<td>🔒 <strong>INTERNAL</strong></td>
+<td>Declared in an internal header (<code>rs_rtc_logger_format.h</code>,
+<code>rs_rtc_logger_hal.h</code>) marked “not part of the public API.”
+Has external (non-<code>static</code>) linkage so it can be called from
+other files inside the module, but is not intended for application
+use.</td>
+</tr>
+<tr>
+<td>⚫ <strong>PRIVATE</strong></td>
+<td><code>static</code> — file-scoped, callable only from within the
+<code>.c</code> file that defines it. Never referenced outside the
+module.</td>
+</tr>
+</tbody>
+</table>
+<p>Only 🟢 <strong>PUBLIC</strong> functions are safe to call from
+application code. 🔒 <strong>INTERNAL</strong> and ⚫
+<strong>PRIVATE</strong> functions are documented here for engineers
+reading, debugging, or extending the module’s source — calling them
+directly from application code voids the safety guarantees (state
+gating, ISR-safety, hot-safe semantics) described for the public
+functions.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#start-here-the-entry-point">Start Here: The Entry
+Point</a></li>
+<li><a href="#configuration-bridge-call-before-open">Configuration
+Bridge (call before Open)</a></li>
+<li><a href="#lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">Lifecycle
+Functions</a></li>
+<li><a href="#operational-functions">Operational Functions</a></li>
+<li><a href="#configuration-and-query-functions">Configuration and
+Query Functions</a></li>
+<li><a href="#example-project-mode-setup-helper">Example Project Mode
+Setup Helper</a></li>
+<li><a href="#complete-public-function-reference-table">Complete
+Public Function Reference Table</a></li>
+<li><a href="#internal-functions-rs_rtc_logger.c">Internal Functions —
+<code>rs_rtc_logger.c</code></a></li>
+<li><a href="#internal-functions-rs_rtc_logger_format.c-.h">Internal
+Functions — <code>rs_rtc_logger_format.c</code> /
+<code>.h</code></a></li>
+<li><a href="#internal-functions-rs_rtc_logger_hal.c-.h">Internal
+Functions — <code>rs_rtc_logger_hal.c</code> / <code>.h</code></a></li>
+<li><a href="#internal-functions-rs_rtc_logger_stdio_console.c-.h">Internal
+Functions — <code>rs_rtc_logger_stdio_console.c</code> /
+<code>.h</code></a></li>
+<li><a href="#complete-internal-function-reference-table">Complete
+Internal Function Reference Table</a></li>
+</ol>
+<hr />
+<h1 id="public-functions">Public Functions</h1>
+<blockquote>
+<p><strong>What “hot-safe” means:</strong> A function marked hot-safe
+can be called while the module is in the STARTED state (actively
+transmitting) without disrupting the current transmission. The change
+takes effect on the next <code>Write()</code> call. Functions that are
+not hot-safe must only be called before the module is started or after
+it is stopped.</p>
+</blockquote>
+<h2 id="start-here-the-entry-point">1. Start Here: The Entry Point</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ISR-safe — the only function the application ISR needs to call:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EventTrigger<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">(</span><span class="dt">uint8_t</span> <span class="dt">const</span> <span class="op">*)</span><span class="st">&quot;Event Detected&quot;</span><span class="op">,</span> <span class="dv">14</span><span class="bu">U</span><span class="op">);</span></span></code></pre></div>
+<p>In <strong>Example Project mode</strong>, this is the only function
+the application needs to call after initial setup. In <strong>Expert
+mode</strong>, the application also manages the lifecycle functions
+described below.</p>
+<hr />
+<h2 id="configuration-bridge-call-before-open">2. Configuration Bridge
+(call before Open)</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Bind the RTC HAL instance — call once before rs_rtc_logger_Open()</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span></code></pre></div>
+<p><code>rs_rtc_logger_ConfigGen()</code>,
+<code>rs_rtc_logger_ConfigCheck()</code>, and
+<code>rs_rtc_logger_ConfigGetSize()</code> are declared in the
+<strong>board-specific preset configuration header</strong>
+(<code>rs_rtc_logger_data_fpb_ra4e2.h</code> /
+<code>rs_rtc_logger_data_fpb_ra6e2.h</code>), alongside the
+<code>*_preset</code> instance data they are most commonly paired with.
+They are declared and defined <strong>unconditionally</strong>
+(regardless of <code>RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE</code>), so the
+same three functions remain available whether the caller binds the
+<code>*_preset</code> RTC instance or the FSP Stack
+Configurator-generated <code>g_rtc0</code>.</p>
+<blockquote>
+<p>Boards are using a Buffered I/O UART driver (FPB-RA4E2 and FPB-RA6E2
+— see <a href="CONFIGURATION_GUIDE.html">CONFIGURATION_GUIDE.html</a>), this
+component never opens, writes, or validates a
+<code>uart_instance_t</code> at all.
+<code>rs_rtc_logger_ConfigGen()</code> takes <strong>only</strong> an
+RTC instance parameter. The shared UART is owned and independently
+validated by the vendored Buffered I/O UART driver.</p>
+</blockquote>
+<h3 id="rs_rtc_logger_configgen">🟢
+<code>rs_rtc_logger_ConfigGen()</code></h3>
+<p>Assigns the RTC HAL instance pointer to the RTC Event Logger
+configuration structure. Called once during application initialization,
+before <code>rs_rtc_logger_Open()</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>fsp_err_t rs_rtc_logger_ConfigGen<span class="op">(</span>rs_rtc_logger_cfg_t   <span class="op">*</span> p_cfg<span class="op">,</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                                   rtc_instance_t  <span class="dt">const</span> <span class="op">*</span> p_rtc<span class="op">);</span></span></code></pre></div>
+<p><code>p_rtc</code> accepts either the pre-set
+<code>g_rtc0_preset</code> (when
+<code>RS_RTC_LOGGER_CFG_PRESET_CONFIG_USE == 1</code>) or the FSP Stack
+Configurator-generated <code>g_rtc0</code> (when <code>== 0</code>).
+Non-instance fields (<code>ts_format</code>, <code>ts_brackets</code>,
+<code>line_term</code>, <code>overflow_policy</code>,
+<code>p_callback</code>, <code>p_context</code>) must already be set in
+<code>p_cfg</code> by the caller; this function does not modify
+them.</p>
+<table>
+<thead>
+<tr>
+<th>Return Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FSP_SUCCESS</code></td>
+<td>Instance pointer assigned</td>
+</tr>
+<tr>
+<td><code>FSP_ERR_ASSERTION</code></td>
+<td><code>p_cfg</code> or <code>p_rtc</code> is NULL</td>
+</tr>
+</tbody>
+</table>
+<p><em>Valid in any RTC Event Logger lifecycle state. Not
+ISR-safe.</em></p>
+<h3 id="rs_rtc_logger_configcheck">🟢
+<code>rs_rtc_logger_ConfigCheck()</code></h3>
+<p>Validates a configuration structure before
+<code>rs_rtc_logger_Open()</code>. Verifies that the required RTC HAL
+instance (and its configuration block) is present, that the RTC carry
+interrupt priority satisfies the constraint documented in <a href="CONFIGURATION_GUIDE.html#required-non-default-fsp-settings">CONFIGURATION_GUIDE.html</a>,
+and that the enumerated configuration fields (<code>ts_format</code>,
+<code>line_term</code>, <code>overflow_policy</code>) are in range.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fsp_err_t rs_rtc_logger_ConfigCheck<span class="op">(</span>rs_rtc_logger_cfg_t <span class="dt">const</span> <span class="op">*</span> p_cfg<span class="op">);</span></span></code></pre></div>
+<p>Call any time after <code>rs_rtc_logger_ConfigGen()</code> and before
+<code>rs_rtc_logger_Open()</code>, so misconfiguration is caught early.
+This function validates the <strong>RTC instance only</strong> — UART
+configuration is validated independently by the Buffered I/O UART
+driver’s own <code>RS_STDIO_UART_CheckApplicationConfiguration()</code>
+(wired in through <code>rs_rtc_logger_console_init()</code>, called from
+<code>rs_rtc_logger_hal_uart_open()</code> during <code>Open()</code> —
+see <a href="#internal-functions-rs_rtc_logger_hal.c-.h">Section
+10</a>).</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Return Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FSP_SUCCESS</code></td>
+<td>Configuration is valid</td>
+</tr>
+<tr>
+<td><code>FSP_ERR_ASSERTION</code></td>
+<td><code>p_cfg</code> is NULL</td>
+</tr>
+<tr>
+<td><code>FSP_ERR_NOT_INITIALIZED</code></td>
+<td>Required RTC instance/config is missing</td>
+</tr>
+<tr>
+<td><code>FSP_ERR_INVALID_HW_CONDITION</code></td>
+<td>RTC <code>carry_ipl</code>/<code>carry_irq</code> is disabled or has
+no NVIC vector allocated</td>
+</tr>
+<tr>
+<td><code>FSP_ERR_INVALID_ARGUMENT</code></td>
+<td><code>ts_format</code>, <code>line_term</code>, or
+<code>overflow_policy</code> is out of range</td>
+</tr>
+</tbody>
+</table>
+<p><em>Valid in any lifecycle state. Not ISR-safe.</em></p>
+<h3 id="rs_rtc_logger_configgetsize">🟢
+<code>rs_rtc_logger_ConfigGetSize()</code></h3>
+<p>Returns the size, in bytes, of the RTC Event Logger control block
+structure. Useful for confirming control-block sizing (e.g. against
+<code>RS_RTC_LOGGER_CFG_CTRL_RAM_LIMIT_BYTES</code>) without requiring
+<code>rs_rtc_logger_Open()</code> to have been called first.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fsp_err_t rs_rtc_logger_ConfigGetSize<span class="op">(</span>rs_rtc_logger_ctrl_t <span class="dt">const</span> <span class="op">*</span> p_ctrl<span class="op">,</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                                       <span class="dt">size_t</span>                      <span class="op">*</span> p_size<span class="op">);</span></span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Return Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FSP_SUCCESS</code></td>
+<td>Size returned in <code>*p_size</code></td>
+</tr>
+<tr>
+<td><code>FSP_ERR_ASSERTION</code></td>
+<td><code>p_ctrl</code> or <code>p_size</code> is NULL</td>
+</tr>
+</tbody>
+</table>
+<p><em>Valid in any lifecycle state. Not ISR-safe. <code>p_ctrl</code>
+may point to caller-allocated storage that has not yet been opened — it
+is only used for <code>sizeof(*p_ctrl)</code>.</em></p>
+<p>Example combining all three:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;rs_rtc_logger/config/rs_rtc_logger_data_fpb_ra4e2.h&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">...</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>fsp_err_t err <span class="op">=</span> rs_rtc_logger_ConfigCheck<span class="op">(&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="op">(</span>FSP_SUCCESS <span class="op">!=</span> err<span class="op">)</span> <span class="op">{</span> <span class="co">/* handle bad configuration */</span> <span class="op">}</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Open<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>g_logger_cfg<span class="op">);</span></span></code></pre></div>
+<hr />
+<h2 id="lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">3.
+Lifecycle Functions (Expert Mode / also used internally in Example
+Project Mode)</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Valid States</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🟢 <code>rs_rtc_logger_Open(p_ctrl, p_cfg)</code></td>
+<td>CLOSED</td>
+<td>Initialize; open RTC + UART HAL drivers in order</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_Start(p_ctrl)</code></td>
+<td>OPEN, STOPPED</td>
+<td>Enable UART output path; activate consumer task</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_Stop(p_ctrl)</code></td>
+<td>STARTED</td>
+<td>Suspend TX; buffer continues accepting events</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_Close(p_ctrl)</code></td>
+<td>OPEN, STOPPED</td>
+<td>Release all resources; close UART then RTC</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="operational-functions">4. Operational Functions</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Valid States</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🟢
+<code>rs_rtc_logger_EventTrigger(p_ctrl, p_data, length)</code></td>
+<td>STARTED, STOPPED (Example Project: also CLOSED on first call)</td>
+<td>ISR-safe capture; enqueues to circular buffer</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_EventDequeue(p_ctrl, p_entry_out)</code></td>
+<td>OPEN, STARTED, STOPPED</td>
+<td>Dequeue oldest buffer entry into caller’s struct (Expert mode
+consumer task; safe canonical path)</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_Write(p_ctrl, p_entry)</code></td>
+<td>STARTED</td>
+<td>Format and transmit one buffer entry (called internally in Example
+Project mode)</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_WriteStr(p_ctrl, p_str)</code></td>
+<td>STARTED</td>
+<td>Convenience: write a string with live RTC timestamp, bypassing the
+circular buffer</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="configuration-and-query-functions">5. Configuration and Query
+Functions</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Hot-Safe</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🟢
+<code>rs_rtc_logger_TimestampFormatSet(p_ctrl, format)</code></td>
+<td>Yes</td>
+<td>Switch timestamp format at runtime</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_TimeSet(p_ctrl, p_time)</code></td>
+<td>Yes</td>
+<td>Set RTC calendar date and time</td>
+</tr>
+<tr>
+<td>🟢
+<code>rs_rtc_logger_ClockValidate(p_ctrl, time_is_valid)</code></td>
+<td>Yes</td>
+<td>Mark RTC time as valid or invalid (used on warm reset)</td>
+</tr>
+<tr>
+<td>🟢
+<code>rs_rtc_logger_LocoCalibrationSet(p_ctrl, rfrl_value)</code></td>
+<td>Yes</td>
+<td>Adjust LOCO oscillator drift via RFRL register (valid range
+8–510)</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_SeqCountSet(p_ctrl, seq_count)</code></td>
+<td>No</td>
+<td>Restore sequence counter after warm reset (OPEN or STOPPED
+only)</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_StatusGet(p_ctrl, p_status)</code></td>
+<td>—</td>
+<td>Snapshot of state, counters, and last timestamp</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_TimeGet(p_ctrl, p_time)</code></td>
+<td>—</td>
+<td>Read current RTC calendar time</td>
+</tr>
+<tr>
+<td>🟢 <code>rs_rtc_logger_VersionGet(p_version)</code></td>
+<td>—</td>
+<td>Module version (valid in any state including CLOSED)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="example-project-mode-setup-helper">6. Example Project Mode Setup
+Helper</h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Call from task context BEFORE enabling the external IRQ:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EP_PrepareConsumerTask<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span></code></pre></div>
+<p>🟢 This creates the internal static FreeRTOS consumer task. It must
+be called from task context (not ISR context) because
+<code>xTaskCreateStatic()</code> must not be called from within an ISR.
+Only compiled in when
+<code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1</code>.</p>
+<hr />
+<h2 id="complete-public-function-reference-table">7. Complete Public
+Function Reference Table</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Category</th>
+<th>State Gating</th>
+<th>See</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rs_rtc_logger_ConfigGen()</code></td>
+<td>Configuration bridge</td>
+<td>Any state</td>
+<td><a href="#configuration-bridge-call-before-open">Section
+2</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_ConfigCheck()</code></td>
+<td>Configuration bridge</td>
+<td>Any state</td>
+<td><a href="#configuration-bridge-call-before-open">Section
+2</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_ConfigGetSize()</code></td>
+<td>Configuration bridge</td>
+<td>Any state</td>
+<td><a href="#configuration-bridge-call-before-open">Section
+2</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_Open()</code></td>
+<td>Lifecycle</td>
+<td>CLOSED</td>
+<td><a href="#lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">Section
+3</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_Start()</code></td>
+<td>Lifecycle</td>
+<td>OPEN, STOPPED</td>
+<td><a href="#lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">Section
+3</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_Stop()</code></td>
+<td>Lifecycle</td>
+<td>STARTED</td>
+<td><a href="#lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">Section
+3</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_Close()</code></td>
+<td>Lifecycle</td>
+<td>OPEN, STOPPED</td>
+<td><a href="#lifecycle-functions-expert-mode-also-used-internally-in-example-project-mode">Section
+3</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_EventTrigger()</code></td>
+<td>Operational</td>
+<td>STARTED, STOPPED (+CLOSED in EP mode)</td>
+<td><a href="#operational-functions">Section 4</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_EventDequeue()</code></td>
+<td>Operational</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#operational-functions">Section 4</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_Write()</code></td>
+<td>Operational</td>
+<td>STARTED</td>
+<td><a href="#operational-functions">Section 4</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_WriteStr()</code></td>
+<td>Operational</td>
+<td>STARTED</td>
+<td><a href="#operational-functions">Section 4</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_TimestampFormatSet()</code></td>
+<td>Config/Query (hot-safe)</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_TimeSet()</code></td>
+<td>Config/Query (hot-safe)</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_ClockValidate()</code></td>
+<td>Config/Query (hot-safe)</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_LocoCalibrationSet()</code></td>
+<td>Config/Query (hot-safe)</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_SeqCountSet()</code></td>
+<td>Config/Query</td>
+<td>OPEN, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_StatusGet()</code></td>
+<td>Config/Query</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_TimeGet()</code></td>
+<td>Config/Query</td>
+<td>OPEN, STARTED, STOPPED</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_VersionGet()</code></td>
+<td>Config/Query</td>
+<td>Any state</td>
+<td><a href="#configuration-and-query-functions">Section 5</a></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_EP_PrepareConsumerTask()</code></td>
+<td>Setup helper</td>
+<td>Any state, task context only</td>
+<td><a href="#example-project-mode-setup-helper">Section 6</a></td>
+</tr>
+</tbody>
+</table>
+<p>For the full state-gating matrix (which states return which error
+codes), see <a href="ARCHITECTURE.html#public-function-state-gating">ARCHITECTURE.html</a>.</p>
+<hr />
+<h1 id="internal-functions">Internal Functions</h1>
+<p>The functions below are <strong>not part of the supported application
+interface</strong>. They are documented so that engineers debugging,
+reviewing, or extending <code>rs_rtc_logger</code> can understand the
+internal call graph without re-deriving it from source. Signatures may
+change between releases without notice, unlike the public functions
+above.</p>
+<h2 id="internal-functions-rs_rtc_logger.c">8. Internal Functions —
+<code>rs_rtc_logger.c</code></h2>
+<p>All five are ⚫ <strong>PRIVATE</strong> (<code>static</code>,
+file-scoped).</p>
+<h3 id="rs_rl_is_open">⚫ <code>rs_rl_is_open()</code></h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">bool</span> rs_rl_is_open<span class="op">(</span>rs_rtc_logger_ctrl_t <span class="dt">const</span> <span class="op">*</span> p_ctrl<span class="op">);</span></span></code></pre></div>
+<p>Returns <code>true</code> if the RTC Event Logger is in any
+non-CLOSED state (OPEN, STARTED, or STOPPED); <code>false</code> if
+CLOSED or <code>p_ctrl</code> is NULL. Used internally by the public
+lifecycle functions to check state before transitioning.</p>
+<h3 id="rs_rl_enqueue">⚫ <code>rs_rl_enqueue()</code></h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> fsp_err_t rs_rl_enqueue<span class="op">(</span>rs_rtc_logger_ctrl_t <span class="op">*</span> p_ctrl<span class="op">,</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                                rtc_time_t     <span class="dt">const</span> <span class="op">*</span> p_timestamp<span class="op">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                                <span class="dt">uint8_t</span>        <span class="dt">const</span> <span class="op">*</span> p_data<span class="op">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                                <span class="dt">uint32_t</span>               length<span class="op">);</span></span></code></pre></div>
+<p>Enqueues a timestamped event entry into the circular buffer. ISR-safe
+— uses a critical section
+(<code>__disable_irq()</code>/<code>__enable_irq()</code>, or the
+FreeRTOS-from-ISR equivalent) to atomically update buffer indices and
+count, and applies the configured overflow policy
+(<code>OVERWRITE_OLDEST</code> or <code>DROP_NEWEST</code>). This is the
+function that actually implements the buffering behavior the public
+<code>rs_rtc_logger_EventTrigger()</code> exposes.</p>
+<p>Returns <code>FSP_SUCCESS</code> on enqueue, or
+<code>FSP_ERR_OVERFLOW</code> if the buffer is full and the policy is
+<code>DROP_NEWEST</code>.</p>
+<h3 id="rs_rl_dequeue">⚫ <code>rs_rl_dequeue()</code></h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">bool</span> rs_rl_dequeue<span class="op">(</span>rs_rtc_logger_ctrl_t        <span class="op">*</span> p_ctrl<span class="op">,</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                           rs_rtc_logger_event_entry_t <span class="op">*</span> p_entry_out<span class="op">);</span></span></code></pre></div>
+<p>Dequeues the oldest entry from the circular buffer. Called from task
+context only (not ISR-safe by design — no ISR-side dequeue path exists).
+Updates <code>buf_tail</code> and <code>buf_count</code>. Compiled in
+for <strong>both</strong> Example Project mode and Expert mode so the
+public <code>rs_rtc_logger_EventDequeue()</code> wrapper can call it in
+either configuration. Returns <code>true</code> if an entry was
+dequeued, <code>false</code> if the buffer was empty.</p>
+<h3 id="rs_rl_auto_init">⚫ <code>rs_rl_auto_init()</code></h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> fsp_err_t rs_rl_auto_init<span class="op">(</span>rs_rtc_logger_ctrl_t <span class="op">*</span> p_ctrl<span class="op">);</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#endif</span></span></code></pre></div>
+<p>Performs the deferred auto-<code>Open()</code>/<code>Start()</code>
+sequence in Example Project mode. Called from the internal consumer task
+after it detects <code>auto_init_pending</code>. Guarantees the first
+<code>EventTrigger()</code> event (already enqueued before
+<code>Open()</code>/<code>Start()</code> ran) is not lost. Only compiled
+in when <code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1</code>.</p>
+<h3 id="rs_rtc_logger_internal_consumer_task">⚫
+<code>rs_rtc_logger_internal_consumer_task()</code></h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#if RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">void</span> rs_rtc_logger_internal_consumer_task<span class="op">(</span><span class="dt">void</span> <span class="op">*</span> p_arg<span class="op">);</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#endif</span></span></code></pre></div>
+<p>The RTC Event Logger-owned FreeRTOS task body used in Example Project
+mode. Waits for task notifications from <code>EventTrigger()</code> (or
+the UART TX-complete callback), then drains the circular buffer by
+calling the public <code>rs_rtc_logger_Write()</code> for each pending
+entry, guarded by a TX timeout
+(<code>RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS</code>). This is the task created
+by the public <code>rs_rtc_logger_EP_PrepareConsumerTask()</code>. Only
+compiled in when
+<code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1</code>.</p>
+<hr />
+<h2 id="internal-functions-rs_rtc_logger_format.c-.h">9. Internal
+Functions — <code>rs_rtc_logger_format.c</code> / <code>.h</code></h2>
+<p><code>rs_rtc_logger_format.h</code> is explicitly marked in its own
+file header as <em>“an internal RTC Event Logger interface — it is not
+part of the public API.”</em> It declares two 🔒
+<strong>INTERNAL</strong> functions with external linkage (callable from
+<code>rs_rtc_logger.c</code>), backed by six ⚫ <strong>PRIVATE</strong>
+helpers local to <code>rs_rtc_logger_format.c</code>.</p>
+<h3 id="rs_rtc_logger_format_timestamp-internal">🔒
+<code>rs_rtc_logger_format_timestamp()</code> — INTERNAL</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">uint32_t</span> rs_rtc_logger_format_timestamp<span class="op">(</span>rtc_time_t              <span class="dt">const</span> <span class="op">*</span> p_time<span class="op">,</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                         rs_rtc_logger_ts_format_t       format<span class="op">,</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                         <span class="dt">bool</span>                            ts_brackets<span class="op">,</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                                         <span class="dt">char</span>                          <span class="op">*</span> p_buf<span class="op">,</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                                         <span class="dt">uint32_t</span>                        buf_size<span class="op">);</span></span></code></pre></div>
+<p>Formats an <code>rtc_time_t</code> timestamp into a caller-supplied
+ASCII buffer, per the selected format (ISO 8601, time-only, compact, or
+syslog) and bracket option. Output is always NUL-terminated; integer
+arithmetic only; no heap allocation. Returns the number of characters
+written (not including NUL), or <code>0</code> on error (buffer too
+small or invalid format). Called by
+<code>rs_rtc_logger_format_line()</code> and, indirectly, by
+<code>rs_rtc_logger_Write()</code> /
+<code>rs_rtc_logger_WriteStr()</code>.</p>
+<h3 id="rs_rtc_logger_format_line-internal">🔒
+<code>rs_rtc_logger_format_line()</code> — INTERNAL</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="dt">uint32_t</span> rs_rtc_logger_format_line<span class="op">(</span>rs_rtc_logger_event_entry_t <span class="dt">const</span> <span class="op">*</span> p_entry<span class="op">,</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>                                    rs_rtc_logger_ts_format_t           format<span class="op">,</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                    <span class="dt">bool</span>                                ts_brackets<span class="op">,</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                    rs_rtc_logger_term_t                term<span class="op">,</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                                    <span class="dt">char</span>                              <span class="op">*</span> p_buf<span class="op">,</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                                    <span class="dt">uint32_t</span>                            buf_size<span class="op">);</span></span></code></pre></div>
+<p>Composes a complete formatted log line (timestamp + event payload +
+sequence number + line terminator) from a circular buffer entry into a
+single NUL-terminated ASCII line, ready for UART TX. Returns total
+characters written, or <code>0</code> on error.</p>
+<h3 id="rs_rtc_logger_format_terminator-private">⚫
+<code>rs_rtc_logger_format_terminator()</code> — PRIVATE</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">uint32_t</span> rs_rtc_logger_format_terminator<span class="op">(</span>rs_rtc_logger_term_t term<span class="op">,</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                                                 <span class="dt">char</span>               <span class="op">*</span> p_buf<span class="op">,</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                                                 <span class="dt">uint32_t</span>             offset<span class="op">,</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                                                 <span class="dt">uint32_t</span>             buf_size<span class="op">);</span></span></code></pre></div>
+<p>Appends the line terminator string (<code>\r\n</code>,
+<code>\n</code>, or <code>\r</code>) to a caller-supplied buffer at the
+given offset. Returns the number of terminator characters written (1 or
+2), or <code>0</code> if insufficient space. Deliberately kept out of
+the public/internal header — it was removed from there as part of a
+prior cleanup so it cannot be called from outside this file.</p>
+<h3 id="rm_rlf_write_u2-rm_rlf_write_d2-rm_rlf_write_year-rm_rlf_write_uint-rm_rlf_write_str-private">⚫
+<code>rm_rlf_write_u2()</code> / <code>rm_rlf_write_d2()</code> /
+<code>rm_rlf_write_year()</code> / <code>rm_rlf_write_uint()</code> /
+<code>rm_rlf_write_str()</code> — PRIVATE</h3>
+<p>Low-level ASCII-writing primitives shared by
+<code>rs_rtc_logger_format_timestamp()</code> and
+<code>rs_rtc_logger_format_line()</code>. All are pure, integer-only,
+and named with the <code>rm_rlf_</code> private prefix (module-local
+formatting helpers, distinct from the <code>rs_rtc_logger_</code> /
+<code>rs_rl_</code> prefixes used elsewhere):</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rm_rlf_write_u2()</code></td>
+<td>Writes a 2-digit, zero-padded decimal integer (e.g. month,
+hour)</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_d2()</code></td>
+<td>Writes a 2-character, <strong>space</strong>-padded decimal integer
+— used for the syslog day field, since RFC 3164 requires a space-padded
+single-digit day (<code>1</code>, not <code>01</code>)</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_year()</code></td>
+<td>Writes a 4-digit year, converting <code>tm_year</code> (years since
+1900) to the full calendar year</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_uint()</code></td>
+<td>Writes a <code>uint32_t</code> as a variable-width decimal string
+(used for the sequence number)</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_str()</code></td>
+<td>Copies a fixed-length string (need not be NUL-terminated) into the
+output buffer</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="internal-functions-rs_rtc_logger_hal.c-.h">10. Internal
+Functions — <code>rs_rtc_logger_hal.c</code> / <code>.h</code></h2>
+<p><code>rs_rtc_logger_hal.h</code> is explicitly marked <em>“Internal
+header — not part of the public API.”</em> It declares seven 🔒
+<strong>INTERNAL</strong> HAL-wrapper functions, backed by two ⚫
+<strong>PRIVATE</strong> helpers local to
+<code>rs_rtc_logger_hal.c</code>.</p>
+<h3 id="rtc-wrappers-internal">🔒 RTC wrappers — INTERNAL</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_open(p_ctrl)</code></td>
+<td>Wraps <code>p_rtc-&gt;p_api-&gt;open()</code>. Validates the RTC
+oscillator is running by probing with a <code>calendarTimeGet()</code>
+call after open. Returns <code>FSP_ERR_NOT_INITIALIZED</code> if the
+oscillator is not running.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_close(p_ctrl)</code></td>
+<td>Wraps <code>p_rtc-&gt;p_api-&gt;close()</code>.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_time_get(p_ctrl, p_time)</code></td>
+<td>Direct calendar-time read — see the “seconds-sandwich”
+implementation note in the source; deliberately does
+<strong>not</strong> call <code>R_RTC_CalendarTimeGet()</code> (the
+carry-interrupt method) to avoid the ISR-priority deadlock risk
+documented in <a href="CONFIGURATION_GUIDE.html#required-non-default-fsp-settings">CONFIGURATION_GUIDE.html</a>.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_time_set(p_ctrl, p_time)</code></td>
+<td>Wraps <code>p_rtc-&gt;p_api-&gt;calendarTimeSet()</code>.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_loco_freq_set(p_ctrl, rfrl_value)</code></td>
+<td>Stops the RTC counter, writes a new RFRL value, reads back the
+retained calendar time, and restarts the counter — no seconds are lost.
+Backs the public <code>rs_rtc_logger_LocoCalibrationSet()</code>. Valid
+RFRL range: 8–510.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="uart-wrappers-internal">🔒 UART wrappers — INTERNAL</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_open(p_ctrl)</code></td>
+<td>Calls <code>rs_rtc_logger_console_init()</code> (see <a href="#internal-functions-rs_rtc_logger_stdio_console.c-.h">Section
+11</a>), which ensures the shared Buffered I/O UART driver is
+initialized and strictly validated against the board reference
+configuration. It is safe to call even if the driver already opened by
+the UART earlier (e.g. via the reference application’s sign-on banner’s
+first <code>printf()</code>).</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_close(p_ctrl)</code></td>
+<td>A no-op that always returns <code>FSP_SUCCESS</code>. The shared
+UART is owned by the Buffered I/O UART driver and is never closed for
+the life of the application.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_write(p_ctrl, p_data, length)</code></td>
+<td>Writes via <code>fwrite()</code> + <code>fflush(stdout)</code> on
+the same stdio stream the Buffered I/O UART driver owns. Returns once
+the write has been safely submitted/serialized (the driver’s own
+<code>uart_flush()</code> spin-waits briefly on its internal busy flag
+if a previous transmission is still in flight). Increments
+<code>p_ctrl-&gt;tx_errors</code> and returns
+<code>FSP_ERR_WRITE_FAILED</code> if
+<code>fwrite()</code>/<code>fflush()</code> do not complete
+cleanly.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rs_rl_bcd_to_dec-private">⚫ <code>rs_rl_bcd_to_dec()</code> —
+PRIVATE</h3>
+<div class="sourceCode" id="cb16"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="dt">static</span> <span class="dt">uint8_t</span> rs_rl_bcd_to_dec<span class="op">(</span><span class="dt">uint8_t</span> bcd<span class="op">);</span></span></code></pre></div>
+<p>Converts a packed BCD byte to a decimal integer
+(e.g. <code>0x21</code> → <code>21</code>). Used exclusively by
+<code>rs_rtc_logger_hal_rtc_time_get()</code> to decode RTC calendar
+registers. Integer arithmetic only, no division.</p>
+<hr />
+<h2 id="internal-functions-rs_rtc_logger_stdio_console.c-.h">11.
+Internal Functions — <code>rs_rtc_logger_stdio_console.c</code> /
+<code>.h</code></h2>
+<p>Uses Buffered I/O over UART (see <a href="RELEASE_NOTES.html#buffered-io-over-uart">RELEASE_NOTES.html</a>).
+This file physically ships inside the <code>rs_rtc_logger/</code> core
+folder, but its three functions split across the public/private line
+differently than the name suggests — see the table below. It is a thin,
+non-blocking bridge between this component (and the reference CLI) and
+the vendored Buffered I/O UART driver
+(<code>src/rs_stdio_uart_buffer_io/</code>, used
+verbatim/unmodified).</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Tag</th>
+<th>Caller</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rs_rtc_logger_console_init()</code></td>
+<td>🔒 INTERNAL (core dependency)</td>
+<td><code>rs_rtc_logger_hal_uart_open()</code> — i.e. every
+<code>rs_rtc_logger_Open()</code> call</td>
+<td>Forces deterministic initialization of the vendored driver (the
+driver otherwise initializes lazily on first
+<code>printf()</code>/<code>getchar()</code>/<code>fflush()</code>) and
+runs the driver’s own public
+<code>RS_STDIO_UART_CheckApplicationConfiguration()</code> exactly once,
+caching the result. A validation failure is returned on every subsequent
+call too, since misconfiguration cannot be fixed by retrying — it
+propagates through <code>rs_rtc_logger_hal_uart_open()</code> and
+<code>rs_rtc_logger_Open()</code> the same way any other
+<code>Open()</code> failure does.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_console_getc_nb(p_c)</code></td>
+<td>Demo-only convenience</td>
+<td>Reference CLI task (<code>demo_rx_getc()</code>)</td>
+<td>Non-blocking single-character read. Peeks the vendored driver’s RX
+byte queue depth via <code>R_BYTEQ_Used()</code> — a non-public but
+externally-linkable symbol (<code>uart_rx_q_ctrl</code>) — before ever
+calling the driver’s own <code>getchar()</code>, which otherwise blocks
+indefinitely when nothing is queued (a documented limitation of the
+vendored driver). Returns <code>false</code> immediately if nothing is
+available; never blocks.</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_console_puts(p_str)</code></td>
+<td>Demo-only convenience</td>
+<td>Reference CLI task (<code>demo_uart_write()</code>)</td>
+<td>Writes a NUL-terminated string via <code>fwrite()</code> then
+<code>fflush(stdout)</code>. Not used by
+<code>rs_rtc_logger_hal_uart_write()</code> itself, which calls
+<code>fwrite()</code>/<code>fflush()</code> directly (see <a href="#internal-functions-rs_rtc_logger_hal.c-.h">Section 10</a>) —
+this function exists purely for the reference CLI’s convenience.</td>
+</tr>
+</tbody>
+</table>
+<p><code>rs_rtc_logger_console_init()</code> is the one function in this
+file the core module actually depends on for <code>Open()</code> to
+succeed — despite the file’s own header comment describing it as a “demo
+application” adapter, it sits on the core’s call path. Keep this in mind
+if you ever consider dropping the file as pure demo scaffolding: doing
+so breaks <code>rs_rtc_logger_hal_uart_open()</code>. See <a href="FILE_GUIDE.html">FILE_GUIDE.html</a> for the full reuse/modify
+guidance on this file.</p>
+<hr />
+<h2 id="complete-internal-function-reference-table">12. Complete
+Internal Function Reference Table</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Function</th>
+<th>Tag</th>
+<th>File</th>
+<th>Compiled When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rs_rl_is_open()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rl_enqueue()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rl_dequeue()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger.c</code></td>
+<td>Always (both modes)</td>
+</tr>
+<tr>
+<td><code>rs_rl_auto_init()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger.c</code></td>
+<td><code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1</code></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_internal_consumer_task()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger.c</code></td>
+<td><code>RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 1</code></td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_format_timestamp()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_format_line()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_format_terminator()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_u2()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_d2()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_year()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_uint()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rm_rlf_write_str()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_format.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_open()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_close()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_time_get()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_rtc_time_set()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_loco_freq_set()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_open()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_close()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_hal_uart_write()</code></td>
+<td>🔒 INTERNAL</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rl_bcd_to_dec()</code></td>
+<td>⚫ PRIVATE</td>
+<td><code>rs_rtc_logger_hal.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_console_init()</code></td>
+<td>🔒 INTERNAL (core dependency)</td>
+<td><code>rs_rtc_logger_stdio_console.c</code></td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_console_getc_nb()</code></td>
+<td>Demo-only convenience</td>
+<td><code>rs_rtc_logger_stdio_console.c</code></td>
+<td>Always (unused unless the demo calls it)</td>
+</tr>
+<tr>
+<td><code>rs_rtc_logger_console_puts()</code></td>
+<td>Demo-only convenience</td>
+<td><code>rs_rtc_logger_stdio_console.c</code></td>
+<td>Always (unused unless the demo calls it)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Return to the <a href="RTC_EVENT_LOGGER-USER_MANUAL.html">User
+Manual</a>.</em></p>
+</body>
+</html>

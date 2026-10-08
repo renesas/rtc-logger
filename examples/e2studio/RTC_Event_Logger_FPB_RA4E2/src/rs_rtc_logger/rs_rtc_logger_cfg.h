@@ -20,9 +20,12 @@
  * Buffer sizing
  **********************************************************************************************************************/
 
-/** Timestamp string buffer: enough for "[YYYY-MM-DD HH:MM:SS] " + NUL */
-#ifndef RS_RTC_LOGGER_CFG_TS_BUF_SIZE
-  #define RS_RTC_LOGGER_CFG_TS_BUF_SIZE          (24U)
+/** Timestamp string buffer: enough for "[YYYY-MM-DD HH:MM:SS] " + NUL = 23 chars.
+ *  DC-1 fix: the old RS_RTC_LOGGER_CFG_TS_BUF_SIZE macro was defined here but never
+ *  referenced anywhere.  Replaced by a build-time assertion that LINE_BUF_SIZE is
+ *  large enough to hold the longest timestamp prefix (23 chars) plus a minimal payload. */
+#ifndef RS_RTC_LOGGER_CFG_TS_MIN_CHARS
+  #define RS_RTC_LOGGER_CFG_TS_MIN_CHARS   (23U)
 #endif
 
 /**
@@ -57,6 +60,42 @@
 /***********************************************************************************************************************
  * Parameter checking
  **********************************************************************************************************************/
+
+/***********************************************************************************************************************
+ * RTC carry interrupt priority guard
+ **********************************************************************************************************************/
+
+/**
+ * @brief Maximum permitted RTC carry interrupt priority level (IPL).
+ *
+ * N-12: R_RTC_CalendarTimeGet() (called from rs_rtc_logger_EventTrigger() in
+ * ISR context) spins waiting for the RTC carry ISR to set a flag.  If the
+ * calling ISR has HIGHER priority (lower IPL number) than the carry ISR, the
+ * carry ISR can never preempt the calling ISR — producing an infinite loop.
+ *
+ * FSP warning (r_rtc.c line ~411):
+ *   "Do not call this function from a critical section or from an interrupt
+ *    with higher priority than the carry interrupt."
+ *
+ * Required invariant:
+ *   carry_ipl  <  ipl_of_any_ISR_that_calls_EventTrigger()
+ *   (lower IPL number = higher preemption on Cortex-M)
+ *
+ * Default: 4 — the carry ISR must be configured at priority 1–4.
+ * This is safely above the FreeRTOS max-syscall priority (1) and below the
+ * demo button ISR (priority 5).
+ *
+ * The preset config (rs_rtc_logger_data_fpb_ra4e2.c) uses carry_ipl = 2. ✓
+ * The FSP-generated hal_data.c uses carry_ipl = 12 which FAILS this check. ✗
+ * Users adopting the FSP Stack Configurator path MUST set the RTC carry
+ * interrupt priority to a value STRICTLY LESS THAN the priority of every ISR
+ * that calls rs_rtc_logger_EventTrigger().
+ *
+ * Override at build time: -DRS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT=<value>
+ */
+#ifndef RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT
+  #define RS_RTC_LOGGER_CFG_CARRY_IPL_LIMIT   (4U)
+#endif
 
 /***********************************************************************************************************************
  * LOCO oscillator drift compensation
@@ -115,7 +154,7 @@
  * Configuration path selection.
  *
  * 1 = Preset configuration path (default):
- *     Include rs_rtc_logger_config_fpb_<board>.h and call
+ *     Include rs_rtc_logger_data_fpb_<board>.h and call
  *     rs_rtc_logger_ConfigGen() with _preset instances.
  *     No FSP Stack Configurator re-run required.
  *
@@ -157,6 +196,21 @@
  * Internal consumer task stack size in bytes (Example Project mode only).
  * Must be sufficient for timestamp formatting and VCOM write call depth.
  * No effect when RS_RTC_LOGGER_CFG_EXAMPLE_MODE_ENABLE == 0.
+ *
+ * N-11 — Stack depth note: rs_rtc_logger_Open() previously stack-allocated
+ * saved_event_buf[RS_RTC_LOGGER_CFG_EVENT_BUF_DEPTH] (~80 bytes × depth),
+ * consuming 640 bytes at the default depth of 8.  This caused a hard fault
+ * in Expert mode (CLI task stack = 1024 bytes) because fewer than 200 bytes
+ * remained for R_RTC_Open() and R_SCI_UART_Open().
+ *
+ * FIXED: saved_event_buf is now declared static inside rs_rtc_logger_Open()
+ * so it lives in BSS rather than on the stack.  The stack demand of Open()
+ * is now ~64 bytes (saved scalars + frame overhead), leaving ample headroom.
+ *
+ * The static declaration is safe because Open() is never called re-entrantly:
+ * Expert mode calls it once from the CLI task; EP mode calls it once from the
+ * consumer task.  If EVENT_BUF_DEPTH is changed, the BSS footprint changes
+ * (not stack), so this value does not need to track EVENT_BUF_DEPTH.
  */
 #ifndef RS_RTC_LOGGER_CFG_TASK_STACK_SIZE
   #define RS_RTC_LOGGER_CFG_TASK_STACK_SIZE        (2048U) /* Note: increase from default for increased (high rate frequency) event workload */
@@ -179,6 +233,51 @@
  */
 #ifndef RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS
   #define RS_RTC_LOGGER_CFG_TX_TIMEOUT_MS          (1000U)
+#endif
+
+/***********************************************************************************************************************
+ * Software debounce for the button S1 ISR callback
+ *
+ * The r_icu hardware digital filter is set to PCLKB_div_1 (120 ns at 25 MHz)
+ * which is far shorter than the 5-20 ms bounce period of a mechanical button.
+ * Every bounce edge triggers the ISR, producing 7-13 spurious EventTrigger()
+ * calls per physical button press.
+ *
+ * The debounce is implemented in demo_button_s1_callback() using the
+ * FreeRTOS tick count (xTaskGetTickCountFromISR) to reject ISR firings that
+ * arrive sooner than RS_RTC_LOGGER_CFG_DEBOUNCE_MS after the last accepted
+ * event.  This covers typical button bounce while allowing rapid
+ * intentional presses spaced apart.
+ *
+ * Set to 0 to disable software debounce (hardware filter only).
+ **********************************************************************************************************************/
+#ifndef RS_RTC_LOGGER_CFG_DEBOUNCE_MS
+ #define RS_RTC_LOGGER_CFG_DEBOUNCE_MS    (150U)
+#endif
+
+/***********************************************************************************************************************
+ * Console transport backend
+ **********************************************************************************************************************/
+
+/**
+ * @brief Select the console I/O transport for log output and CLI.
+ *
+ *   0 = Buffered I/O UART (default, unmodified vendored driver).
+ *       Uses picolibc stdio (fwrite/fflush/getchar) routed through the
+ *       rs_stdio_uart_buffer_io PES.  All its source files are compiled
+ *       and linked.
+ *
+ *   1 = SEGGER RTT via J-Link debug connection (src/SEGGER_RTT/).
+ *       Uses SEGGER_RTT_Write / SEGGER_RTT_GetKey.
+ *       Eliminates the rs_stdio_uart_buffer_io dependency and all heap use
+ *       in the I/O path (~648 B RAM total vs ~768 B + heap for UART).
+ *       In CMake, set -DUSE_RTT_CONSOLE=ON to also exclude the UART driver
+ *       source files from the build.
+ *
+ * Override at build time: -DRS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1
+ */
+#ifndef RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE
+  #define RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE        (0U)
 #endif
 
 #endif /* RS_RTC_LOGGER_CFG_H */
