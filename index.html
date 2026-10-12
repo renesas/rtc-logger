@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<h1 id="rtc-internal-timestamp-event-logger-rs_rtc_logger">RTC Internal
+Timestamp Event Logger (<code>rs_rtc_logger</code>)</h1>
+<h2 id="1-what-this-component-does">1. What This Component Does</h2>
+<p>The RTC Event Logger demonstrates <strong>timestamped serial event
+logging using the MCU's on-chip Real-Time Clock (RTC)</strong>. An
+application-owned interrupt source (by default, a user button) triggers
+a capture; the RTC Event Logger timestamps the event from the RTC at ISR
+time, buffers it in a static circular buffer, and transmits a formatted
+line over a shared UART (VCOM) through a vendored Buffered I/O UART
+driver, without blocking the calling ISR.</p>
+<p>The reference implementation demonstrates:</p>
+<ul>
+<li>ISR-safe RTC timestamp capture, decoupled from UART transmission via
+a circular buffer</li>
+<li>UART transmission via a shared Buffered I/O UART driver
+(stdio-based; see <a
+href="docs/RELEASE_NOTES.html#buffered-io-over-uart"><code>docs/RELEASE_NOTES.html</code></a>)
+— the same UART serves both the CLI console and event logging</li>
+<li>Four selectable timestamp formats (ISO 8601, time-only, compact,
+syslog-style)</li>
+<li>Warm-reset preservation of RTC configuration and event sequence
+numbering</li>
+<li>LOCO oscillator drift calibration</li>
+<li>Two operating modes — Example Project (simple, auto-managed) and
+Expert (full application-owned lifecycle)</li>
+</ul>
+<p>This repository contains:</p>
+<ul>
+<li>Reusable core source code (<code>src/rs_rtc_logger/</code>) with a
+selectable console transport backend
+(<code>RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE</code>):
+<ul>
+<li><code>0</code> = direct UART HAL path (default)</li>
+<li><code>1</code> = SEGGER RTT path via J-Link</li>
+</ul></li>
+<li>A vendored Buffered I/O UART driver
+(<code>src/rs_stdio_uart_buffer_io/</code>)</li>
+<li>Board-specific reference/preset configuration for FPB-RA4E2 and
+FPB-RA6E2</li>
+<li>Complete e2studio example projects for both boards</li>
+<li>A Meson + LLVM/Clang build for host unit tests and command-line
+firmware builds</li>
+<li>Integration, configuration, and troubleshooting documentation</li>
+<li>Host and on-target unit test suites (51 Unity tests)</li>
+</ul>
+<hr />
+<h2 id="2-who-should-use-the-rtc-event-logger">2. Who Should Use The RTC
+Event Logger</h2>
+<p>Use this Component if you want to:</p>
+<ul>
+<li>Evaluate timestamped event logging built on the RA-family on-chip
+RTC and UART.</li>
+<li>Learn how RTC, UART, and FreeRTOS can be combined for ISR-safe,
+non-blocking telemetry capture.</li>
+<li>Reuse the core source in your own application.</li>
+<li>Start from a working reference implementation with warm-reset time
+preservation already solved.</li>
+<li>Understand how to configure Renesas RA devices for RTC-timestamped
+serial logging.</li>
+</ul>
+<blockquote>
+<p><strong>Reusing the logger in another application:</strong> copy
+<code>src/rs_rtc_logger/</code>. For RTT backend support, also copy
+<code>src/SEGGER_RTT/</code>.</p>
+<p>Select backend with
+<code>RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE</code>:</p>
+<ul>
+<li><code>0</code> (default): direct UART HAL write path</li>
+<li><code>1</code>: SEGGER RTT transport</li>
+</ul>
+<p>In Meson firmware builds, set this with:
+<code>meson setup build --cross-file meson/llvm-cortex-m33.ini -Drtt_console_enable=1</code></p>
+</blockquote>
+<hr />
+<h2 id="3-supported-reference-configuration">3. Supported Reference
+Configuration</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Reference Board (primary)</td>
+<td>FPB-RA4E2</td>
+</tr>
+<tr class="even">
+<td>Reference Board (secondary)</td>
+<td>FPB-RA6E2</td>
+</tr>
+<tr class="odd">
+<td>Device Family</td>
+<td>RA4E2 / RA6E2 (Cortex-M33)</td>
+</tr>
+<tr class="even">
+<td>RTC Driver</td>
+<td><code>r_rtc</code></td>
+</tr>
+<tr class="odd">
+<td>UART Driver</td>
+<td><code>r_sci_uart</code> (SCI0, VCOM, 115200 8N1), owned by the
+vendored Buffered I/O UART driver — see <a
+href="docs/CONFIGURATION_GUIDE.html"><code>docs/CONFIGURATION_GUIDE.html</code></a></td>
+</tr>
+<tr class="even">
+<td>External IRQ</td>
+<td><code>r_icu</code> (application-owned; User Switch S1)</td>
+</tr>
+<tr class="odd">
+<td>RTOS</td>
+<td>FreeRTOS (bundled with FSP v6.5.0)</td>
+</tr>
+<tr class="even">
+<td>FSP Baseline</td>
+<td>v6.5.0</td>
+</tr>
+<tr class="odd">
+<td>IDE / Tool Flow</td>
+<td>e² studio, or Meson + LLVM/Clang from the command line</td>
+</tr>
+</tbody>
+</table>
+<p>Full board-specific assumptions and required non-default FSP settings
+are in <a
+href="docs/CONFIGURATION_GUIDE.html"><code>docs/CONFIGURATION_GUIDE.html</code></a>.</p>
+<hr />
+<h2 id="4-repository-layout">4. Repository Layout</h2>
+<pre class="text"><code>.
+├── README.md                     ← This file: high-level overview, quick start, documentation map
+│
+├── docs/
+│   ├── RTC_EVENT_LOGGER-USER_MANUAL.md   ← Start here: use case, core capabilities, documentation map
+│   ├── FUNCTIONS_GUIDE.md               ← Function reference — public and private/internal, each tagged; naming conventions
+│   ├── INTEGRATION_GUIDE.md              ← Initialization order, task/RTOS integration, warm-reset ordering, multi-instance considerations
+│   ├── CONFIGURATION_GUIDE.md            ← Reference board config, adapting to your board, dependencies
+│   ├── FILE_GUIDE.md                     ← Core vs. demo vs. FSP-generated files; what is safe to modify
+│   ├── ARCHITECTURE.md                   ← Lifecycle state machine, state gating, event/telemetry flow
+│   ├── BEHAVIOR_AND_PERFORMANCE.md       ← Demonstrated behavior, timing, RAM budget, clock accuracy
+│   ├── EXAMPLES_GUIDE.md                 ← Importing/building the e2studio example, expected VCOM output
+│   ├── REUSABILITY_GUIDE.md              ← Adapting the core logic to other event sources and workflows
+│   ├── RELEASE_NOTES.md                  ← Version history, adopting a newer release
+│   └── BUILD.md                          ← Command-line build/test instructions (Meson + LLVM/Clang)
+│
+├── examples/
+│   └── e2studio/
+│   │   ├── RTC_Event_Logger_FPB_RA4E2/    ← e²studio project for FPB-RA4E2
+│   │   └── RTC_Event_Logger_FPB_RA6E2/    ← e²studio project for FPB-RA6E2
+│   │
+│   └── VSCode
+│       │ 
+│       ├── RTC_Event_Logger_FPB_RA4E2/    ← VSCode project for FPB-RA4E2
+│       └── RTC_Event_Logger_FPB_RA6E2/    ← VSCode project for FPB-RA6E2
+│
+├── firmware/
+│   ├── meson.build                ← Meson firmware build (per-board ELF targets)
+│   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
+│
+├── src/
+│   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
+│       ├── rs_rtc_logger.c / .h
+│       ├── rs_rtc_logger_cfg.h
+│       ├── rs_rtc_logger_format.c / .h
+│       ├── rs_rtc_logger_hal.c / .h
+│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
+│       ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
+│       ├── rs_rtc_logger_types.h
+│       └── config/
+│           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
+│           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
+│   └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
+│
+├── tests/
+│   ├── meson.build                 ← Test build configuration (host vs. target tests)
+│   ├── run_ut.robot                ← Run on-target Unity firmware tests
+│   ├── stubs/                      ← Host-build FSP/FreeRTOS type stubs
+│   ├── target/                     ← On-target Unity port (SCI UART)
+│   ├── test_main.c                 ← Host-based Unity test entry point
+│   ├── test_main_firmware.c        ← On-target Unity test entry point
+│   ├── test_rs_rtc_logger_core.c   ← Lifecycle + circular buffer unit tests
+│   └── test_rs_rtc_logger_format.c ← Timestamp formatting unit tests
+│
+├── meson/
+│   ├── llvm-clangcl-msvc.ini              ← Windows host native file (unit tests)
+│   ├── llvm-clangcl-ubuntu2404-ci.ini     ← Linux host native file (unit tests / CI)
+│   └── llvm-cortex-m33.ini                ← Cortex-M33 cross file (both boards)
+│
+├── toolchains/
+│   ├── llvm-cortex-m23.ini         ← Meson cross file for Cortex-M23 (RA0 series)
+│   └── llvm-cortex-m33.ini         ← Meson cross file for Cortex-M23/M33 (RA2/RA4/RA6 series)
+│
+├── srec
+│   └── e2 studio example project executables in S-RECORD format
+│
+└── scripts/
+    ├── env.ps1                     ← Windows PATH setup (edit before use)
+    ├── run_rasc.py                 ← Headless RASC code generation + output copy
+    ├── run_rasc_bundle.py          ← Smart bundle generation for TrustZone MCUs
+    └── UartLibrary.py              ← Optional VCOM helper (Robot Framework)</code></pre>
+<blockquote>
+<p><strong>Note:</strong> A top-level <code>meson.build</code> /
+<code>meson_options.txt</code> and a <code>subprojects/</code> directory
+(holding the <code>unity</code>, <code>fsp</code>, and
+<code>cmsis</code> Meson wraps) are required to drive the builds
+described in <a
+href="docs/BUILD.html"><code>docs/BUILD.html</code></a></p>
+</blockquote>
+<hr />
+<h2 id="5-quick-start">5. Quick Start</h2>
+<ol type="1">
+<li>Open an example project:</li>
+</ol>
+<pre class="text"><code>examples/e2studio/RTC_Event_Logger_FPB_RA4E2</code></pre>
+<ol start="2" type="1">
+<li>Import the project into e² studio.</li>
+<li>Confirm the required FSP version (v6.5.0).</li>
+<li>Build the project (default: Example Project mode).</li>
+<li>Program the target board (<strong>Run → Debug As → Renesas GDB
+Hardware Debugging</strong>).</li>
+<li>Open a serial terminal on the J-Link virtual COM port at
+<strong>115200 8N1</strong>.</li>
+<li>Power cycle the target board by disconnecting and re-connecting the
+USB cable.</li>
+<li>Follow the date/time and LOCO trim calibration prompts which are
+only available after a cold start.</li>
+<li>Press User Switch <strong>S1</strong> on the board to trigger a
+logged event.</li>
+</ol>
+<h3
+id="build-with-segger-rtt-in-e2studio-ra4e2-and-ra6e2-examples">Build
+with SEGGER RTT in e2studio (RA4E2 and RA6E2 examples)</h3>
+<p>The e2studio example projects support compile-time transport
+selection.</p>
+<ol type="1">
+<li>Open the imported project properties.</li>
+<li>Go to <strong>C/C++ Build -&gt; Settings -&gt; Tool Settings -&gt;
+GNU ARM Cross C Compiler -&gt; Preprocessor</strong>.</li>
+<li>Add this preprocessor symbol:</li>
+</ol>
+<pre class="text"><code>RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1</code></pre>
+<ol start="4" type="1">
+<li>Clean and rebuild the project.</li>
+<li>Start a debug session and open the RTT viewer/terminal in your
+J-Link tooling.</li>
+</ol>
+<p>Notes:</p>
+<ul>
+<li><code>RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=0</code> (default) uses
+the Buffered I/O UART backend.</li>
+<li><code>RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1</code> uses SEGGER
+RTT.</li>
+<li>Optional size optimization for RTT builds: exclude
+<code>src/rs_stdio_uart_buffer_io/</code> from build in e2studio
+resource settings.</li>
+</ul>
+<p>See <a
+href="docs/EXAMPLES_GUIDE.html"><code>docs/EXAMPLES_GUIDE.html</code></a>
+for full expected output, and <a
+href="docs/BUILD.html"><code>docs/BUILD.html</code></a> for the
+command-line Meson build (host unit tests and firmware).</p>
+<hr />
+<h2 id="6-key-features">6. Key Features</h2>
+<ul>
+<li>ISR-safe, non-blocking event capture via
+<code>rs_rtc_logger_EventTrigger()</code>.</li>
+<li>Static circular event buffer — no dynamic memory allocation in the
+component core itself.</li>
+<li>Selectable console backend: direct UART HAL (default) or SEGGER
+RTT.</li>
+<li>Four selectable timestamp formats; runtime-switchable.</li>
+<li>Warm-reset preservation of RTC configuration and event sequence
+count.</li>
+<li>LOCO oscillator drift calibration at runtime.</li>
+<li>Two operating modes: Example Project (simple) and Expert (full
+lifecycle control).</li>
+<li>Reference-board configuration for two boards (FPB-RA4E2, FPB-RA6E2):
+RTC preset plus a Buffered I/O UART board config for each.</li>
+<li>Software debounce for the reference application's button event
+source.</li>
+<li>Host-based Unity unit tests plus on-target Unity test firmware
+(predates the Buffered I/O update — see <a
+href="docs/RELEASE_NOTES.html#buffered-io-over-uart"><code>docs/RELEASE_NOTES.html</code></a>).</li>
+</ul>
+<hr />
+<h2 id="7-public-function-model">7. Public Function Model</h2>
+<p>The RTC Event Logger (Component) supports two usage models. See <a
+href="docs/FUNCTIONS_GUIDE.html"><code>docs/FUNCTIONS_GUIDE.html</code></a>
+for complete function details, and <a
+href="docs/INTEGRATION_GUIDE.html"><code>docs/INTEGRATION_GUIDE.html</code></a>
+for the recommended initialization sequence for each path.</p>
+<h3 id="simple-path-example-project-mode">Simple Path (Example Project
+mode)</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EP_PrepareConsumerTask<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span>   <span class="co">// once, from task context</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">// ...</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EventTrigger<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">(</span><span class="dt">uint8_t</span> <span class="dt">const</span> <span class="op">*)</span><span class="st">&quot;Event Detected&quot;</span><span class="op">,</span> <span class="dv">14</span><span class="bu">U</span><span class="op">);</span> <span class="co">// from ISR</span></span></code></pre></div>
+<h3 id="expert-path-full-lifecycle-control">Expert Path (full lifecycle
+control)</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigGen<span class="op">(&amp;</span>g_logger_cfg<span class="op">,</span> <span class="op">&amp;</span>g_rtc0_preset<span class="op">);</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_ConfigCheck<span class="op">(&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Open<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> <span class="op">&amp;</span>g_logger_cfg<span class="op">);</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Start<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_EventTrigger<span class="op">(&amp;</span>g_logger_ctrl<span class="op">,</span> p_data<span class="op">,</span> length<span class="op">);</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Stop<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>rs_rtc_logger_Close<span class="op">(&amp;</span>g_logger_ctrl<span class="op">);</span></span></code></pre></div>
+<hr />
+<h2 id="8-main-documentation">8. Main Documentation</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Document</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a
+href="docs/RTC_EVENT_LOGGER-USER_MANUAL.html"><code>docs/RTC_EVENT_LOGGER-USER_MANUAL.html</code></a></td>
+<td>What the RTC Event Logger does, dual operating modes, core-vs-demo
+split, documentation map</td>
+</tr>
+<tr class="even">
+<td><a
+href="docs/FUNCTIONS_GUIDE.html"><code>docs/FUNCTIONS_GUIDE.html</code></a></td>
+<td>Public <strong>and</strong> private/internal function behavior (each
+tagged), naming conventions, state gating</td>
+</tr>
+<tr class="odd">
+<td><a
+href="docs/INTEGRATION_GUIDE.html"><code>docs/INTEGRATION_GUIDE.html</code></a></td>
+<td>Initialization order, task/RTOS integration, warm-reset ordering,
+multi-instance considerations</td>
+</tr>
+<tr class="even">
+<td><a
+href="docs/CONFIGURATION_GUIDE.html"><code>docs/CONFIGURATION_GUIDE.html</code></a></td>
+<td>Reference board config, required FSP settings, porting to a new
+board</td>
+</tr>
+<tr class="odd">
+<td><a
+href="docs/FILE_GUIDE.html"><code>docs/FILE_GUIDE.html</code></a></td>
+<td>Core vs. demo vs. FSP-generated files; what is safe to modify</td>
+</tr>
+<tr class="even">
+<td><a
+href="docs/ARCHITECTURE.html"><code>docs/ARCHITECTURE.html</code></a></td>
+<td>Lifecycle state machine, state gating table, event flow</td>
+</tr>
+<tr class="odd">
+<td><a
+href="docs/BEHAVIOR_AND_PERFORMANCE.html"><code>docs/BEHAVIOR_AND_PERFORMANCE.html</code></a></td>
+<td>Demonstrated behavior, ISR/UART timing, RAM budget</td>
+</tr>
+<tr class="even">
+<td><a
+href="docs/EXAMPLES_GUIDE.html"><code>docs/EXAMPLES_GUIDE.html</code></a></td>
+<td>Importing/building the e2studio example, expected output</td>
+</tr>
+<tr class="odd">
+<td><a
+href="docs/REUSABILITY_GUIDE.html"><code>docs/REUSABILITY_GUIDE.html</code></a></td>
+<td>Adapting the core logic to other event sources</td>
+</tr>
+<tr class="even">
+<td><a
+href="docs/RELEASE_NOTES.html"><code>docs/RELEASE_NOTES.html</code></a></td>
+<td>Version history, adopting a newer release</td>
+</tr>
+<tr class="odd">
+<td><a href="docs/BUILD.html"><code>docs/BUILD.html</code></a></td>
+<td>Command-line build/test instructions (Meson + LLVM/Clang), FSP
+v6.5.0 migration notes, troubleshooting</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-main-example">9. Main Example</h2>
+<p>See:</p>
+<pre class="text"><code>examples/e2studio/RTC_Event_Logger_FPB_RA4E2
+examples/e2studio/RTC_Event_Logger_FPB_RA6E2</code></pre>
+<p>The examples demonstrate:</p>
+<ul>
+<li>RTC-timestamped event logging over VCOM.</li>
+<li>Cold-start date/time and LOCO calibration prompts.</li>
+<li>Warm-reset time and sequence-counter preservation.</li>
+<li>Both Example Project and Expert operating modes.</li>
+<li>Debounced button-triggered event capture.</li>
+</ul>
+<hr />
+<h2 id="10-validated-scope">10. Validated Scope</h2>
+<p>The intended reference validation scope includes:</p>
+<ul>
+<li>FPB-RA4E2 (primary) and FPB-RA6E2 (secondary)</li>
+<li>RTC + UART (VCOM) integration at 115200 baud</li>
+<li>Example Project and Expert operating modes</li>
+<li>Warm-reset RTC and sequence-counter preservation</li>
+<li>Host-based Unity unit tests (lifecycle, circular buffer, formatting)
+plus on-target Unity test firmware</li>
+</ul>
+<p>See <a
+href="docs/BEHAVIOR_AND_PERFORMANCE.html"><code>docs/BEHAVIOR_AND_PERFORMANCE.html</code></a>
+and <a
+href="docs/BUILD.html#host-unit-tests"><code>docs/BUILD.html</code></a>
+for details.</p>
+<hr />
+<h2 id="11-limitations">11. Limitations</h2>
+<p>Current validated scope does not imply support for:</p>
+<ul>
+<li>Power-down RTC retention on FPB-RA4E2 (no VBATT pin/circuit on this
+board — see <a
+href="docs/RTC_EVENT_LOGGER-USER_MANUAL.html"><code>docs/RTC_EVENT_LOGGER-USER_MANUAL.html</code></a>).</li>
+<li>High-accuracy timekeeping out of the box — the default LOCO clock
+source drifts several hundred to several thousand ppm; the sub-clock
+(SOSC) alternative requires manual adaptation (see <a
+href="docs/REUSABILITY_GUIDE.html"><code>docs/REUSABILITY_GUIDE.html</code></a>).</li>
+<li>Boards other than FPB-RA4E2 / FPB-RA6E2 without creating new preset
+configuration (RTC) and a new Buffered I/O UART board config file
+(UART), or switching to the FSP Stack Configurator path for the RTC
+side.</li>
+<li>Event sources other than the reference application's debounced
+button without independently deciding on deglitch/debounce needs for the
+new source.</li>
+<li>The core module itself performs no dynamic allocation, but the
+vendored Buffered I/O UART driver calls
+<code>malloc()</code>/<code>free()</code> internally (see <a
+href="docs/BEHAVIOR_AND_PERFORMANCE.html"><code>docs/BEHAVIOR_AND_PERFORMANCE.html</code></a>).</li>
+</ul>
+<hr />
+<h2 id="12-support-and-modification-note">12. Support and Modification
+Note</h2>
+<p>The RTC Event Logger is provided as reference source code.</p>
+<p>Customers may modify the source to fit their application
+requirements. Once modified, the resulting implementation becomes
+customer-owned and future updates may require manual review and merge of
+local changes. See <a
+href="docs/RELEASE_NOTES.html"><code>docs/RELEASE_NOTES.html</code></a>.</p>
+<hr />
+<h2 id="13-next-steps">13. Next Steps</h2>
+<p>If you are:</p>
+<ul>
+<li>Evaluating the RTC Event Logger → Start with <a
+href="docs/RTC_EVENT_LOGGER-USER_MANUAL.html"><code>docs/RTC_EVENT_LOGGER-USER_MANUAL.html</code></a>.</li>
+<li>Running the example → Read <a
+href="docs/EXAMPLES_GUIDE.html"><code>docs/EXAMPLES_GUIDE.html</code></a>.</li>
+<li>Building from the command line → Read <a
+href="docs/BUILD.html"><code>docs/BUILD.html</code></a>.</li>
+<li>Integrating the RTC Event Logger → Read <a
+href="docs/INTEGRATION_GUIDE.html"><code>docs/INTEGRATION_GUIDE.html</code></a>.</li>
+<li>Writing code against the RTC Event Logger module → Read <a
+href="docs/FUNCTIONS_GUIDE.html"><code>docs/FUNCTIONS_GUIDE.html</code></a>.</li>
+<li>Porting to your board → Read <a
+href="docs/CONFIGURATION_GUIDE.html"><code>docs/CONFIGURATION_GUIDE.html</code></a>.</li>
+<li>Reviewing what's safe to modify → Read <a
+href="docs/FILE_GUIDE.html"><code>docs/FILE_GUIDE.html</code></a>.</li>
+<li>Reusing this for a different use case → Read <a
+href="docs/REUSABILITY_GUIDE.html"><code>docs/REUSABILITY_GUIDE.html</code></a>.</li>
+</ul>
+</body>
+</html>
