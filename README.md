@@ -114,10 +114,6 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 
 ```
 
-> **Note:** A top-level `meson.build` / `meson_options.txt` and a `subprojects/` directory
-> (holding the `unity`, `fsp`, and `cmsis` Meson wraps) are required to drive the builds
-> described in [`docs/BUILD.md`](docs/BUILD.md)
-
 ---
 
 ## 5. Quick Start
@@ -216,7 +212,6 @@ rs_rtc_logger_Close(&g_logger_ctrl);
 | [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) | Importing/building the e2studio example, expected output |
 | [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md) | Adapting the core logic to other event sources |
 | [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) | Version history, adopting a newer release |
-| [`docs/BUILD.md`](docs/BUILD.md) | Command-line build/test instructions (Meson + LLVM/Clang), FSP v6.5.0 migration notes, troubleshooting |
 
 ---
 
@@ -279,7 +274,6 @@ If you are:
 
 - Evaluating the RTC Event Logger → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
 - Running the example → Read [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md).
-- Building from the command line → Read [`docs/BUILD.md`](docs/BUILD.md).
 - Integrating the RTC Event Logger → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
 - Writing code against the RTC Event Logger module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
 - Porting to your board → Read [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md).

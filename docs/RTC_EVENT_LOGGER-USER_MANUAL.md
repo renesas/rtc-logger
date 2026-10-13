@@ -30,8 +30,6 @@ guides — see the [Documentation Map](#documentation-map) below.
 | [BEHAVIOR_AND_PERFORMANCE.md](BEHAVIOR_AND_PERFORMANCE.md) | Demonstrated behavior, ISR/UART timing, RAM budget, clock accuracy | Validating the module meets your timing/memory budget |
 | [REUSABILITY_GUIDE.md](REUSABILITY_GUIDE.md) | Adapting the core logic to other event sources and use cases | Reusing the module for a different use case |
 | [RELEASE_NOTES.md](RELEASE_NOTES.md) | What changes between releases, merge guidance | Adopting a newer release of this module |
-| [BUILD.md](BUILD.md) | Meson/LLVM host and firmware build instructions, FSP v6.5.0 migration notes, troubleshooting | Building, testing, or flashing from the command line |
-
 ---
 
 ## Table of Contents
@@ -148,7 +146,6 @@ The following table identifies which files are reusable core code and which belo
 - **Understanding internal design?** → [ARCHITECTURE.md](ARCHITECTURE.md)
 - **Checking timing/RAM budget?** → [BEHAVIOR_AND_PERFORMANCE.md](BEHAVIOR_AND_PERFORMANCE.md)
 - **Upgrading from an older release?** → [RELEASE_NOTES.md](RELEASE_NOTES.md)
-- **Building or flashing from the command line?** → [BUILD.md](BUILD.md)
 
 ---
 
