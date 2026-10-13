@@ -97,51 +97,21 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │       ├── RTC_Event_Logger_FPB_RA4E2/    ← VSCode project for FPB-RA4E2
 │       └── RTC_Event_Logger_FPB_RA6E2/    ← VSCode project for FPB-RA6E2
 │
-├── firmware/
-│   ├── meson.build                ← Meson firmware build (per-board ELF targets)
-│   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
-│
 ├── src/
-│   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
-│       ├── rs_rtc_logger.c / .h
-│       ├── rs_rtc_logger_cfg.h
-│       ├── rs_rtc_logger_format.c / .h
-│       ├── rs_rtc_logger_hal.c / .h
-│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
-│       ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
-│       ├── rs_rtc_logger_types.h
-│       └── config/
-│           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
-│           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
-│   └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
-│
-├── tests/
-│   ├── meson.build                 ← Test build configuration (host vs. target tests)
-│   ├── run_ut.robot                ← Run on-target Unity firmware tests
-│   ├── stubs/                      ← Host-build FSP/FreeRTOS type stubs
-│   ├── target/                     ← On-target Unity port (SCI UART)
-│   ├── test_main.c                 ← Host-based Unity test entry point
-│   ├── test_main_firmware.c        ← On-target Unity test entry point
-│   ├── test_rs_rtc_logger_core.c   ← Lifecycle + circular buffer unit tests
-│   └── test_rs_rtc_logger_format.c ← Timestamp formatting unit tests
-│
-├── meson/
-│   ├── llvm-clangcl-msvc.ini              ← Windows host native file (unit tests)
-│   ├── llvm-clangcl-ubuntu2404-ci.ini     ← Linux host native file (unit tests / CI)
-│   └── llvm-cortex-m33.ini                ← Cortex-M33 cross file (both boards)
-│
-├── toolchains/
-│   ├── llvm-cortex-m23.ini         ← Meson cross file for Cortex-M23 (RA0 series)
-│   └── llvm-cortex-m33.ini         ← Meson cross file for Cortex-M23/M33 (RA2/RA4/RA6 series)
-│
-├── srec
-│   └── e2 studio example project executables in S-RECORD format
-│
-└── scripts/
-    ├── env.ps1                     ← Windows PATH setup (edit before use)
-    ├── run_rasc.py                 ← Headless RASC code generation + output copy
-    ├── run_rasc_bundle.py          ← Smart bundle generation for TrustZone MCUs
-    └── UartLibrary.py              ← Optional VCOM helper (Robot Framework)
+    ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
+    │   ├── rs_rtc_logger.c / .h
+    │   ├── rs_rtc_logger_cfg.h
+    │   ├── rs_rtc_logger_format.c / .h
+    │   ├── rs_rtc_logger_hal.c / .h
+    │   ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
+    │   ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
+    │   ├── rs_rtc_logger_types.h
+    │   └── config/
+    │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
+    │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
+    └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
+
+
 ```
 
 > **Note:** A top-level `meson.build` / `meson_options.txt` and a `subprojects/` directory
