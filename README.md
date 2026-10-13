@@ -85,7 +85,7 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │   ├── EXAMPLES_GUIDE.md                 ← Importing/building the e2studio example, expected VCOM output
 │   ├── REUSABILITY_GUIDE.md              ← Adapting the core logic to other event sources and workflows
 │   ├── RELEASE_NOTES.md                  ← Version history, adopting a newer release
-│   └── BUILD.md                          ← Command-line build/test instructions (Meson + LLVM/Clang)
+│   
 │
 ├── examples/
 │   └── e2studio/
@@ -153,7 +153,7 @@ Notes:
 - `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1` uses SEGGER RTT.
 - Optional size optimization for RTT builds: exclude `src/rs_stdio_uart_buffer_io/` from build in e2studio resource settings.
 
-See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
+See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output.
 
 ---
 
@@ -244,7 +244,7 @@ The intended reference validation scope includes:
 - Warm-reset RTC and sequence-counter preservation
 - Host-based Unity unit tests (lifecycle, circular buffer, formatting) plus on-target Unity test firmware
 
-See [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md) and [`docs/BUILD.md`](docs/BUILD.md#-host-unit-tests) for details.
+See [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md) for details.
 
 ---
 
