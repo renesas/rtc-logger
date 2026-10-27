@@ -85,7 +85,7 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │   ├── EXAMPLES_GUIDE.md                 ← Importing/building the e2studio example, expected VCOM output
 │   ├── REUSABILITY_GUIDE.md              ← Adapting the core logic to other event sources and workflows
 │   ├── RELEASE_NOTES.md                  ← Version history, adopting a newer release
-│   
+│   └── BUILD.md                          ← Command-line build/test instructions (Meson + LLVM/Clang)
 │
 ├── examples/
 │   └── e2studio/
@@ -97,22 +97,56 @@ Full board-specific assumptions and required non-default FSP settings are in [`d
 │       ├── RTC_Event_Logger_FPB_RA4E2/    ← VSCode project for FPB-RA4E2
 │       └── RTC_Event_Logger_FPB_RA6E2/    ← VSCode project for FPB-RA6E2
 │
+├── firmware/
+│   ├── meson.build                ← Meson firmware build (per-board ELF targets)
+│   └── generated/                 ← RASC custom_target outputs (populated by rasc_generate)
+│
 ├── src/
-    ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
-    │   ├── rs_rtc_logger.c / .h
-    │   ├── rs_rtc_logger_cfg.h
-    │   ├── rs_rtc_logger_format.c / .h
-    │   ├── rs_rtc_logger_hal.c / .h
-    │   ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
-    │   ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
-    │   ├── rs_rtc_logger_types.h
-    │   └── config/
-    │       ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
-    │       └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
-    └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
-
-
+│   ├── rs_rtc_logger/              ← core source and per-board RTC preset configuration
+│       ├── rs_rtc_logger.c / .h
+│       ├── rs_rtc_logger_cfg.h
+│       ├── rs_rtc_logger_format.c / .h
+│       ├── rs_rtc_logger_hal.c / .h
+│       ├── rs_rtc_logger_stdio_console.c / .h   ← Adapter API + UART backend (default)
+│       ├── rs_rtc_logger_rtt_console.c          ← SEGGER RTT backend
+│       ├── rs_rtc_logger_types.h
+│       └── config/
+│           ├── rs_rtc_logger_data_fpb_ra4e2.c / .h   ← RTC instance
+│           └── rs_rtc_logger_data_fpb_ra6e2.c / .h   ← RTC instance
+│   └── SEGGER_RTT/                 ← Vendored SEGGER RTT source (used when backend=1)
+│
+├── tests/
+│   ├── meson.build                 ← Test build configuration (host vs. target tests)
+│   ├── run_ut.robot                ← Run on-target Unity firmware tests
+│   ├── stubs/                      ← Host-build FSP/FreeRTOS type stubs
+│   ├── target/                     ← On-target Unity port (SCI UART)
+│   ├── test_main.c                 ← Host-based Unity test entry point
+│   ├── test_main_firmware.c        ← On-target Unity test entry point
+│   ├── test_rs_rtc_logger_core.c   ← Lifecycle + circular buffer unit tests
+│   └── test_rs_rtc_logger_format.c ← Timestamp formatting unit tests
+│
+├── meson/
+│   ├── llvm-clangcl-msvc.ini              ← Windows host native file (unit tests)
+│   ├── llvm-clangcl-ubuntu2404-ci.ini     ← Linux host native file (unit tests / CI)
+│   └── llvm-cortex-m33.ini                ← Cortex-M33 cross file (both boards)
+│
+├── toolchains/
+│   ├── llvm-cortex-m23.ini         ← Meson cross file for Cortex-M23 (RA0 series)
+│   └── llvm-cortex-m33.ini         ← Meson cross file for Cortex-M23/M33 (RA2/RA4/RA6 series)
+│
+├── srec
+│   └── e2 studio example project executables in S-RECORD format
+│
+└── scripts/
+    ├── env.ps1                     ← Windows PATH setup (edit before use)
+    ├── run_rasc.py                 ← Headless RASC code generation + output copy
+    ├── run_rasc_bundle.py          ← Smart bundle generation for TrustZone MCUs
+    └── UartLibrary.py              ← Optional VCOM helper (Robot Framework)
 ```
+
+> **Note:** A top-level `meson.build` / `meson_options.txt` and a `subprojects/` directory
+> (holding the `unity`, `fsp`, and `cmsis` Meson wraps) are required to drive the builds
+> described in [`docs/BUILD.md`](docs/BUILD.md)
 
 ---
 
@@ -153,7 +187,7 @@ Notes:
 - `RS_RTC_LOGGER_CFG_RTT_CONSOLE_ENABLE=1` uses SEGGER RTT.
 - Optional size optimization for RTT builds: exclude `src/rs_stdio_uart_buffer_io/` from build in e2studio resource settings.
 
-See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output.
+See [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) for full expected output, and [`docs/BUILD.md`](docs/BUILD.md) for the command-line Meson build (host unit tests and firmware).
 
 ---
 
@@ -212,6 +246,7 @@ rs_rtc_logger_Close(&g_logger_ctrl);
 | [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md) | Importing/building the e2studio example, expected output |
 | [`docs/REUSABILITY_GUIDE.md`](docs/REUSABILITY_GUIDE.md) | Adapting the core logic to other event sources |
 | [`docs/RELEASE_NOTES.md`](docs/RELEASE_NOTES.md) | Version history, adopting a newer release |
+| [`docs/BUILD.md`](docs/BUILD.md) | Command-line build/test instructions (Meson + LLVM/Clang), FSP v6.5.0 migration notes, troubleshooting |
 
 ---
 
@@ -244,7 +279,7 @@ The intended reference validation scope includes:
 - Warm-reset RTC and sequence-counter preservation
 - Host-based Unity unit tests (lifecycle, circular buffer, formatting) plus on-target Unity test firmware
 
-See [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md) for details.
+See [`docs/BEHAVIOR_AND_PERFORMANCE.md`](docs/BEHAVIOR_AND_PERFORMANCE.md) and [`docs/BUILD.md`](docs/BUILD.md#-host-unit-tests) for details.
 
 ---
 
@@ -274,6 +309,7 @@ If you are:
 
 - Evaluating the RTC Event Logger → Start with [`docs/RTC_EVENT_LOGGER-USER_MANUAL.md`](docs/RTC_EVENT_LOGGER-USER_MANUAL.md).
 - Running the example → Read [`docs/EXAMPLES_GUIDE.md`](docs/EXAMPLES_GUIDE.md).
+- Building from the command line → Read [`docs/BUILD.md`](docs/BUILD.md).
 - Integrating the RTC Event Logger → Read [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md).
 - Writing code against the RTC Event Logger module → Read [`docs/FUNCTIONS_GUIDE.md`](docs/FUNCTIONS_GUIDE.md).
 - Porting to your board → Read [`docs/CONFIGURATION_GUIDE.md`](docs/CONFIGURATION_GUIDE.md).
