@@ -12,8 +12,8 @@
 ## About This Manual
 
 This manual covers the core use case, capabilities, and reusability model of the
-`rs_rtc_logger`. It is the starting point for evaluating and adapting the
-module, and it also contains the complete task-specific documentation (running the demo,
+`rs_rtc_logger`. It is the starting point for evaluating and adapting the module, 
+and it also contains the complete task-specific documentation (running the demo,
 configuration, function reference, integration, file layout, architecture,
 performance, reusability, and release notes) in a single file. Use the
 [Table of Contents](#table-of-contents) to jump to the section you need.
